@@ -1,0 +1,59 @@
+name: Build 3D cell asset
+on:
+  push:
+    branches: ['feat/cell-hero-3d']
+    paths:
+      - 'tools/cell_asset/**'
+      - 'Assets/CellHero/Scripts/**'
+      - 'Assets/CellHero/Editor/**'
+      - 'Assets/CellHero/Shaders/**'
+      - '.github/workflows/cell-hero-asset.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cell-hero-asset
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate generator syntax
+        run: python3 -m py_compile tools/cell_asset/*.py
+      - name: Install Blender runtime libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libx11-6 libxi6 libxrender1 libxfixes3 libxkbcommon0 libgl1 ffmpeg
+      - name: Download pinned Blender
+        run: |
+          curl --fail --location --retry 2 --max-time 240 https://download.blender.org/release/Blender4.3/blender-4.3.2-linux-x64.tar.xz -o /tmp/cell-blender.tar.xz
+          tar -xf /tmp/cell-blender.tar.xz -C /tmp
+      - name: Generate actual cell geometry and renders
+        run: /tmp/blender-4.3.2-linux-x64/blender --background --factory-startup --threads 4 --python tools/cell_asset/build_cell.py
+      - name: Validate exported FBX geometry and rigs
+        run: /tmp/blender-4.3.2-linux-x64/blender --background --factory-startup --threads 4 --python tools/cell_asset/verify_cell.py
+      - name: Encode rotating cell preview
+        run: ffmpeg -y -framerate 24 -i art/cell-hero/Previews/turntable/%04d.png -c:v libx264 -crf 20 -pix_fmt yuv420p art/cell-hero/Previews/CellHero_Turntable.mp4
+      - name: Package Unity assets
+        run: python3 tools/cell_asset/package_cell.py
+      - name: Preserve generated assets on the asset branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -rf art/cell-hero/Previews/turntable
+          find art/cell-hero -name '*.blend1' -delete
+          git add -f -- Assets/CellHero art/cell-hero dist/cell-hero
+          if ! git diff --cached --quiet; then
+            git commit -m "Generate and validate 3D cell hero assets"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CellHero-3D-Asset
+          path: |
+            dist/cell-hero
+            art/cell-hero/Previews
+          retention-days: 30
+          if-no-files-found: error

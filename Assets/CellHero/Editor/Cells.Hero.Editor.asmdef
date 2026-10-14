@@ -1,0 +1,13 @@
+{
+  "name": "Cells.Hero.Editor",
+  "rootNamespace": "Cells.Hero.Editor",
+  "references": [
+    "Cells.Hero"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "autoReferenced": true,
+  "noEngineReferences": false
+}
