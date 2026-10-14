@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Cells.Substances
 {
-    public enum ChemicalEventKind { Synthesized, Secreted, Absorbed, Damaged, Died, Added }
+    public enum ChemicalEventKind { Synthesized, Secreted, Absorbed, Damaged, Died, Added, Leaked, Digested }
 
     [Serializable]
     public struct ChemicalEvent

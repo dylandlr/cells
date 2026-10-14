@@ -1,22 +1,22 @@
 {
   "editor": "6000.6.5f1",
   "host": "Windows",
-  "base_commit": "054aa926d35c70a03da0478d2ba9ca177836a348",
-  "static": "49 unique asset GUIDs; 4 assemblies; scene references, package lock, CI version passed",
+  "base_commit": "769c64c1cac7ee24aa50aac23c7c0e785b693f65",
+  "static": "51 unique asset GUIDs; 4 assemblies; scene references, package lock, CI version passed",
   "windows_build": {
     "result": "Succeeded",
-    "total_bytes": 157606228,
+    "total_bytes": 157609884,
     "manual_player_test": false
   },
   "suites": {
     "editmode": {
       "result": "Passed",
-      "total": "30",
-      "passed": "30",
+      "total": "41",
+      "passed": "41",
       "failed": "0",
       "skipped": "0",
-      "start-time": "2026-10-14 04:36:59Z",
-      "end-time": "2026-10-14 04:37:00Z",
+      "start-time": "2026-10-14 04:46:56Z",
+      "end-time": "2026-10-14 04:46:56Z",
       "tests": [
         {
           "name": "Cells.Tests.ChemicalEventLogTests.LogPreservesSequenceAndOrganismProvenance",
@@ -76,6 +76,50 @@
         },
         {
           "name": "Cells.Tests.MembraneIntegrityTests.ResistanceReducesDamageAndRepairConsumesEnergy",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.ConcentratedExternalNutrientStopsOutwardLeak",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.DiffusionAndLeakageConserveCombinedMassOverManySteps",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.IntactMembraneRetainsNutrients",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.InvalidDigestionProductCannotConsumeFoodOrProduceEnergy(\"missing\")",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.InvalidDigestionProductCannotConsumeFoodOrProduceEnergy(\"nutrient-A\")",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.LargeStepApproachesContactEquilibriumWithoutOvershoot",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.LeakTransfersActualMassAndNeverChangesEnergy(False)",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.LeakTransfersActualMassAndNeverChangesEnergy(True)",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.ParticleIngestionRequiresReserveAndTransfersMassBeforeDigestion",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.RejectedDepositCannotDestroyInternalMass(True)",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneLeakageTests.RejectedDepositCannotDestroyInternalMass(False)",
           "result": "Passed"
         },
         {
@@ -142,12 +186,12 @@
     },
     "playmode": {
       "result": "Passed",
-      "total": "5",
-      "passed": "5",
+      "total": "6",
+      "passed": "6",
       "failed": "0",
       "skipped": "0",
-      "start-time": "2026-10-14 04:37:49Z",
-      "end-time": "2026-10-14 04:37:52Z",
+      "start-time": "2026-10-14 04:48:51Z",
+      "end-time": "2026-10-14 04:48:55Z",
       "tests": [
         {
           "name": "Cells.Tests.DemoPlayModeTests.CameraRendersSimulationAndSavesEvidence",
@@ -163,6 +207,10 @@
         },
         {
           "name": "Cells.Tests.DemoPlayModeTests.ParticleVisualsTrackPositionsAndFieldCanBeReenabled",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.DemoPlayModeTests.RupturedCellLeaksNutrientsWithoutFeedingOrLosingMass",
           "result": "Passed"
         },
         {

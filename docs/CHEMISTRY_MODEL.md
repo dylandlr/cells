@@ -25,9 +25,15 @@ reaction or elemental stoichiometry engine. Rate units are area / (mass * time).
 ## Cells and material accounting
 
 Dissolved food enters a reserve at a bounded intake rate, then digestion consumes that
-reserve and supplies energy with a configured yield. Digestion removes represented food
-mass; catabolic products are not yet modeled. Particulate food uses a different species ID
-and is not double counted as dissolved food. Toxin secretion transfers a finite internal
+reserve and supplies energy with a configured yield. Digestion emits equal mass of a
+distinct metabolic byproduct (`metabolic-waste-E`) at a membrane outlet. It does not
+consume food or supply energy if that product/outlet cannot accept the material.
+This equal-mass conversion is an abstract catabolic pathway, not elemental/oxygen balance.
+Particulate food uses a different external species ID and transfers packet mass into the
+same internal nutrient reserve; it no longer creates energy immediately. The exchange's
+usableEnergyPerMass governs digestion for both feeding routes. A missing reserve component
+prevents ingestion rather than discarding the food. Each demo cell starts with 0.5 mass
+of stored nutrient, explicitly part of its initial condition. Toxin secretion transfers a finite internal
 reserve to the field and charges energy. Exposure samples 32 regions at the membrane surface. Each receives 1/32 of the
 whole-cell uptake coefficient (area / time). Uptake removes actual local toxin mass,
 then applies resistance-adjusted injury to the corresponding region. An optional
@@ -43,7 +49,7 @@ not a resolved pore mechanics model. Feeding does not revive a dead cell.
 
 Damaged regions increase their uptake coefficient linearly from 1x to the configurable
 maximum (default 3x). This is a phenomenological permeability feedback. It does not yet
-simulate intracellular concentration, cytosolic leakage or osmosis. The dissolved grid
+simulate intracellular toxin concentration or osmosis. The dissolved grid
 does not treat the cell interior as an impermeable obstacle. All contacts snapshot field
 concentrations before withdrawals; severe depletion of a shared grid voxel is resolved
 in region order, so normal small fixed time steps should be retained.
@@ -52,9 +58,38 @@ Repair spends energy proportional to the mean integrity restored, distributing i
 across local deficits without changing healthy regions. Rupture is not repairable.
 Explicitly assigning the legacy integrity scalar resets all regions uniformly for
 scenario compatibility; it is not a resurrection mechanism.
-Events identify absorption, secretion, injury, toxin-associated death, and pipette additions.
+Events identify absorption, secretion, digestion, leakage, injury, toxin-associated death, and pipette additions.
 Basal starvation is visible in physiological state but does not yet create a causal log event.
 Reaction extent is exposed as aggregate reacted mass rather than per-voxel event spam.
+
+## Passive nutrient leakage
+
+`MembraneLeakageSystem` transfers only nutrient-reserve material. Its inside concentration
+is reserve mass / (pi * membraneRadius squared), a well-mixed two-dimensional compartment.
+For each damaged region it samples outside concentration at the actual surface location.
+Conductance is permeability * damage squared * arc length. Intact membrane has zero leak.
+Only an outward concentration gradient transfers mass; reverse passive uptake is not modeled.
+
+Each contact uses the exact two-compartment exchange toward equal concentrations:
+
+```
+S = 1 / internalArea + 1 / fieldCellArea
+transfer = (insideConcentration - outsideConcentration) / S
+           * (1 - exp(-conductance * S * dt))
+```
+
+The amount is bounded by the reserve and credited to the field before it is deducted
+internally. Failed/outside-domain deposits preserve the reserve. Contacts run sequentially
+in region order, an operator-split approximation of shared cytosol coupled to multiple
+external voxels. Small fixed steps limit order dependence; this is not an exact simultaneous
+multi-compartment solve. A single contact cannot overshoot its concentration equilibrium.
+Leakage continues after death and neither spends nor creates energy. The microscope reports
+remaining internal mass and cumulative emitted mass. Toxin reserve leakage, intracellular
+spatial transport, pressure-driven flow, water balance and osmosis remain unimplemented.
+
+Tests verify 500 steps of leak-plus-diffusion conservation, both living and dead leakage,
+a concentrated exterior blocking outward flow, bounded equilibration over a very large step,
+rejected-deposit accounting, digestion products, and particle-to-reserve transfer.
 
 ## Rendering and reproducibility
 

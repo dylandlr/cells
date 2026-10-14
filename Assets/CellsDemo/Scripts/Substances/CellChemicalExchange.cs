@@ -13,8 +13,10 @@ namespace Cells.Substances
         public CellMetabolism metabolism;
         public string toxinId = "toxin-B";
         public string nutrientId = "nutrient-A";
+        public string digestionProductId = "metabolic-waste-E";
         public Transform secretionPore;
         public Transform feedingPore;
+        public Transform metabolicOutlet;
         [Min(0)] public float toxinReserve = 2f;
         [Min(0)] public float nutrientReserve;
         [Min(0)] public float toxinRate = .12f;
@@ -31,7 +33,7 @@ namespace Cells.Substances
 
         public void Tick(float dt)
         {
-            if (!field || !metabolism || !metabolism.alive || dt <= 0f) return;
+            if (!field || !metabolism || !metabolism.alive || !MultiChemicalField2D.Finite(dt) || dt <= 0f) return;
             if (secretionEnabled && toxinReserve > 0f)
             {
                 float allowed = secretionEnergyCost > 0f
@@ -59,9 +61,19 @@ namespace Cells.Substances
                 if (consumed > 0f && events) events.Record(Time.fixedTime, organismId, nutrientId,
                     ChemicalEventKind.Absorbed, consumed, p, "membrane.feeding_site");
             }
-            float digested = Mathf.Min(nutrientReserve, Mathf.Max(0f, digestionRate) * dt);
+            // Material is converted only when the byproduct can enter the represented world.
+            Vector2 outlet = metabolicOutlet ? (Vector2)metabolicOutlet.position : (Vector2)transform.position;
+            float requestedDigestion = Mathf.Min(nutrientReserve, Mathf.Max(0f, digestionRate) * dt);
+            float digested = digestionProductId == nutrientId ? 0f : field.Deposit(digestionProductId, outlet, requestedDigestion);
             nutrientReserve -= digested;
             metabolism.Feed(digested * Mathf.Max(0f, usableEnergyPerMass));
+            if (digested > 0f && events)
+            {
+                events.Record(Time.fixedTime, organismId, nutrientId, ChemicalEventKind.Digested,
+                    digested, transform.position, "metabolism.nutrient_reserve");
+                events.Record(Time.fixedTime, organismId, digestionProductId, ChemicalEventKind.Secreted,
+                    digested, outlet, "membrane.metabolic_outlet");
+            }
         }
     }
 }

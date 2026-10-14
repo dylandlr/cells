@@ -42,11 +42,22 @@ namespace Cells.Tests
             Assert.IsNotNull(demo.GetComponent<ChemistryDemoView>());
             Assert.IsTrue(demo.Registry.TryGet("toxin-B", out _));
             float mass = demo.Particles.TotalMass("food-particle");
+            float nutrientBudget = NutrientBudget();
             var grazer = demo.transform.Find("Grazer").GetComponent<MembraneIntegrity>();
             yield return new WaitForSeconds(.4f);
             Assert.That(demo.Particles.TotalMass("food-particle"), Is.LessThan(mass));
             Assert.That(grazer.integrity, Is.LessThan(1f));
             Assert.That(demo.Field.Total("toxin-B"), Is.GreaterThan(0f));
+            Assert.That(NutrientBudget(), Is.EqualTo(nutrientBudget).Within(2e-4f),
+                "Particle ingestion, uptake, digestion and leakage must conserve represented nutrient/byproduct mass.");
+        }
+
+        float NutrientBudget()
+        {
+            float total = demo.Field.Total("nutrient-A") + demo.Field.Total("metabolic-waste-E")
+                + demo.Particles.TotalMass("food-particle");
+            foreach (var exchange in demo.GetComponentsInChildren<CellChemicalExchange>()) total += exchange.nutrientReserve;
+            return total;
         }
 
         [UnityTest]
@@ -150,6 +161,28 @@ namespace Cells.Tests
                 camera.targetTexture = previousTarget; camera.rect = previousRect; RenderTexture.active = previous;
                 target.Release(); Object.Destroy(target); Object.Destroy(image);
             }
+        }
+
+        [UnityTest]
+        public IEnumerator RupturedCellLeaksNutrientsWithoutFeedingOrLosingMass()
+        {
+            var view = demo.GetComponent<ChemistryDemoView>();
+            view.SetPaused(true); demo.Field.Initialize();
+            var cell = demo.transform.Find("Grazer");
+            var exchange = cell.GetComponent<CellChemicalExchange>();
+            exchange.nutrientReserve = 1f; exchange.digestionRate = 0f;
+            exchange.feedingEnabled = exchange.secretionEnabled = false;
+            cell.GetComponentInChildren<ParticleFeedingSite>().enabled = false;
+            var membrane = cell.GetComponent<MembraneIntegrity>();
+            membrane.chemicalResistance = 0f; membrane.ApplyExposureToSegment(0, 1f);
+            float previouslyLeaked = cell.GetComponent<MembraneLeakageSystem>().TotalLeaked;
+            view.SetPaused(false);
+            yield return new WaitForSeconds(.25f);
+            Assert.IsFalse(cell.GetComponent<CellMetabolism>().alive);
+            Assert.That(cell.GetComponent<CellMetabolism>().energy, Is.Zero);
+            Assert.That(cell.GetComponent<MembraneLeakageSystem>().TotalLeaked, Is.GreaterThan(previouslyLeaked));
+            Assert.That(demo.Field.Total("nutrient-A"), Is.GreaterThan(0f));
+            Assert.That(exchange.nutrientReserve + demo.Field.Total("nutrient-A"), Is.EqualTo(1f).Within(1e-4f));
         }
     }
 }

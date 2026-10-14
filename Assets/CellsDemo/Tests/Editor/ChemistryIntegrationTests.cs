@@ -99,11 +99,13 @@ namespace Cells.Tests
             var exchange = cell.AddComponent<CellChemicalExchange>(); exchange.field = field;
             exchange.metabolism = metabolism;
             exchange.nutrientId = "a"; exchange.toxinId = "b";
+            exchange.digestionProductId = "p";
             exchange.feedingRate = 1f; exchange.digestionRate = .5f; exchange.usableEnergyPerMass = 2f;
             exchange.toxinReserve = 2f; exchange.toxinRate = .5f; exchange.secretionEnergyCost = 1f;
             field.Deposit("a", Vector2.zero, 1f); exchange.Tick(1f);
             Assert.That(field.Total("a"), Is.Zero);
             Assert.That(exchange.nutrientReserve, Is.EqualTo(.5f));
+            Assert.That(field.Total("p"), Is.EqualTo(.5f));
             Assert.That(exchange.toxinReserve + field.Total("b"), Is.EqualTo(2f));
             Assert.That(metabolism.energy, Is.EqualTo(5.5f));
         }

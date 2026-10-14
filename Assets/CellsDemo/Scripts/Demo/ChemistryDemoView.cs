@@ -98,6 +98,10 @@ namespace Cells.Demo
                 GUILayout.Label("Energy: " + Selected.energy.ToString("F3"));
                 GUILayout.Label("Membrane: " + membrane.integrity.ToString("P1") + (membrane.ruptured ? " / RUPTURED" : ""));
                 GUILayout.Label("Weakest region: " + membrane.WeakestIntegrity.ToString("P1"));
+                var exchange = Selected.GetComponent<CellChemicalExchange>();
+                var leakage = Selected.GetComponent<MembraneLeakageSystem>();
+                if (exchange) GUILayout.Label("Internal nutrient mass: " + exchange.nutrientReserve.ToString("F4"));
+                if (leakage) GUILayout.Label("Leaked nutrient mass: " + leakage.TotalLeaked.ToString("F4"));
                 GUI.enabled = Selected.alive && !membrane.ruptured;
                 if (GUILayout.Button("Repair membrane (uses energy)")) membrane.Repair(1f, Selected);
                 GUI.enabled = true;

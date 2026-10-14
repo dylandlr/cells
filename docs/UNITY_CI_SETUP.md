@@ -21,7 +21,8 @@ CLI summaries can highlight unrelated licensing warnings ahead of the real failu
 
 PlayMode tests load the saved demo scene, check feeding/injury, pause and pipette
 behavior, renderer lifecycle, camera rendering, and local rupture under directional
-toxin exposure. The controlled-rupture test also writes `Artifacts/membrane-local-rupture.png`
+toxin exposure, whole-scene nutrient/byproduct conservation, and passive nutrient leakage
+after death. The controlled-rupture test also writes `Artifacts/membrane-local-rupture.png`
 and its scenario provenance; transport and reaction are deliberately paused in that test. The render test writes
 `Artifacts/microscope-camera.png` and a provenance text file. That image is an actual
 Unity PlayMode camera render. It excludes the IMGUI overlay and is not a recording

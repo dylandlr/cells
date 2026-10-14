@@ -1,16 +1,16 @@
 # Integration status - October 13, 2026 (America/Chicago)
 
 Repository: `dylandlr/cells`; branch: `feat/substance-ontology`; existing draft PR: #1.
-Latest work continued from commit `054aa926d35c70a03da0478d2ba9ca177836a348` in a local
+Latest work continued from spatial-membrane commit `769c64c` in a local
 Windows workspace with the installed Unity **6000.6.5f1** editor.
 
 ## Implemented
 
 - A saved demo scene and Editor setup/build commands, complete generated project settings,
   asset metadata and pinned package lock; the microscope attaches automatically.
-- Four independent dissolved species, mass-vs-concentration units, no-flux diffusion,
+- Five independent dissolved species, mass-vs-concentration units, no-flux diffusion,
   measured exponential decay, and local mass-conserving bimolecular neutralization.
-- Nutrient reserve digestion, paid secretion, concentration-dependent exposure,
+- Nutrient reserve digestion with an equal-mass metabolic byproduct, paid secretion, concentration-dependent exposure,
   32-region membrane injury, local permeability feedback, repair cost, rupture and irreversible death.
 - Seed-resettable suspended food particles, actual-packet ingestion and position-driven sprites.
 - Correct field overlay ordering and disable/re-enable lifecycle; owned runtime assets cleaned up.
@@ -19,20 +19,29 @@ Windows workspace with the installed Unity **6000.6.5f1** editor.
 - Directional pipette placement and local concentration inspection, mean/weakest membrane
   integrity readouts, and region/location provenance on exposure events.
 - A separate boundary texture shows local injury/openings without changing physical geometry.
+- Conservative, concentration-driven nutrient leakage through damaged regions, including
+  after death; retained and cumulatively leaked mass are inspectable.
+- Particle feeding now transfers mass into the nutrient reserve and uses the shared
+  digestion pathway. Intake, toxin secretion and metabolic byproduct emission use named
+  membrane sites. Digestion does not proceed if its distinct byproduct cannot be deposited.
 
 ## Verification
 
 - Unity Editor import, runtime/editor C# compilation, and scene generation: passed.
-- EditMode: **30 passed, 0 failed, 0 skipped**. Covers conserved diffusion, reaction stoichiometry
+- EditMode: **41 passed, 0 failed, 0 skipped**. Covers conserved diffusion, reaction stoichiometry
   and time partition, decay, material transfer, membrane rupture/death, deterministic particle
   replay, registry initialization and existing sensor/hazard policies. New checks cover
   rotation-aware contact sites, damage-dependent uptake, local repair budgets, local rupture
-  despite a healthy mean, and legacy uniform-integrity reset compatibility.
-- PlayMode: **5 passed, 0 failed, 0 skipped**, including directional toxin exposure,
+  despite a healthy mean, and legacy uniform-integrity reset compatibility. Leakage tests
+  cover living/dead cells, 500-step mass conservation, concentration gradients, large-step
+  equilibrium, rejected deposits, and particle/reserve/byproduct accounting.
+- PlayMode: **6 passed, 0 failed, 0 skipped**, including directional toxin exposure,
   local rupture, visible opening, opposite-side preservation, and render/physics separation.
-- Static structure: **49 unique asset GUIDs, 4 assemblies**, valid scene script references,
+  Also checks the complete scene's nutrient/byproduct budget and conservative leakage
+  from a dead cell without feeding or energy creation.
+- Static structure: **51 unique asset GUIDs, 4 assemblies**, valid scene script references,
   matching package lock and CI editor version.
-- Windows development player: **build succeeded**, 157,606,228 bytes reported by Unity. The standalone executable was not manually playtested.
+- Windows development player: **build succeeded**, 157,609,884 bytes reported by Unity. The standalone executable was not manually playtested.
 
 During the first bootstrap pass, initial failures were corrected: an invalid added package name prevented the first import;
 then two new EditMode fixtures relied on Awake being called and needed explicit references.
@@ -72,6 +81,7 @@ and [provenance](validation/membrane-local-rupture.txt). Both camera images excl
 The legacy Causal Microscope v0.3 archive was unavailable; **no archive migration is claimed**.
 See `MIGRATION.md` for searched locations and next steps. Biology remains illustrative,
 uncalibrated and stationary. Membrane damage is spatial, but mechanical tearing,
-fluid flow through openings, cytosolic leakage, osmosis and intracellular transport are absent.
+fluid flow through openings, toxin leakage, osmosis and spatial intracellular transport are absent.
+Nutrient leakage uses a well-mixed compartment and sequential conservative surface contacts.
 No evolutionary controllers, full fluid mechanics or research-grade validation are claimed.
 Hosted Linux/GameCI activation and execution have not been verified in this pass.

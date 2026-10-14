@@ -56,7 +56,11 @@ namespace Cells.Demo
             waste.stableId = "waste-D"; waste.displayName = "Neutralization product";
             waste.classification = SubstanceClass.Waste; waste.diffusionCoefficient = .1f;
             waste.visualization.baseColor = new Color(.6f,.6f,.65f);
-            field.species = new[] { food, poison, neutralizer, waste };
+            var metabolicWaste = ScriptableObject.CreateInstance<SubstanceDefinition>();
+            metabolicWaste.stableId = "metabolic-waste-E"; metabolicWaste.displayName = "Metabolic byproduct";
+            metabolicWaste.classification = SubstanceClass.Waste; metabolicWaste.diffusionCoefficient = .14f;
+            metabolicWaste.visualization.baseColor = new Color(.85f, .55f, .25f);
+            field.species = new[] { food, poison, neutralizer, waste, metabolicWaste };
             ownedAssets.AddRange(field.species);
             field.Initialize();
             Registry = fieldObject.AddComponent<SubstanceRegistry>();
@@ -79,6 +83,7 @@ namespace Cells.Demo
             AddChemicalOverlay("Toxins", "toxin-B", MaterialForm.Dissolved, new Color(.72f,.31f,.94f), -21);
             AddChemicalOverlay("Neutralizer", "neutralizer-C", MaterialForm.Dissolved, neutralizer.visualization.baseColor, -20);
             AddChemicalOverlay("Waste", "waste-D", MaterialForm.Dissolved, waste.visualization.baseColor, -23);
+            AddChemicalOverlay("Metabolic byproduct", "metabolic-waste-E", MaterialForm.Dissolved, metabolicWaste.visualization.baseColor, -24);
             var view = GetComponent<ChemistryDemoView>();
             if (!view) view = gameObject.AddComponent<ChemistryDemoView>();
             view.demo = this;
@@ -114,6 +119,7 @@ namespace Cells.Demo
                 feeder.world = particles;
                 feeder.events = eventLog;
                 feeder.metabolism = grazer.GetComponent<CellMetabolism>();
+                feeder.exchange = grazer.GetComponent<CellChemicalExchange>();
                 feeder.edibleSubstanceId = "food-particle";
                 feeder.captureRadius = .45f;
             }
@@ -146,6 +152,14 @@ namespace Cells.Demo
             exchange.feedingEnabled = true;
             exchange.toxinReserve = secretor ? 2f : 0f;
             exchange.toxinRate = .4f;
+            exchange.nutrientReserve = .5f;
+            exchange.digestionRate = .04f;
+            exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", Vector2.left * .9f);
+            exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", Vector2.right * .9f);
+            exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", Vector2.down * .9f);
+            var leakage = go.AddComponent<MembraneLeakageSystem>();
+            leakage.exchange = exchange;
+            leakage.membrane = membrane;
 
             if (!secretor)
             {
@@ -171,6 +185,14 @@ namespace Cells.Demo
             renderer.substanceId = id;
             renderer.form = form;
             renderer.tint = color;
+        }
+
+        static Transform CreatePore(Transform cell, string label, Vector2 position)
+        {
+            var pore = new GameObject(label).transform;
+            pore.SetParent(cell, false);
+            pore.localPosition = position;
+            return pore;
         }
 
         static Sprite CreateSprite()

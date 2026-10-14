@@ -23,13 +23,16 @@ voxel; microscope queries report mass per local area. First-order decay is expli
 accounted for. An illustrative local reaction, toxin + reagent -> neutralization product,
 conserves equal-mass reactants and creates their combined product mass. Suspended food is
 tracked separately as seeded Brownian particles; ingestion removes actual packets.
-Feeding, secretion costs, concentration-dependent exposure, membrane injury, rupture,
-and energy depletion change authoritative simulation state.
+Feeding moves material into an internal reserve; digestion releases a separate metabolic
+byproduct before supplying energy. Damaged membranes leak nutrient mass back into the field,
+including after death. Secretion costs, concentration-dependent exposure, local injury,
+rupture and energy depletion change authoritative simulation state.
 
 These are phenomenological models in arbitrary units, not calibrated molecular chemistry
 or validated biological toxicology. Cells are stationary in this demo. Membrane injury is
 spatially sampled across 32 regions with state-driven visible openings; fluid flow through
-pores, mechanical tearing, osmosis, evolution, and learned behavior remain future work. Human substance names and colors are not organism sensor inputs.
+pores, mechanical tearing, osmosis, evolution, and learned behavior remain future work.
+Nutrient leakage uses a well-mixed internal compartment and conservative surface transfers. Human substance names and colors are not organism sensor inputs.
 
 ## Provenance and validation
 
