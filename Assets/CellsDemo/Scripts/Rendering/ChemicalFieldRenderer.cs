@@ -17,7 +17,7 @@ namespace Cells.Rendering
         Sprite sprite;
         SpriteRenderer target;
 
-        void OnEnable()
+        void Start()
         {
             target = GetComponent<SpriteRenderer>();
             if (!field) field = FindFirstObjectByType<MultiChemicalField2D>();
