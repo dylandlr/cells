@@ -1,7 +1,7 @@
 {
   "name": "Cells.EditorTests",
   "rootNamespace": "Cells.Tests",
-  "references": [],
+  "references": ["Cells.Runtime"],
   "includePlatforms": ["Editor"],
   "optionalUnityReferences": ["TestAssemblies"],
   "overrideReferences": true,
