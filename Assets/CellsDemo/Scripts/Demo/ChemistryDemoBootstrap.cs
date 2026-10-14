@@ -41,8 +41,8 @@ namespace Cells.Demo
             CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f);
             CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f);
             CreateCamera();
-            AddChemicalOverlay("Nutrients", "nutrient-A", new Color(.48f,.87f,.33f), -22);
-            AddChemicalOverlay("Toxins", "toxin-B", new Color(.72f,.31f,.94f), -21);
+            AddChemicalOverlay("Nutrients", "nutrient-A", MaterialForm.Suspension, new Color(.48f,.87f,.33f), -22);
+            AddChemicalOverlay("Toxins", "toxin-B", MaterialForm.Dissolved, new Color(.72f,.31f,.94f), -21);
         }
 
         void CreateCell(string label, int id, Vector2 position, bool secretor, float resistance)
@@ -84,7 +84,7 @@ namespace Cells.Demo
             }
         }
 
-        void AddChemicalOverlay(string label, string id, Color color, int order)
+        void AddChemicalOverlay(string label, string id, MaterialForm form, Color color, int order)
         {
             var go = new GameObject(label + " field visualization");
             var spriteRenderer = go.AddComponent<SpriteRenderer>();
@@ -92,6 +92,7 @@ namespace Cells.Demo
             var renderer = go.AddComponent<ChemicalFieldRenderer>();
             renderer.field = field;
             renderer.substanceId = id;
+            renderer.form = form;
             renderer.tint = color;
         }
 
