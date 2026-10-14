@@ -1,0 +1,151 @@
+{
+  "editor": "6000.6.5f1",
+  "host": "Windows",
+  "base_commit": "ae0db1fcc1082e3016426658230ba6a2c055124b",
+  "static": "48 unique asset GUIDs; 4 assemblies; scene references, package lock, CI version passed",
+  "windows_build": {
+    "result": "Succeeded",
+    "total_bytes": 157600900,
+    "manual_player_test": false
+  },
+  "suites": {
+    "editmode": {
+      "result": "Passed",
+      "total": "25",
+      "passed": "25",
+      "failed": "0",
+      "skipped": "0",
+      "start-time": "2026-10-14 04:09:32Z",
+      "end-time": "2026-10-14 04:09:32Z",
+      "tests": [
+        {
+          "name": "Cells.Tests.ChemicalEventLogTests.LogPreservesSequenceAndOrganismProvenance",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemicalVisualPatternTests.PatternIsDeterministicAndFormDependent",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.ConcentrationUsesVoxelAreaAndOutsideSamplesDoNotClampToEdge",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.DecayIsExponentialAndAccountedFor",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.DissolvedFeedingTransfersMassBeforeEnergyAndSecretionPaysItsCost",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.ExposureDamagesRupturesKillsAndLogsOnlyOneDeath",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.NeutralizationConservesMassAndNeverOverdraws(1.0f,1.0f,1.0f)",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.NeutralizationConservesMassAndNeverOverdraws(1.0f,2.0f,100.0f)",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.NeutralizationConservesMassAndNeverOverdraws(2.0f,1.0f,100.0f)",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.ParticleResetReplaysTheSameBrownianTrajectory",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.ReactionIntegrationIsIndependentOfTimePartition",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.ReactionIsLocalAndMissingProductCannotConsumeReactants",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.ChemistryIntegrationTests.RegistryCanBeInitializedAfterRuntimeDefinitionsAreAssigned",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.FieldVisualizationTests.SamplingDoesNotChangeSubstanceMass",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MembraneIntegrityTests.ResistanceReducesDamageAndRepairConsumesEnergy",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MetabolismTests.DamageCanKillButCannotCreateNegativeEnergy",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MetabolismTests.MetabolicSpendingIsBoundedByReserves",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MultiChemicalFieldTests.DiffusionApproximatelyConservesQuantity",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MultiChemicalFieldTests.SeparateChemicalsDoNotIntermix",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.MultiChemicalFieldTests.UptakeCannotWithdrawMoreThanAvailable",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SubstanceModelTests.AgentObservationContainsOnlyReceptorValues",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SubstanceModelTests.ResistanceChangesExposureOutcome",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SubstanceModelTests.UnverifiedToxicityMustNeverShowCertainSkull",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.TrackedParticleTests.IngestionRemovesPreciselyOneMassPacket",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.TrackedParticleTests.ZeroDiffusionAndDriftPreservesPositionAndMass",
+          "result": "Passed"
+        }
+      ]
+    },
+    "playmode": {
+      "result": "Passed",
+      "total": "4",
+      "passed": "4",
+      "failed": "0",
+      "skipped": "0",
+      "start-time": "2026-10-14 04:15:32Z",
+      "end-time": "2026-10-14 04:15:33Z",
+      "tests": [
+        {
+          "name": "Cells.Tests.DemoPlayModeTests.CameraRendersSimulationAndSavesEvidence",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.DemoPlayModeTests.MicroscopePauseSelectionDoseAndReactionUseRealState",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.DemoPlayModeTests.ParticleVisualsTrackPositionsAndFieldCanBeReenabled",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.DemoPlayModeTests.SavedSceneBuildsAndSimulatesMaterialTransfers",
+          "result": "Passed"
+        }
+      ]
+    }
+  }
+}

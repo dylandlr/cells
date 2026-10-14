@@ -36,9 +36,19 @@ namespace Cells.Substances
 
         void Awake() => random = new System.Random(seed);
 
+        public void ResetSimulation(int randomSeed)
+        {
+            seed = randomSeed;
+            random = new System.Random(seed);
+            particles.Clear();
+            nextId = 1;
+        }
+
         public int Spawn(string substanceId, Vector2 position, float mass, float radius)
         {
             if (particles.Count >= maxParticles || string.IsNullOrWhiteSpace(substanceId)
+                || !MultiChemicalField2D.Finite(mass) || !MultiChemicalField2D.Finite(radius)
+                || !MultiChemicalField2D.Finite(position.x) || !MultiChemicalField2D.Finite(position.y)
                 || mass <= 0f || radius <= 0f) return -1;
             if (random == null) random = new System.Random(seed);
             int id = nextId++;
@@ -58,8 +68,9 @@ namespace Cells.Substances
 
         public void Step(float dt)
         {
-            if (dt <= 0f) return;
-            float brownianSigma = Mathf.Sqrt(2f * diffusivity * dt);
+            if (!MultiChemicalField2D.Finite(dt) || dt <= 0f) return;
+            if (random == null) random = new System.Random(seed);
+            float brownianSigma = Mathf.Sqrt(2f * Mathf.Max(0f, diffusivity) * dt);
             for (int i = 0; i < particles.Count; i++)
             {
                 var p = particles[i];
@@ -84,6 +95,8 @@ namespace Cells.Substances
         public bool TryConsume(string substanceId, Vector2 center, float reach,
             out TrackedParticle consumed)
         {
+            consumed = default;
+            if (!MultiChemicalField2D.Finite(reach) || reach < 0f) return false;
             float squared = reach * reach;
             for (int i = particles.Count-1; i>=0; i--)
             {

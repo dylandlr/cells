@@ -13,7 +13,7 @@ namespace Cells.Physiology
 
         public float ApplyExposure(float incomingDamage)
         {
-            float effective = Mathf.Max(0f, incomingDamage) * (1f - chemicalResistance);
+            float effective = Mathf.Min(integrity, Mathf.Max(0f, incomingDamage) * (1f - Mathf.Clamp01(chemicalResistance)));
             integrity = Mathf.Clamp01(integrity - effective);
             return effective;
         }

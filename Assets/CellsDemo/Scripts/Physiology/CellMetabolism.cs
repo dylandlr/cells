@@ -15,6 +15,7 @@ namespace Cells.Physiology
             if (!alive || requested <= 0f) return 0f;
             float paid = Mathf.Min(energy, requested);
             energy -= paid;
+            if (energy <= 0f) alive = false;
             return paid;
         }
 

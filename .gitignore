@@ -12,3 +12,5 @@
 .vs/
 .idea/
 .DS_Store
+Artifacts/
+TestResults/

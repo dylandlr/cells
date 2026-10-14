@@ -24,7 +24,7 @@ namespace Cells.Rendering
         void Start()
         {
             target = GetComponent<SpriteRenderer>();
-            if (!field) field = FindFirstObjectByType<MultiChemicalField2D>();
+            if (!field) field = FindAnyObjectByType<MultiChemicalField2D>();
             if (!field) return;
             texture = new Texture2D(field.width, field.height, TextureFormat.RGBA32, false);
             texture.filterMode = FilterMode.Point;
@@ -32,13 +32,13 @@ namespace Cells.Rendering
             sprite = Sprite.Create(texture,
                 new Rect(0,0,field.width,field.height), new Vector2(.5f,.5f), 1f/field.cellSize);
             target.sprite = sprite;
-            target.sortingOrder = -20;
             transform.SetParent(field.transform, false);
         }
 
         void LateUpdate()
         {
-            if (!field || !texture || Time.frameCount % updateEveryFrames != 0) return;
+            if (!field || !texture || Time.frameCount % Mathf.Max(1, updateEveryFrames) != 0) return;
+            float detail = Camera.main ? Mathf.Clamp01((8f - Camera.main.orthographicSize) / 6f) : 0f;
             for (int y=0;y<field.height;y++)
             for (int x=0;x<field.width;x++)
             {
@@ -47,14 +47,14 @@ namespace Cells.Rendering
                 // Point-sampled microtexture is deterministic and modulates actual concentration,
                 // never creates a visible particle when the real concentration is zero.
                 float mask = ChemicalVisualPattern.Mask(form, x, y, visualSeed);
-                float detail = Camera.main ? Mathf.Clamp01((8f - Camera.main.orthographicSize) / 6f) : 0f;
-                float opacity = Mathf.Lerp(coverage, coverage * mask * particulateCoverage, detail);
+                float opacity = form == MaterialForm.Dissolved ? coverage :
+                    Mathf.Lerp(coverage, coverage * mask * particulateCoverage, detail);
                 texture.SetPixel(x,y,new Color(tint.r,tint.g,tint.b,opacity*maxAlpha));
             }
             texture.Apply(false);
         }
 
-        void OnDisable()
+        void OnDestroy()
         {
             if (target) target.sprite = null;
             if (sprite) Destroy(sprite);

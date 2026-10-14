@@ -1,23 +1,18 @@
-# Unity migration and verification checklist
+# Legacy archive migration
 
-Existing generated prototype: **Causal Microscope v0.3** (standalone ZIP; not yet committed). Do not treat the repository's initial docs as an Editor-verified Unity game.
+The earlier conversation describes a **Causal Microscope v0.3** ZIP. It is not attached
+to the accessible chat, present under the synced project sources, or present in the
+inspected Downloads, Documents, Desktop, OneDrive, PROJECTS, and starter Unity project
+locations. No archive migration was performed in this pass. The standalone chemistry
+demo is built from the code already on `feat/substance-ontology`.
 
-## Integration order
+When the archive becomes available:
 
-1. Import baseline Unity project (Assets, Packages, ProjectSettings) while preserving full file history.
-2. Compile/test in a pinned Unity 6 version; replace placeholder editor revision metadata.
-3. Fix runtime/compile issues before extending biological fidelity.
-4. Introduce substance registry and target-dependent interaction rules.
-5. Attach rendering presets to simulation substance IDs, never let appearance define physics.
-6. Create inspectable causal provenance for production, transport, exposure, metabolism and damage.
-7. Add microscope zoom LOD, highlight selection and UI decluttering.
-8. Run calibrated low-Re locomotion tests and field conservation/mass-balance checks.
-9. Record **actual Unity Game View** footage with time scale, build SHA and reproducible seed.
+1. Inventory archive paths and preserve provenance/version information.
+2. Import useful source/assets into a separate legacy area, preserving GUIDs and checking conflicts.
+3. Compare transport, physiology, sensor and rendering responsibilities with the working demo.
+4. Integrate incrementally against the existing EditMode and PlayMode tests.
+5. Record new runtime evidence separately from older target-footage renders.
 
-## Verification gates
-
-- Agent sensors cannot access global registry metadata unless translated through sensor models.
-- Two distinct compounds from one class are distinguishable without relying on hue alone.
-- Semantic icons do not obscure organisms or appear per micro-particle at wide zoom.
-- Mutation/production/death chain reconstructible from timestamped events.
-- Editor compilation, Play Mode and visual contrast tests recorded separately from conceptual mockups.
+Do not overwrite the working project settings or reintroduce duplicate chemistry
+systems without verifying their units, material accounting and update ownership.

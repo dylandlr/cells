@@ -4,7 +4,8 @@ using UnityEngine;
 
 namespace Cells.Substances
 {
-    /// <summary>Independent finite-volume-like concentration grids; no visual metadata enters transport.</summary>
+    /// <summary>Mass per grid voxel, with concentration queries in mass / local area.
+    /// No-flux diffusion and first-order decay use arbitrary simulation units.</summary>
     public sealed class MultiChemicalField2D : MonoBehaviour
     {
         public SubstanceDefinition[] species = Array.Empty<SubstanceDefinition>();
@@ -15,30 +16,39 @@ namespace Cells.Substances
         readonly Dictionary<string, float[]> concentrations = new Dictionary<string, float[]>();
         readonly Dictionary<string, float[]> buffers = new Dictionary<string, float[]>();
         float accumulator;
+        public float CellArea => cellSize * cellSize;
+        public float DecayedMass { get; private set; }
 
         void Awake() => Initialize();
 
         public void Initialize()
         {
+            if (width < 3 || height < 3 || !Finite(cellSize) || cellSize <= 0f)
+                throw new ArgumentOutOfRangeException(nameof(cellSize), "Use a positive cell size and at least a 3x3 grid.");
+            accumulator = 0f;
+            DecayedMass = 0f;
             concentrations.Clear(); buffers.Clear();
             foreach (var s in species)
             {
                 if (!s || string.IsNullOrWhiteSpace(s.stableId)) continue;
                 if (concentrations.ContainsKey(s.stableId))
                 {
-                    Debug.LogError("Duplicate substance ID: " + s.stableId, this);
-                    continue;
+                    throw new ArgumentException("Duplicate substance ID: " + s.stableId);
                 }
                 concentrations.Add(s.stableId, new float[width * height]);
                 buffers.Add(s.stableId, new float[width * height]);
             }
         }
 
+        public static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
         int Index(Vector2 world)
         {
             Vector2 local = transform.InverseTransformPoint(world);
-            int x = Mathf.Clamp(Mathf.FloorToInt(local.x / cellSize + width * .5f), 0, width - 1);
-            int y = Mathf.Clamp(Mathf.FloorToInt(local.y / cellSize + height * .5f), 0, height - 1);
+            if (!Finite(local.x) || !Finite(local.y)) return -1;
+            int x = Mathf.FloorToInt(local.x / cellSize + width * .5f);
+            int y = Mathf.FloorToInt(local.y / cellSize + height * .5f);
+            if (x < 0 || x >= width || y < 0 || y >= height) return -1;
             return y * width + x;
         }
 
@@ -47,26 +57,29 @@ namespace Cells.Substances
         {
             if (!concentrations.TryGetValue(id, out var values)) return 0f;
             if (x < 0 || x >= width || y < 0 || y >= height) return 0f;
-            return values[y * width + x];
+            return values[y * width + x] / CellArea;
         }
 
         public float Sample(string id, Vector2 world)
         {
-            return concentrations.TryGetValue(id, out var values) ? values[Index(world)] : 0f;
+            int i = Index(world);
+            return i >= 0 && concentrations.TryGetValue(id, out var values) ? values[i] / CellArea : 0f;
         }
 
         public float Deposit(string id, Vector2 world, float amount)
         {
-            if (!concentrations.TryGetValue(id, out var values) || amount <= 0f) return 0f;
+            if (!concentrations.TryGetValue(id, out var values) || !Finite(amount) || amount <= 0f) return 0f;
             int i = Index(world);
+            if (i < 0) return 0f;
             values[i] += amount;
             return amount;
         }
 
         public float Withdraw(string id, Vector2 world, float requested)
         {
-            if (!concentrations.TryGetValue(id, out var values) || requested <= 0f) return 0f;
+            if (!concentrations.TryGetValue(id, out var values) || !Finite(requested) || requested <= 0f) return 0f;
             int i = Index(world);
+            if (i < 0) return 0f;
             float amount = Mathf.Min(requested, values[i]);
             values[i] -= amount;
             return amount;
@@ -82,6 +95,7 @@ namespace Cells.Substances
 
         void FixedUpdate()
         {
+            if (!Finite(fixedStep) || fixedStep <= 0f) return;
             accumulator += Time.fixedDeltaTime;
             int steps = 0;
             while (accumulator >= fixedStep && steps++ < 16)
@@ -93,14 +107,14 @@ namespace Cells.Substances
 
         public void Step(float dt)
         {
-            if (dt <= 0f) return;
+            if (!Finite(dt) || dt <= 0f) return;
             foreach (var speciesDefinition in species)
             {
                 if (!speciesDefinition || !concentrations.TryGetValue(speciesDefinition.stableId, out var src)) continue;
                 var dst = buffers[speciesDefinition.stableId];
                 // Explicit 5-point diffusion: coefficient bounded to the 2D stability condition.
                 // Excessive requested diffusion requires substepping; do not silently destabilize.
-                float requested = speciesDefinition.diffusionCoefficient * dt / (cellSize * cellSize);
+                float requested = Mathf.Max(0f, speciesDefinition.diffusionCoefficient) * dt / CellArea;
                 int substeps = Mathf.Max(1, Mathf.CeilToInt(requested / .24f));
                 float alpha = requested / substeps;
                 for (int s = 0; s < substeps; s++)
@@ -119,11 +133,45 @@ namespace Cells.Substances
                     }
                     var temp = src; src = dst; dst = temp;
                 }
-                float retention = Mathf.Exp(-speciesDefinition.decayRate * dt);
-                for (int i = 0; i < src.Length; i++) src[i] *= retention;
+                float retention = Mathf.Exp(-Mathf.Max(0f, speciesDefinition.decayRate) * dt);
+                for (int i = 0; i < src.Length; i++)
+                {
+                    DecayedMass += src[i] * (1f - retention);
+                    src[i] *= retention;
+                }
                 concentrations[speciesDefinition.stableId] = src;
                 buffers[speciesDefinition.stableId] = dst;
             }
+        }
+
+        /// <summary>Local equal-mass neutralization A + B -> 2 product.
+        /// Exact integrated bimolecular rate for each voxel, avoiding negative reactants at large dt.</summary>
+        public float React(string a, string b, string product, float rate, float dt)
+        {
+            if (a == b || a == product || b == product || !Finite(rate) || !Finite(dt) || rate <= 0f || dt <= 0f)
+                return 0f;
+            if (!concentrations.TryGetValue(a, out var left) || !concentrations.TryGetValue(b, out var right)
+                || !concentrations.TryGetValue(product, out var output)) return 0f;
+            float total = 0f;
+            for (int i = 0; i < left.Length; i++)
+            {
+                double low = Math.Min(left[i], right[i]) / CellArea;
+                double high = Math.Max(left[i], right[i]) / CellArea;
+                if (low <= 0) continue;
+                double difference = high - low;
+                double remaining;
+                if (difference < 1e-7 * high)
+                    remaining = low / (1.0 + rate * low * dt);
+                else
+                {
+                    double ratio = low / high * Math.Exp(-rate * difference * dt);
+                    remaining = difference * ratio / (1.0 - ratio);
+                }
+                float extent = Mathf.Clamp((float)((low - remaining) * CellArea), 0f, Mathf.Min(left[i], right[i]));
+                left[i] -= extent; right[i] -= extent; output[i] += 2f * extent;
+                total += extent;
+            }
+            return total;
         }
     }
 }

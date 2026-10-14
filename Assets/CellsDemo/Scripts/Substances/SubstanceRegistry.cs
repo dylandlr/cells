@@ -10,7 +10,9 @@ namespace Cells.Substances
         public SubstanceDefinition[] definitions = Array.Empty<SubstanceDefinition>();
         readonly Dictionary<string, SubstanceDefinition> byId = new Dictionary<string, SubstanceDefinition>();
 
-        void Awake()
+        void Awake() => Initialize();
+
+        public void Initialize()
         {
             byId.Clear();
             foreach (var definition in definitions)

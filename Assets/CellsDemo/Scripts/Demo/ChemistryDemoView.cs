@@ -1,60 +1,126 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Cells.Substances;
 using Cells.Physiology;
 
 namespace Cells.Demo
 {
-    /// <summary>Development-only informative HUD and simple microscope focus control.</summary>
+    /// <summary>Human-only microscope/debug controls; never feeds metadata to an agent.</summary>
     public sealed class ChemistryDemoView : MonoBehaviour
     {
+        public ChemistryDemoBootstrap demo;
+        public CellMetabolism Selected { get; private set; }
         Camera microscope;
-        CellMetabolism selected;
         bool follow;
         float zoom = 5f;
+        readonly List<ChemicalEvent> history = new List<ChemicalEvent>();
+        Rect Panel => new Rect(12, 12, Mathf.Min(330, Screen.width - 24), Mathf.Max(100, Screen.height - 24));
+        Vector2 scroll;
+
+        public void Select(CellMetabolism cell) => Selected = cell;
+        public void SetPaused(bool paused) => Time.timeScale = paused ? 0f : 1f;
+        public float Dose(string substance, float mass)
+        {
+            if (!demo || !demo.Field) return 0f;
+            Vector2 position = Selected ? (Vector2)Selected.transform.position : Vector2.zero;
+            float added = demo.Field.Deposit(substance, position, mass);
+            if (added > 0f) demo.Events.Record(Time.fixedTime, 0, substance,
+                ChemicalEventKind.Added, added, position, "microscope.pipette");
+            return added;
+        }
 
         void Update()
         {
             if (!microscope) microscope = Camera.main;
             if (!microscope) return;
-            float delta = Input.mouseScrollDelta.y;
-            if (delta != 0f) zoom = Mathf.Clamp(zoom * Mathf.Pow(.86f, delta), 1f, 12f);
+            Vector2 guiMouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
+            bool overPanel = Panel.Contains(guiMouse);
+            // Reserve the sidebar's screen space so it cannot conceal a cell at normal zoom.
+            float sidebar = Mathf.Clamp01((Panel.xMax + 12f) / Mathf.Max(1, Screen.width));
+            microscope.rect = new Rect(sidebar, 0f, Mathf.Max(.1f, 1f - sidebar), 1f);
+            if (!overPanel && Input.mouseScrollDelta.y != 0f)
+                zoom = Mathf.Clamp(zoom * Mathf.Pow(.86f, Input.mouseScrollDelta.y), 1f, 12f);
             microscope.orthographicSize = Mathf.Lerp(microscope.orthographicSize, zoom, Time.unscaledDeltaTime * 8f);
-            if (Input.GetKeyDown(KeyCode.Escape)) { selected = null; follow = false; }
+            if (Input.GetKeyDown(KeyCode.Space)) SetPaused(Time.timeScale > 0f);
+            if (Input.GetKeyDown(KeyCode.Escape)) { Select(null); follow = false; }
             if (Input.GetKeyDown(KeyCode.F)) follow = !follow;
-            if (Input.GetMouseButtonDown(0))
+            if (!overPanel && Input.GetMouseButtonDown(0) && demo)
             {
                 Vector2 mouse = microscope.ScreenToWorldPoint(Input.mousePosition);
-                float best = .9f;
+                float best = 1f;
                 CellMetabolism nearest = null;
-                foreach (var candidate in FindObjectsByType<CellMetabolism>(FindObjectsSortMode.None))
+                foreach (var candidate in demo.GetComponentsInChildren<CellMetabolism>())
                 {
-                    float d = Vector2.Distance(candidate.transform.position, mouse);
-                    if (d < best) { best = d; nearest = candidate; }
+                    float distance = Vector2.Distance(candidate.transform.position, mouse);
+                    if (distance < best) { best = distance; nearest = candidate; }
                 }
-                selected = nearest;
+                Select(nearest);
             }
-            if (follow && selected)
+            if (follow && Selected)
             {
-                var next = selected.transform.position; next.z = -10f;
+                var next = Selected.transform.position; next.z = -10f;
                 microscope.transform.position = Vector3.Lerp(microscope.transform.position, next, Time.unscaledDeltaTime * 4f);
             }
         }
 
         void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(16, 16, 340, 170), GUI.skin.box);
-            GUILayout.Label("cells | Chemical causality demo");
-            GUILayout.Label("Scroll: zoom   Click: inspect   F: follow   Esc: clear");
-            if (selected)
+            if (!demo || !demo.Field) return;
+            GUILayout.BeginArea(Panel, GUI.skin.box);
+            scroll = GUILayout.BeginScrollView(scroll);
+            GUILayout.Label("CELLS / CAUSAL MICROSCOPE");
+            GUILayout.Label("Seed " + demo.seed + " | t = " + Time.fixedTime.ToString("F1") + " s");
+            GUILayout.Label("Scroll: zoom | Click: inspect | F: follow");
+            if (GUILayout.Button(Time.timeScale > 0f ? "Pause [Space]" : "Resume [Space]"))
+                SetPaused(Time.timeScale > 0f);
+            GUILayout.Label("Inspect organism");
+            GUILayout.BeginHorizontal();
+            foreach (var cell in demo.GetComponentsInChildren<CellMetabolism>())
+                if (GUILayout.Button(cell.name)) Select(cell);
+            GUILayout.EndHorizontal();
+            Vector2 location = Selected ? (Vector2)Selected.transform.position : Vector2.zero;
+            if (Selected)
             {
-                var membrane = selected.GetComponent<MembraneIntegrity>();
-                GUILayout.Label("Cell: " + selected.gameObject.name);
-                GUILayout.Label("Energy: " + selected.energy.ToString("F3"));
-                GUILayout.Label("Membrane integrity: " + (membrane ? membrane.integrity.ToString("F3") : "N/A"));
-                GUILayout.Label("Status: " + (selected.alive ? "Alive" : "Dead"));
+                var membrane = Selected.GetComponent<MembraneIntegrity>();
+                GUILayout.Label(Selected.name + " / " + (Selected.alive ? "Alive" : "Dead"));
+                GUILayout.Label("Energy: " + Selected.energy.ToString("F3"));
+                GUILayout.Label("Membrane: " + membrane.integrity.ToString("P1") + (membrane.ruptured ? " / RUPTURED" : ""));
+                GUI.enabled = Selected.alive && !membrane.ruptured;
+                if (GUILayout.Button("Repair membrane (uses energy)")) membrane.Repair(1f, Selected);
+                GUI.enabled = true;
             }
-            else GUILayout.Label("Select a cell for its physiological state.");
+            GUILayout.Space(8);
+            GUILayout.Label("Dissolved chemistry / local concentration");
+            foreach (var species in demo.Field.species)
+            {
+                if (!ChemicalInspectorQuery.TryRead(demo.Field, demo.Registry, species.stableId, location, out var state)) continue;
+                GUI.contentColor = state.displayColor;
+                GUILayout.Label(state.name + ": " + state.localConcentration.ToString("F3"));
+                GUI.contentColor = Color.white;
+                GUILayout.Label("  Total mass: " + state.totalQuantity.ToString("F3"));
+            }
+            GUILayout.Label("Suspended food: " + demo.Particles.Particles.Count + " packets / " + demo.Particles.TotalMass("food-particle").ToString("F3") + " mass");
+            GUILayout.Label("Neutralized mass: " + demo.Reaction.ReactedMass.ToString("F3"));
+            GUILayout.Label("Pipette at " + (Selected ? Selected.name : "field center"));
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("+ Food")) Dose("nutrient-A", .25f);
+            if (GUILayout.Button("+ Toxin")) Dose("toxin-B", .1f);
+            if (GUILayout.Button("+ Reagent")) Dose("neutralizer-C", .25f);
+            GUILayout.EndHorizontal();
+            GUILayout.Space(8);
+            GUILayout.Label("Recent causal events (mass / injury)");
+            int id = Selected ? Selected.GetComponent<CellChemicalExchange>().organismId : 0;
+            demo.Events.QueryOrganism(id, history);
+            for (int i = Mathf.Max(0, history.Count - 6); i < history.Count; i++)
+            {
+                var e = history[i];
+                GUILayout.Label(e.simulationTime.ToString("F2") + "s " + e.kind + " " + e.substanceId + " " + e.quantity.ToString("F4"));
+            }
+            GUILayout.Label("Illustrative model / arbitrary units.\nNot calibrated biological toxicology.");
+            GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
+
+        void OnDisable() => Time.timeScale = 1f;
     }
 }

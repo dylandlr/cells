@@ -25,11 +25,15 @@ namespace Cells.Substances
             if (!membrane) membrane = GetComponent<MembraneIntegrity>();
         }
 
-        void FixedUpdate()
+        void FixedUpdate() => Tick(Time.fixedDeltaTime);
+
+        public void Tick(float dt)
         {
-            if (!field || !metabolism || !membrane || !metabolism.alive) return;
+            if (!field || !metabolism || !membrane || !metabolism.alive || dt <= 0f) return;
             Vector2 p = intakeSite ? (Vector2)intakeSite.position : (Vector2)transform.position;
-            float amount = field.Withdraw(substanceId, p, uptakeRate * Time.fixedDeltaTime);
+            // First-order uptake: exposure scales with the actual local concentration.
+            float amount = field.Withdraw(substanceId, p,
+                Mathf.Max(0f, uptakeRate) * field.Sample(substanceId, p) * dt);
             if (amount <= 0f) return;
             if (events) events.Record(Time.fixedTime, organismId, substanceId,
                 ChemicalEventKind.Absorbed, amount, p, "membrane.intake");

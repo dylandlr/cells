@@ -19,16 +19,19 @@ namespace Cells.Substances
         [Min(0)] public float nutrientReserve;
         [Min(0)] public float toxinRate = .12f;
         [Min(0)] public float feedingRate = .2f;
+        [Min(0)] public float usableEnergyPerMass = 2f;
+        [Min(0)] public float digestionRate = .2f;
         [Min(0)] public float secretionEnergyCost = .04f;
         public bool secretionEnabled = true;
         public bool feedingEnabled = true;
 
         void Awake() { if (!metabolism) metabolism = GetComponent<CellMetabolism>(); }
 
-        void FixedUpdate()
+        void FixedUpdate() => Tick(Time.fixedDeltaTime);
+
+        public void Tick(float dt)
         {
-            if (!field || !metabolism || !metabolism.alive) return;
-            float dt = Time.fixedDeltaTime;
+            if (!field || !metabolism || !metabolism.alive || dt <= 0f) return;
             if (secretionEnabled && toxinReserve > 0f)
             {
                 float allowed = secretionEnergyCost > 0f
@@ -47,6 +50,7 @@ namespace Cells.Substances
                     }
                 }
             }
+            if (!metabolism.alive) return;
             if (feedingEnabled)
             {
                 Vector2 p = feedingPore ? (Vector2)feedingPore.position : (Vector2)transform.position;
@@ -55,6 +59,9 @@ namespace Cells.Substances
                 if (consumed > 0f && events) events.Record(Time.fixedTime, organismId, nutrientId,
                     ChemicalEventKind.Absorbed, consumed, p, "membrane.feeding_site");
             }
+            float digested = Mathf.Min(nutrientReserve, Mathf.Max(0f, digestionRate) * dt);
+            nutrientReserve -= digested;
+            metabolism.Feed(digested * Mathf.Max(0f, usableEnergyPerMass));
         }
     }
 }
