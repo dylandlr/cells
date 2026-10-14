@@ -12,7 +12,8 @@ two organisms, suspended food, camera, renderers, and microscope overlay at runt
 - Click a cell or its named button to inspect energy, membrane integrity, and recent events.
 - Scroll over the world to zoom; F follows selection; Escape clears it.
 - Space or Pause stops simulation while inspection remains usable.
-- Food, Toxin, and Reagent buttons deposit measured quantities at the selected cell (or origin).
+- Food, Toxin, and Reagent buttons deposit measured quantities at the selected membrane region (or origin).
+- The region slider moves the pipette around the boundary; inspection reports local concentration, mean integrity and weakest-region integrity.
 - Repair spends the selected living cell's energy. A ruptured membrane cannot be repaired.
 
 ## What is simulated
@@ -27,8 +28,8 @@ and energy depletion change authoritative simulation state.
 
 These are phenomenological models in arbitrary units, not calibrated molecular chemistry
 or validated biological toxicology. Cells are stationary in this demo. Membrane injury is
-a scalar; membrane pores, spatial tearing, fluid mechanics, evolution, and learned behavior
-remain future work. Human substance names and colors are not organism sensor inputs.
+spatially sampled across 32 regions with state-driven visible openings; fluid flow through
+pores, mechanical tearing, osmosis, evolution, and learned behavior remain future work. Human substance names and colors are not organism sensor inputs.
 
 ## Provenance and validation
 

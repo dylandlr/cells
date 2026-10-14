@@ -89,6 +89,39 @@ namespace Cells.Tests
         public IEnumerator CameraRendersSimulationAndSavesEvidence()
         {
             yield return new WaitForSeconds(.2f);
+            CaptureCamera("microscope-camera", "Default scene, live simulation.");
+        }
+
+        [UnityTest]
+        public IEnumerator DirectionalToxinCreatesVisibleLocalRuptureWithoutChangingGeometry()
+        {
+            var view = demo.GetComponent<ChemistryDemoView>();
+            var cell = demo.transform.Find("Grazer");
+            var membrane = cell.GetComponent<MembraneIntegrity>();
+            var renderer = cell.GetComponent<MembraneStateRenderer>();
+            Vector3 initialScale = cell.localScale;
+            // Isolate contact location from transport while the normal exposure FixedUpdate runs.
+            view.SetPaused(true);
+            demo.Field.Initialize(); demo.Field.enabled = false; demo.Reaction.enabled = false;
+            membrane.integrity = 1f;
+            view.Select(cell.GetComponent<CellMetabolism>()); view.SetPipetteSector(0);
+            Assert.That(view.Dose("toxin-B", .5f), Is.EqualTo(.5f));
+            view.SetPaused(false);
+            yield return new WaitForSeconds(2f);
+            Assert.IsTrue(membrane.ruptured);
+            Assert.IsFalse(cell.GetComponent<CellMetabolism>().alive);
+            Assert.That(membrane.GetIntegrity(16), Is.EqualTo(1f));
+            Assert.That(membrane.integrity, Is.GreaterThan(.8f));
+            renderer.Refresh();
+            var boundary = renderer.BoundaryRenderer.sprite.texture;
+            Assert.That(boundary.GetPixel(61, 32).a, Is.Zero, "Failed right-hand sector must leave a visible opening.");
+            Assert.That(boundary.GetPixel(2, 32).a, Is.GreaterThan(.9f), "Opposite membrane must remain visible.");
+            Assert.That(cell.localScale, Is.EqualTo(initialScale), "Rendering must not alter physical sampling geometry.");
+            CaptureCamera("membrane-local-rupture", "Directional toxin challenge: 0.5 mass at region 0; diffusion/reaction disabled; normal FixedUpdate exposure for 2 seconds.");
+        }
+
+        void CaptureCamera(string name, string scenario)
+        {
             var camera = Camera.main;
             Assert.IsNotNull(camera);
             var target = new RenderTexture(960, 540, 24);
@@ -109,8 +142,8 @@ namespace Cells.Tests
                     if (Mathf.Abs(pixel.r - background.r) + Mathf.Abs(pixel.g - background.g) + Mathf.Abs(pixel.b - background.b) > 30) varied++;
                 Assert.That(varied, Is.GreaterThan(1000), "Camera must draw actual objects, not just clear color.");
                 Directory.CreateDirectory("Artifacts");
-                File.WriteAllBytes("Artifacts/microscope-camera.png", image.EncodeToPNG());
-                File.WriteAllText("Artifacts/microscope-camera.txt", "Actual Unity PlayMode Camera.Render output; excludes IMGUI HUD.\nEditor: " + Application.unityVersion + "\nSeed: " + demo.seed + "\nSimulation time: " + Time.fixedTime + "\n");
+                File.WriteAllBytes("Artifacts/" + name + ".png", image.EncodeToPNG());
+                File.WriteAllText("Artifacts/" + name + ".txt", "Actual Unity PlayMode Camera.Render output; excludes IMGUI HUD.\nEditor: " + Application.unityVersion + "\nSeed: " + demo.seed + "\nSimulation time: " + Time.fixedTime + "\nScenario: " + scenario + "\n");
             }
             finally
             {

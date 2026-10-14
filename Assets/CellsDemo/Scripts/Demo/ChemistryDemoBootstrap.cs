@@ -68,9 +68,9 @@ namespace Cells.Demo
             eventLog = Child("Causal chemical log").AddComponent<ChemicalEventLog>();
             field.Deposit("nutrient-A", new Vector2(0f, 0f), initialFood);
             // Spread the challenge dose over several voxels rather than an instantaneous point overdose.
-            for (int x = -2; x <= 2; x++)
-            for (int y = -2; y <= 2; y++)
-                field.Deposit("toxin-B", new Vector2(1f + x * field.cellSize, y * field.cellSize), initialToxin / 25f);
+            for (int x = -4; x <= 4; x++)
+            for (int y = -4; y <= 4; y++)
+                field.Deposit("toxin-B", new Vector2(1f + x * field.cellSize, y * field.cellSize), initialToxin / 81f);
             CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f);
             CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f);
             CreateParticleDemo();
@@ -185,8 +185,8 @@ namespace Cells.Demo
                 float dy = (y + .5f - s*.5f)/(s*.5f);
                 float r = Mathf.Sqrt(dx*dx+dy*dy);
                 Color c = Color.clear;
-                if (r < .95f) c = new Color(.65f,.83f,.76f,1f);
-                if (r < .85f) c = new Color(.35f,.65f,.59f,1f);
+                // The outer membrane is drawn separately from its authoritative sector state.
+                if (r < .83f) c = new Color(.35f,.65f,.59f,1f);
                 if (r < .3f) c = new Color(.22f,.3f,.35f,1f);
                 tex.SetPixel(x,y,c);
             }

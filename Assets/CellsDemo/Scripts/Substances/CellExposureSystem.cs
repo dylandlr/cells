@@ -3,7 +3,8 @@ using Cells.Physiology;
 
 namespace Cells.Substances
 {
-    /// <summary>Phenotype-dependent chemical injury to membranes and internal energy.</summary>
+    /// <summary>Samples chemical exposure on the membrane, with spatial provenance.
+    /// UptakeRate is the whole-cell coefficient; each sector receives 1/N of that area.</summary>
     [RequireComponent(typeof(CellMetabolism), typeof(MembraneIntegrity))]
     public sealed class CellExposureSystem : MonoBehaviour
     {
@@ -17,7 +18,11 @@ namespace Cells.Substances
         [Min(0)] public float damagePerUnit = 5f;
         [Min(0)] public float beneficialEnergyPerUnit;
         [Min(0)] public float internalDamageFraction = .25f;
+        [Min(0)] public float membraneRadius = .9f;
+        [Min(1)] public float damagedPermeabilityMultiplier = 3f;
         public Transform intakeSite;
+        readonly Vector2[] locations = new Vector2[MembraneIntegrity.SegmentCount];
+        readonly float[] requests = new float[MembraneIntegrity.SegmentCount];
 
         void Awake()
         {
@@ -25,32 +30,56 @@ namespace Cells.Substances
             if (!membrane) membrane = GetComponent<MembraneIntegrity>();
         }
 
+        public Vector2 SurfacePosition(int segment) => transform.TransformPoint(MembraneIntegrity.DirectionOf(segment) * membraneRadius);
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
 
         public void Tick(float dt)
         {
-            if (!field || !metabolism || !membrane || !metabolism.alive || dt <= 0f) return;
-            Vector2 p = intakeSite ? (Vector2)intakeSite.position : (Vector2)transform.position;
-            // First-order uptake: exposure scales with the actual local concentration.
-            float amount = field.Withdraw(substanceId, p,
-                Mathf.Max(0f, uptakeRate) * field.Sample(substanceId, p) * dt);
-            if (amount <= 0f) return;
-            if (events) events.Record(Time.fixedTime, organismId, substanceId,
-                ChemicalEventKind.Absorbed, amount, p, "membrane.intake");
-
-            float injury = membrane.ApplyExposure(amount * damagePerUnit);
-            if (injury > 0f)
+            if (!field || !metabolism || !membrane || !metabolism.alive || !MultiChemicalField2D.Finite(dt) || dt <= 0f) return;
+            if (membrane.ruptured)
             {
-                metabolism.Injure(injury * internalDamageFraction);
-                if (events) events.Record(Time.fixedTime, organismId, substanceId,
-                    ChemicalEventKind.Damaged, injury, p, "membrane.integrity");
+                KillIfNeeded(transform.position);
+                return;
             }
-            if (membrane.ruptured) metabolism.Injure(metabolism.energy);
-            if (metabolism.alive && beneficialEnergyPerUnit > 0f)
-                metabolism.Feed(amount * beneficialEnergyPerUnit);
+            int count = intakeSite ? 1 : MembraneIntegrity.SegmentCount;
+            int siteSegment = intakeSite ? MembraneIntegrity.SegmentAt(transform.InverseTransformPoint(intakeSite.position)) : 0;
+            // Snapshot all local concentrations before any withdrawal: sampling itself is read-only.
+            for (int i = 0; i < count; i++)
+            {
+                int segment = intakeSite ? siteSegment : i;
+                locations[i] = intakeSite ? (Vector2)intakeSite.position : SurfacePosition(segment);
+                float permeability = Mathf.Lerp(1f, Mathf.Max(1f, damagedPermeabilityMultiplier), 1f - membrane.GetIntegrity(segment));
+                requests[i] = Mathf.Max(0f, uptakeRate) * permeability * field.Sample(substanceId, locations[i]) * dt / count;
+            }
+            Vector2 lastInjury = transform.position;
+            for (int i = 0; i < count; i++)
+            {
+                int segment = intakeSite ? siteSegment : i;
+                float amount = field.Withdraw(substanceId, locations[i], requests[i]);
+                if (amount <= 0f) continue;
+                string structure = "membrane.sector[" + segment + "]";
+                if (events) events.Record(Time.fixedTime, organismId, substanceId,
+                    ChemicalEventKind.Absorbed, amount, locations[i], structure);
+                float injury = membrane.ApplyExposureToSegment(segment, amount * Mathf.Max(0f, damagePerUnit) * MembraneIntegrity.SegmentCount);
+                if (injury > 0f)
+                {
+                    lastInjury = locations[i];
+                    metabolism.Injure(injury * Mathf.Max(0f, internalDamageFraction));
+                    if (events) events.Record(Time.fixedTime, organismId, substanceId,
+                        ChemicalEventKind.Damaged, injury, locations[i], structure);
+                }
+                if (metabolism.alive && beneficialEnergyPerUnit > 0f && !membrane.ruptured)
+                    metabolism.Feed(amount * beneficialEnergyPerUnit);
+            }
+            KillIfNeeded(lastInjury);
+        }
+
+        void KillIfNeeded(Vector2 location)
+        {
+            if (membrane.ruptured && metabolism.alive) metabolism.Injure(metabolism.energy);
             if (!metabolism.alive && events)
-                events.Record(Time.fixedTime, organismId, substanceId,
-                    ChemicalEventKind.Died, 0f, p, membrane.ruptured ? "membrane.rupture" : "metabolism");
+                events.Record(Time.fixedTime, organismId, substanceId, ChemicalEventKind.Died, 0f,
+                    location, membrane.ruptured ? "membrane.rupture" : "metabolism");
         }
     }
 }

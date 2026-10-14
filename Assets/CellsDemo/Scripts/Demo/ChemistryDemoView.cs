@@ -10,6 +10,18 @@ namespace Cells.Demo
     {
         public ChemistryDemoBootstrap demo;
         public CellMetabolism Selected { get; private set; }
+        public int PipetteSector { get; private set; }
+        public void SetPipetteSector(int sector) => PipetteSector = Mathf.Clamp(sector, 0, MembraneIntegrity.SegmentCount - 1);
+        public Vector2 InspectionPosition
+        {
+            get
+            {
+                if (!Selected) return Vector2.zero;
+                var exposure = Selected.GetComponent<CellExposureSystem>();
+                float radius = exposure ? exposure.membraneRadius : .9f;
+                return Selected.transform.TransformPoint(MembraneIntegrity.DirectionOf(PipetteSector) * radius);
+            }
+        }
         Camera microscope;
         bool follow;
         float zoom = 5f;
@@ -22,7 +34,7 @@ namespace Cells.Demo
         public float Dose(string substance, float mass)
         {
             if (!demo || !demo.Field) return 0f;
-            Vector2 position = Selected ? (Vector2)Selected.transform.position : Vector2.zero;
+            Vector2 position = InspectionPosition;
             float added = demo.Field.Deposit(substance, position, mass);
             if (added > 0f) demo.Events.Record(Time.fixedTime, 0, substance,
                 ChemicalEventKind.Added, added, position, "microscope.pipette");
@@ -78,13 +90,14 @@ namespace Cells.Demo
             foreach (var cell in demo.GetComponentsInChildren<CellMetabolism>())
                 if (GUILayout.Button(cell.name)) Select(cell);
             GUILayout.EndHorizontal();
-            Vector2 location = Selected ? (Vector2)Selected.transform.position : Vector2.zero;
+            Vector2 location = InspectionPosition;
             if (Selected)
             {
                 var membrane = Selected.GetComponent<MembraneIntegrity>();
                 GUILayout.Label(Selected.name + " / " + (Selected.alive ? "Alive" : "Dead"));
                 GUILayout.Label("Energy: " + Selected.energy.ToString("F3"));
                 GUILayout.Label("Membrane: " + membrane.integrity.ToString("P1") + (membrane.ruptured ? " / RUPTURED" : ""));
+                GUILayout.Label("Weakest region: " + membrane.WeakestIntegrity.ToString("P1"));
                 GUI.enabled = Selected.alive && !membrane.ruptured;
                 if (GUILayout.Button("Repair membrane (uses energy)")) membrane.Repair(1f, Selected);
                 GUI.enabled = true;
@@ -101,7 +114,12 @@ namespace Cells.Demo
             }
             GUILayout.Label("Suspended food: " + demo.Particles.Particles.Count + " packets / " + demo.Particles.TotalMass("food-particle").ToString("F3") + " mass");
             GUILayout.Label("Neutralized mass: " + demo.Reaction.ReactedMass.ToString("F3"));
-            GUILayout.Label("Pipette at " + (Selected ? Selected.name : "field center"));
+            GUILayout.Label("Pipette at " + (Selected ? Selected.name + " membrane" : "field center"));
+            if (Selected)
+            {
+                SetPipetteSector(Mathf.RoundToInt(GUILayout.HorizontalSlider(PipetteSector, 0, MembraneIntegrity.SegmentCount - 1)));
+                GUILayout.Label("Region " + PipetteSector + " / " + (PipetteSector * 360f / MembraneIntegrity.SegmentCount).ToString("F0") + " degrees (0 = right)");
+            }
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("+ Food")) Dose("nutrient-A", .25f);
             if (GUILayout.Button("+ Toxin")) Dose("toxin-B", .1f);
@@ -115,6 +133,7 @@ namespace Cells.Demo
             {
                 var e = history[i];
                 GUILayout.Label(e.simulationTime.ToString("F2") + "s " + e.kind + " " + e.substanceId + " " + e.quantity.ToString("F4"));
+                GUILayout.Label("  " + e.sourceStructure);
             }
             GUILayout.Label("Illustrative model / arbitrary units.\nNot calibrated biological toxicology.");
             GUILayout.EndScrollView();

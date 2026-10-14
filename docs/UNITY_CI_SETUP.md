@@ -20,7 +20,9 @@ undiscovered suite is not a pass. Consult NUnit XML as well as process exit stat
 CLI summaries can highlight unrelated licensing warnings ahead of the real failure.
 
 PlayMode tests load the saved demo scene, check feeding/injury, pause and pipette
-behavior, renderer lifecycle, and camera rendering. The render test writes
+behavior, renderer lifecycle, camera rendering, and local rupture under directional
+toxin exposure. The controlled-rupture test also writes `Artifacts/membrane-local-rupture.png`
+and its scenario provenance; transport and reaction are deliberately paused in that test. The render test writes
 `Artifacts/microscope-camera.png` and a provenance text file. That image is an actual
 Unity PlayMode camera render. It excludes the IMGUI overlay and is not a recording
 of the Editor window, a video, or proof of manual interaction/accessibility testing.

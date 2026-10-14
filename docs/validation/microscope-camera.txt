@@ -2,3 +2,4 @@ Actual Unity PlayMode Camera.Render output; excludes IMGUI HUD.
 Editor: 6000.6.5f1
 Seed: 631
 Simulation time: 0.2799999
+Scenario: Default scene, live simulation.

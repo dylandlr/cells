@@ -115,6 +115,7 @@ namespace Cells.Tests
             var membrane = cell.AddComponent<MembraneIntegrity>(); membrane.chemicalResistance = 0f;
             var exposure = cell.AddComponent<CellExposureSystem>();
             exposure.metabolism = metabolism; exposure.membrane = membrane;
+            exposure.membraneRadius = 0f;
             exposure.field = field; exposure.substanceId = "a"; exposure.uptakeRate = .1f;
             exposure.damagePerUnit = 20f; exposure.events = root.AddComponent<ChemicalEventLog>();
             field.Deposit("a", Vector2.zero, 1f); exposure.Tick(1f); exposure.Tick(1f);

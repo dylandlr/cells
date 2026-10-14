@@ -1,22 +1,22 @@
 {
   "editor": "6000.6.5f1",
   "host": "Windows",
-  "base_commit": "ae0db1fcc1082e3016426658230ba6a2c055124b",
-  "static": "48 unique asset GUIDs; 4 assemblies; scene references, package lock, CI version passed",
+  "base_commit": "054aa926d35c70a03da0478d2ba9ca177836a348",
+  "static": "49 unique asset GUIDs; 4 assemblies; scene references, package lock, CI version passed",
   "windows_build": {
     "result": "Succeeded",
-    "total_bytes": 157600900,
+    "total_bytes": 157606228,
     "manual_player_test": false
   },
   "suites": {
     "editmode": {
       "result": "Passed",
-      "total": "25",
-      "passed": "25",
+      "total": "30",
+      "passed": "30",
       "failed": "0",
       "skipped": "0",
-      "start-time": "2026-10-14 04:09:32Z",
-      "end-time": "2026-10-14 04:09:32Z",
+      "start-time": "2026-10-14 04:36:59Z",
+      "end-time": "2026-10-14 04:37:00Z",
       "tests": [
         {
           "name": "Cells.Tests.ChemicalEventLogTests.LogPreservesSequenceAndOrganismProvenance",
@@ -99,6 +99,26 @@
           "result": "Passed"
         },
         {
+          "name": "Cells.Tests.SpatialMembraneTests.DamagedRegionHasGreaterUptakeAndSamplingDoesNotUseCellCenter",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SpatialMembraneTests.DirectionalExposureRespectsCellRotationAndRecordsContactSite",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SpatialMembraneTests.LocalLesionCanRuptureMostlyHealthyMembrane",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SpatialMembraneTests.RepairSpendsEnergyOnDamagedSectorsOnly",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SpatialMembraneTests.UniformDamageAndLegacyScalarResetRemainConsistent",
+          "result": "Passed"
+        },
+        {
           "name": "Cells.Tests.SubstanceModelTests.AgentObservationContainsOnlyReceptorValues",
           "result": "Passed"
         },
@@ -122,15 +142,19 @@
     },
     "playmode": {
       "result": "Passed",
-      "total": "4",
-      "passed": "4",
+      "total": "5",
+      "passed": "5",
       "failed": "0",
       "skipped": "0",
-      "start-time": "2026-10-14 04:15:32Z",
-      "end-time": "2026-10-14 04:15:33Z",
+      "start-time": "2026-10-14 04:37:49Z",
+      "end-time": "2026-10-14 04:37:52Z",
       "tests": [
         {
           "name": "Cells.Tests.DemoPlayModeTests.CameraRendersSimulationAndSavesEvidence",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.DemoPlayModeTests.DirectionalToxinCreatesVisibleLocalRuptureWithoutChangingGeometry",
           "result": "Passed"
         },
         {

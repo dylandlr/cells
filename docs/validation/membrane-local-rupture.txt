@@ -1,0 +1,5 @@
+Actual Unity PlayMode Camera.Render output; excludes IMGUI HUD.
+Editor: 6000.6.5f1
+Seed: 631
+Simulation time: 2.359999
+Scenario: Directional toxin challenge: 0.5 mass at region 0; diffusion/reaction disabled; normal FixedUpdate exposure for 2 seconds.
