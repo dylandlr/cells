@@ -3,53 +3,50 @@ using Cells.Physiology;
 
 namespace Cells.Substances
 {
-    /// <summary>
-    /// Target-relative contact exposure; configured susceptibilities are simulation data,
-    /// not inferred from visual hue/glyph. This prototype withdraws ingested chemicals
-    /// and applies damage without requiring access to the human inspector.
-    /// </summary>
+    /// <summary>Phenotype-dependent chemical injury to membranes and internal energy.</summary>
+    [RequireComponent(typeof(CellMetabolism), typeof(MembraneIntegrity))]
     public sealed class CellExposureSystem : MonoBehaviour
     {
         public MultiChemicalField2D field;
         public ChemicalEventLog events;
         public CellMetabolism metabolism;
+        public MembraneIntegrity membrane;
         public int organismId;
         public string substanceId = "toxin-B";
         [Min(0)] public float uptakeRate = .1f;
-        [Range(0, 1)] public float resistance = .25f;
         [Min(0)] public float damagePerUnit = 5f;
         [Min(0)] public float beneficialEnergyPerUnit;
+        [Min(0)] public float internalDamageFraction = .25f;
         public Transform intakeSite;
 
         void Awake()
         {
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
+            if (!membrane) membrane = GetComponent<MembraneIntegrity>();
         }
 
         void FixedUpdate()
         {
-            if (!field || !metabolism || !metabolism.alive) return;
-            float dt = Time.fixedDeltaTime;
-            Vector2 position = intakeSite ? (Vector2)intakeSite.position : (Vector2)transform.position;
-            float amount = field.Withdraw(substanceId, position, uptakeRate * dt);
+            if (!field || !metabolism || !membrane || !metabolism.alive) return;
+            Vector2 p = intakeSite ? (Vector2)intakeSite.position : (Vector2)transform.position;
+            float amount = field.Withdraw(substanceId, p, uptakeRate * Time.fixedDeltaTime);
             if (amount <= 0f) return;
+            if (events) events.Record(Time.fixedTime, organismId, substanceId,
+                ChemicalEventKind.Absorbed, amount, p, "membrane.intake");
 
-            if (events)
-                events.Record(Time.fixedTime, organismId, substanceId,
-                    ChemicalEventKind.Absorbed, amount, position, "membrane.intake");
-
-            float damage = amount * damagePerUnit * (1f - resistance);
-            if (damage > 0f)
+            float injury = membrane.ApplyExposure(amount * damagePerUnit);
+            if (injury > 0f)
             {
-                metabolism.Injure(damage);
+                metabolism.Injure(injury * internalDamageFraction);
                 if (events) events.Record(Time.fixedTime, organismId, substanceId,
-                    ChemicalEventKind.Damaged, damage, position, "internal.exposure");
+                    ChemicalEventKind.Damaged, injury, p, "membrane.integrity");
             }
-            float benefit = amount * beneficialEnergyPerUnit;
-            if (benefit > 0f) metabolism.Feed(benefit);
+            if (membrane.ruptured) metabolism.Injure(metabolism.energy);
+            if (metabolism.alive && beneficialEnergyPerUnit > 0f)
+                metabolism.Feed(amount * beneficialEnergyPerUnit);
             if (!metabolism.alive && events)
                 events.Record(Time.fixedTime, organismId, substanceId,
-                    ChemicalEventKind.Died, 0f, position, "metabolism");
+                    ChemicalEventKind.Died, 0f, p, membrane.ruptured ? "membrane.rupture" : "metabolism");
         }
     }
 }
