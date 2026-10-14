@@ -16,11 +16,21 @@ namespace Cells.Rendering
 
         void Awake()
         {
-            var tex = new Texture2D(2,2,TextureFormat.RGBA32,false);
-            tex.filterMode = FilterMode.Point;
-            tex.SetPixels(new[] { Color.white,Color.white,Color.white,Color.white });
+            const int size = 32;
+            var tex = new Texture2D(size,size,TextureFormat.RGBA32,false);
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            var pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float radius = new Vector2((x + .5f) * 2f / size - 1f, (y + .5f) * 2f / size - 1f).magnitude;
+                float alpha = (1f - Mathf.SmoothStep(.15f, 1f, radius));
+                pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+            }
+            tex.SetPixels(pixels);
             tex.Apply();
-            pixelSprite = Sprite.Create(tex, new Rect(0,0,2,2), new Vector2(.5f,.5f),2f);
+            pixelSprite = Sprite.Create(tex, new Rect(0,0,size,size), new Vector2(.5f,.5f),size);
         }
 
         void LateUpdate()

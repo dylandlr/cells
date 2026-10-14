@@ -5,9 +5,15 @@ A Unity microscopic chemistry and physiology sandbox with a human-facing causal 
 ## Run
 
 Open this folder in **Unity 6000.6.5f1 (Unity 6.6)**, open
-`Assets/CellsDemo/Scenes/ChemistryDemo.unity`, and press Play. If the scene is absent,
-use **Cells > Create or open chemistry demo**. The scene creates its substrate,
-two organisms, suspended food, camera, renderers, and microscope overlay at runtime.
+`Assets/CellsDemo/Scenes/MicroscopeCulture.unity`, and press Play. If the scene is absent,
+use **Cells > Create or open microscope culture**. This denser, adherent culture uses
+phase-contrast-inspired grayscale rendering, irregular contours and varied static
+intracellular texture. Every visible cell has metabolism, exchange and leakage.
+Local boundaries deform under contact and injury and relax when released. The centers
+remain anchored; there is no synchronized beating or scripted pulsing.
+
+The smaller two-organism experiment remains available in `ChemistryDemo.unity` and
+**Cells > Create or open chemistry demo**. Windows builds start in the culture view.
 
 - Click a cell or its named button to inspect energy, membrane integrity, and recent events.
 - Scroll over the world to zoom; F follows selection; Escape clears it.
@@ -15,6 +21,8 @@ two organisms, suspended food, camera, renderers, and microscope overlay at runt
 - Food, Toxin, and Reagent buttons deposit measured quantities at the selected membrane region (or origin).
 - The region slider moves the pipette around the boundary; inspection reports local concentration, mean integrity and weakest-region integrity.
 - Repair spends the selected living cell's energy. A ruptured membrane cannot be repaired.
+- Toggle **Show false-color chemical concentrations** to inspect the underlying field.
+  It is hidden initially in the culture view; chemistry continues running.
 
 ## What is simulated
 
@@ -29,9 +37,9 @@ including after death. Secretion costs, concentration-dependent exposure, local 
 rupture and energy depletion change authoritative simulation state.
 
 These are phenomenological models in arbitrary units, not calibrated molecular chemistry
-or validated biological toxicology. Cells are stationary in this demo. Membrane injury is
+or validated biological toxicology. Cell centers remain stationary in this demo. Membrane injury is
 spatially sampled across 32 regions with state-driven visible openings; fluid flow through
-pores, mechanical tearing, osmosis, evolution, and learned behavior remain future work.
+pores, full mechanical tearing, osmosis, evolution, and learned behavior remain future work.
 Nutrient leakage uses a well-mixed internal compartment and conservative surface transfers. Human substance names and colors are not organism sensor inputs.
 
 ## Provenance and validation
@@ -44,3 +52,5 @@ that archive was migrated.
 See [integration and test results](docs/INTEGRATION_STATUS.md),
 [model units](docs/CHEMISTRY_MODEL.md), and [test instructions](docs/UNITY_CI_SETUP.md).
 Actual Unity test reports and runtime imagery, if produced, are distinguished from mockups.
+The optional [camera recording workflow](tools/capture/README.md) produces real Unity
+frames with measured-state captions. It excludes the IMGUI panel and adds no beating.

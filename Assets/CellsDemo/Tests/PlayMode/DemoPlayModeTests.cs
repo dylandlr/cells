@@ -125,13 +125,95 @@ namespace Cells.Tests
             Assert.That(membrane.integrity, Is.GreaterThan(.8f));
             renderer.Refresh();
             var boundary = renderer.BoundaryRenderer.sprite.texture;
-            Assert.That(boundary.GetPixel(61, 32).a, Is.Zero, "Failed right-hand sector must leave a visible opening.");
-            Assert.That(boundary.GetPixel(2, 32).a, Is.GreaterThan(.9f), "Opposite membrane must remain visible.");
+            float span = 2f * MembraneStateRenderer.TextureHalfExtent;
+            var right = membrane.SurfacePoint(0, .9f) / span + Vector2.one * .5f;
+            var left = membrane.SurfacePoint(16, .9f) / span + Vector2.one * .5f;
+            Assert.That(boundary.GetPixelBilinear(right.x, right.y).a, Is.Zero, "Failed right-hand sector must leave a visible opening.");
+            Assert.That(boundary.GetPixelBilinear(left.x, left.y).a, Is.GreaterThan(.6f), "Opposite membrane must remain visible through its antialiased edge.");
             Assert.That(cell.localScale, Is.EqualTo(initialScale), "Rendering must not alter physical sampling geometry.");
             CaptureCamera("membrane-local-rupture", "Directional toxin challenge: 0.5 mass at region 0; diffusion/reaction disabled; normal FixedUpdate exposure for 2 seconds.");
         }
 
-        void CaptureCamera(string name, string scenario)
+        [UnityTest]
+        public IEnumerator ShaderBoundaryFollowsAuthoritativeDeformation()
+        {
+            Time.timeScale = 0f;
+            var cell = demo.transform.Find("Grazer");
+            var membrane = cell.GetComponent<MembraneIntegrity>();
+            membrane.integrity = 1f;
+            var display = cell.GetComponent<MembraneStateRenderer>();
+            display.Refresh();
+            var boundary = display.BoundaryRenderer;
+            var camera = Camera.main;
+            var target = new RenderTexture(512, 512, 24, RenderTextureFormat.ARGB32);
+            var image = new Texture2D(512, 512, TextureFormat.RGBA32, false);
+            var oldTarget = camera.targetTexture;
+            var oldActive = RenderTexture.active;
+            var oldRect = camera.rect;
+            var oldBackground = camera.backgroundColor;
+            int oldMask = camera.cullingMask;
+            try
+            {
+                boundary.gameObject.layer = 30;
+                camera.cullingMask = 1 << 30;
+                camera.backgroundColor = Color.clear;
+                camera.orthographicSize = MembraneStateRenderer.TextureHalfExtent;
+                camera.transform.position = cell.position + Vector3.back * 10f;
+                camera.rect = new Rect(0, 0, 1, 1);
+                camera.targetTexture = target;
+                System.Func<Vector2, float> alphaAt = local =>
+                {
+                    camera.Render(); RenderTexture.active = target;
+                    image.ReadPixels(new Rect(0, 0, 512, 512), 0, 0); image.Apply();
+                    Vector3 uv = camera.WorldToViewportPoint(cell.TransformPoint(local));
+                    return image.GetPixelBilinear(uv.x, uv.y).a;
+                };
+                Vector2 before = membrane.SurfacePoint(0, .9f);
+                Assert.That(alphaAt(before), Is.GreaterThan(.4f));
+                membrane.SetStretch(0, .75f);
+                display.Refresh();
+                Vector2 after = membrane.SurfacePoint(0, .9f);
+                Assert.That(alphaAt(before), Is.LessThan(.05f), "Old boundary location must clear in the actual render.");
+                Assert.That(alphaAt(after), Is.GreaterThan(.4f), "Optical rim must match the moved physical contact.");
+            }
+            finally
+            {
+                camera.targetTexture = oldTarget; camera.cullingMask = oldMask;
+                camera.rect = oldRect; camera.backgroundColor = oldBackground;
+                RenderTexture.active = oldActive; boundary.gameObject.layer = 0;
+                target.Release(); Object.Destroy(target); Object.Destroy(image);
+            }
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator CultureSceneKeepsChemistryActiveWithoutBeatingOrChemicalOverlay()
+        {
+            yield return SceneManager.LoadSceneAsync("MicroscopeCulture", LoadSceneMode.Single);
+            yield return null;
+            demo = Object.FindAnyObjectByType<ChemistryDemoBootstrap>();
+            var cells = demo.GetComponentsInChildren<CellMetabolism>();
+            Assert.That(cells.Length, Is.GreaterThan(40));
+            var positions = new Vector3[cells.Length];
+            for (int i = 0; i < cells.Length; i++)
+            {
+                positions[i] = cells[i].transform.position;
+                Assert.IsNotNull(cells[i].GetComponent<CellChemicalExchange>());
+                Assert.IsNotNull(cells[i].GetComponent<MembraneLeakageSystem>());
+            }
+            float before = NutrientBudget();
+            yield return new WaitForSeconds(.3f);
+            Assert.That(NutrientBudget(), Is.EqualTo(before).Within(1e-3f));
+            for (int i = 0; i < cells.Length; i++) Assert.That(cells[i].transform.position, Is.EqualTo(positions[i]));
+            foreach (var overlay in demo.GetComponentsInChildren<ChemicalFieldRenderer>())
+                Assert.IsFalse(overlay.GetComponent<SpriteRenderer>().enabled);
+            Assert.That(cells[0].GetComponent<MembraneIntegrity>().GeometryRevision, Is.GreaterThan(0));
+            Assert.IsTrue(cells[0].GetComponent<SpriteRenderer>().sharedMaterial.shader.isSupported);
+            Assert.That(demo.Field.Total("metabolic-waste-E"), Is.GreaterThan(0f));
+            CaptureCamera("microscope-culture", "Adherent culture with local deformation; active chemistry; false-color overlay hidden; no beating.", 3.7f);
+        }
+
+        void CaptureCamera(string name, string scenario, float orthographicSize = 2.5f)
         {
             var camera = Camera.main;
             Assert.IsNotNull(camera);
@@ -142,7 +224,7 @@ namespace Cells.Tests
             var previousRect = camera.rect;
             try
             {
-                camera.orthographicSize = 2.5f;
+                camera.orthographicSize = orthographicSize;
                 camera.rect = new Rect(0, 0, 1, 1);
                 camera.targetTexture = target; camera.Render(); RenderTexture.active = target;
                 image.ReadPixels(new Rect(0, 0, 960, 540), 0, 0); image.Apply();

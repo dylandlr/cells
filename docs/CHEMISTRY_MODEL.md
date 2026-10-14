@@ -65,7 +65,9 @@ Reaction extent is exposed as aggregate reacted mass rather than per-voxel event
 ## Passive nutrient leakage
 
 `MembraneLeakageSystem` transfers only nutrient-reserve material. Its inside concentration
-is reserve mass / (pi * membraneRadius squared), a well-mixed two-dimensional compartment.
+is reserve mass / enclosed contour area, a well-mixed two-dimensional compartment.
+Circular cells use pi * membraneRadius squared. Irregular contours use the analytic
+polar area of their radial harmonics; contact lengths use chords between sector boundaries.
 For each damaged region it samples outside concentration at the actual surface location.
 Conductance is permeability * damage squared * arc length. Intact membrane has zero leak.
 Only an outward concentration gradient transfers mass; reverse passive uptake is not modeled.
@@ -93,11 +95,41 @@ rejected-deposit accounting, digestion products, and particle-to-reserve transfe
 
 ## Rendering and reproducibility
 
-Point-filtered concentration textures reflect actual field values. Particle sprites use
+Bilinear concentration textures interpolate actual field values for display, with a
+smooth saturating opacity response. This does not change the finite-volume chemistry.
+Chemical false color can be hidden without pausing chemistry. Particle sprites use
 simulated positions, masses and radii; visual caps do not remove simulation particles.
 Runtime sprites/textures are disposed with their owner. A fixed particle seed supports
 repeatable trajectories with the same time steps; whole-scene cross-platform bitwise
-determinism is not claimed. A separate point-filtered membrane texture draws each region
+determinism is not claimed. A separate antialiased membrane texture draws each region
 from its actual integrity and leaves transparent openings for failed regions. It does
 not move or scale the organism: rendering cannot change contact sampling geometry.
 The opening is a state-driven visualization, not a mesh or fluid-flow aperture.
+
+The static contour is r(theta) = R * [1 + a * (0.65 cos(2u) + 0.25 sin(3u) + 0.1 cos(5u))],
+where u = theta - phase and a is clamped to [0, 0.2]. Its area is pi * R^2 * (1 + 0.2475 a^2).
+Exposure, leakage, pipetting, initial named pores and the boundary use the same contour.
+Rest morphology is configured before bootstrap texture generation. A bounded radial stretch
+is interpolated across the 32 sectors for dynamic deformation. Area is then integrated with
+128 angular samples; physical contacts, leakage, pipetting, named pores and the optical
+shader all follow this same contour. Non-unit transform scales remain unsupported.
+
+The culture scene is an adherent arrangement with fixed centers. Local soft-contact
+repulsion, rest-shape elasticity, neighboring-sector smoothing and area recovery drive
+an overdamped deformation model. Injury softens/retracts its region. Deformation is bounded
+to 0.72–1.08 times rest radius; it is not a full tissue stress solver and can leave projected
+overlap under crowding. There is no oscillator, beating, locomotion, growth or cell division.
+The mechanics use arbitrary units and do not claim calibrated elastic moduli, osmotic
+pressure, water transport, or conservation of mechanical energy.
+
+Intracellular granules, inclusions and
+nuclei are illustrative static texture, not additional simulated chemicals or organelles.
+Phase-contrast-inspired shading is a visual approximation, not an optical wave simulation.
+The shader warps the texture with the physical boundary; no independent breathing animation
+is applied. State-driven failed sectors remain optically open. Core tests verify contact
+compression, release/relaxation, local injury response, bounded area and moving contact
+coordinates; a PlayMode test reads actual rendered alpha at old/new boundary locations.
+
+The mechanics are motivated by the separate roles of cortex stress and pressure described
+in [Cellular Pressure and Volume Regulation and Implications for Cell Mechanics](https://pmc.ncbi.nlm.nih.gov/articles/PMC3736675/),
+but do not implement or claim to reproduce that paper's quantitative model.

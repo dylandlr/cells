@@ -14,8 +14,9 @@ namespace Cells.Rendering
         [Min(0)] public int visualSeed = 631;
         [Range(0f, 1f)] public float particulateCoverage = .8f;
         [Range(0f, 1f)] public float fineDetailZoomThreshold = .5f;
-        [Min(.001f)] public float concentrationAtFullOpacity = .2f;
-        [Range(0,1)] public float maxAlpha = .75f;
+        // Dissolved display uses this as the half-opacity concentration, avoiding clipped plateaus.
+        [Min(.001f)] public float concentrationAtFullOpacity = .65f;
+        [Range(0,1)] public float maxAlpha = .16f;
         [Min(1)] public int updateEveryFrames = 3;
         Texture2D texture;
         Sprite sprite;
@@ -27,7 +28,8 @@ namespace Cells.Rendering
             if (!field) field = FindAnyObjectByType<MultiChemicalField2D>();
             if (!field) return;
             texture = new Texture2D(field.width, field.height, TextureFormat.RGBA32, false);
-            texture.filterMode = FilterMode.Point;
+            // Interpolate the display only: chemistry still samples the authoritative finite-volume grid.
+            texture.filterMode = FilterMode.Bilinear;
             texture.wrapMode = TextureWrapMode.Clamp;
             sprite = Sprite.Create(texture,
                 new Rect(0,0,field.width,field.height), new Vector2(.5f,.5f), 1f/field.cellSize);
@@ -43,7 +45,8 @@ namespace Cells.Rendering
             for (int x=0;x<field.width;x++)
             {
                 float c = field.SampleCell(substanceId,x,y);
-                float coverage = Mathf.Clamp01(c / concentrationAtFullOpacity);
+                float scale = Mathf.Max(.001f, concentrationAtFullOpacity);
+                float coverage = form == MaterialForm.Dissolved ? c / (c + scale) : Mathf.Clamp01(c / scale);
                 // Point-sampled microtexture is deterministic and modulates actual concentration,
                 // never creates a visible particle when the real concentration is zero.
                 float mask = ChemicalVisualPattern.Mask(form, x, y, visualSeed);

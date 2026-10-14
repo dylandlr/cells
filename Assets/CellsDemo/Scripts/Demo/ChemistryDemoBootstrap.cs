@@ -13,6 +13,7 @@ namespace Cells.Demo
         public float initialToxin = 5f;
         public float initialFood = 4f;
         public bool autoBuild = true;
+        public bool cultureView;
         MultiChemicalField2D field;
         ChemicalEventLog eventLog;
         readonly System.Collections.Generic.List<UnityEngine.Object> ownedAssets = new System.Collections.Generic.List<UnityEngine.Object>();
@@ -77,6 +78,7 @@ namespace Cells.Demo
                 field.Deposit("toxin-B", new Vector2(1f + x * field.cellSize, y * field.cellSize), initialToxin / 81f);
             CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f);
             CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f);
+            if (cultureView) CreateCulture();
             CreateParticleDemo();
             CreateCamera();
             AddChemicalOverlay("Nutrients", "nutrient-A", MaterialForm.Dissolved, food.visualization.baseColor, -22);
@@ -87,6 +89,25 @@ namespace Cells.Demo
             var view = GetComponent<ChemistryDemoView>();
             if (!view) view = gameObject.AddComponent<ChemistryDemoView>();
             view.demo = this;
+            view.SetZoom(cultureView ? 3.7f : 2.5f);
+            view.SetChemicalOverlay(!cultureView);
+        }
+
+        void CreateCulture()
+        {
+            // Static adherent arrangement; every visible cell has metabolism, chemical exchange,
+            // exposure and leakage. This does not imply beating, tissue mechanics or motility.
+            var random = new System.Random(seed + 81);
+            int id = 3;
+            for (int row = -3; row <= 3; row++)
+            for (int column = -4; column <= 4; column++)
+            {
+                Vector2 position = new Vector2(column * 1.72f + (row % 2) * .83f, row * 1.47f);
+                position += new Vector2((float)random.NextDouble() - .5f, (float)random.NextDouble() - .5f) * .24f;
+                if (Vector2.Distance(position, new Vector2(-1.5f, 0)) < 1.45f || Vector2.Distance(position, new Vector2(1f, 0)) < 1.45f) continue;
+                CreateCell("Culture cell " + id, id, position, false, .25f);
+                id++;
+            }
         }
 
         void CreateParticleDemo()
@@ -107,7 +128,7 @@ namespace Cells.Demo
             var particleRenderer = display.AddComponent<TrackedParticleRenderer>();
             particleRenderer.world = particles;
             particleRenderer.substanceId = "food-particle";
-            particleRenderer.color = new Color(.75f, .97f, .43f);
+            particleRenderer.color = new Color(.24f, .34f, .16f);
             var grazer = transform.Find("Grazer");
             if (grazer)
             {
@@ -133,15 +154,18 @@ namespace Cells.Demo
             metabolism.energy = secretor ? 10f : 2f;
             var membrane = go.AddComponent<MembraneIntegrity>();
             membrane.chemicalResistance = resistance;
+            membrane.contourAmplitude = .12f + .075f * Mathf.Abs(Mathf.Sin(id * 2.7f));
+            membrane.contourPhase = id * 1.87f;
             var visual = go.AddComponent<SpriteRenderer>();
-            visual.sprite = CreateSprite();
+            visual.sprite = CreateSprite(id, membrane);
             ownedAssets.Add(visual.sprite.texture);
             ownedAssets.Add(visual.sprite);
             visual.sortingOrder = 10;
             var membraneVisual = go.AddComponent<MembraneStateRenderer>();
             membraneVisual.membrane = membrane;
-            visual.color = secretor ? new Color(.66f, .9f, .82f) : new Color(.95f, .75f, .55f);
-            membraneVisual.healthy = visual.color;
+            visual.color = Color.white;
+            membraneVisual.healthy = new Color(.23f, .28f, .25f);
+            membraneVisual.injured = new Color(.58f, .25f, .18f);
 
             var exchange = go.AddComponent<CellChemicalExchange>();
             exchange.organismId = id;
@@ -154,12 +178,13 @@ namespace Cells.Demo
             exchange.toxinRate = .4f;
             exchange.nutrientReserve = .5f;
             exchange.digestionRate = .04f;
-            exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", Vector2.left * .9f);
-            exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", Vector2.right * .9f);
-            exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", Vector2.down * .9f);
+            exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", membrane.SurfacePoint(16, .9f));
+            exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", membrane.SurfacePoint(0, .9f));
+            exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", membrane.SurfacePoint(24, .9f));
             var leakage = go.AddComponent<MembraneLeakageSystem>();
             leakage.exchange = exchange;
             leakage.membrane = membrane;
+            if (cultureView) go.AddComponent<CellShapeDynamics>();
 
             if (!secretor)
             {
@@ -195,25 +220,57 @@ namespace Cells.Demo
             return pore;
         }
 
-        static Sprite CreateSprite()
+        // Static illustrative microstructure, not simulated organelles or additional material.
+        static Sprite CreateSprite(int cellId, MembraneIntegrity membrane)
         {
-            const int s = 48;
+            const int s = 256;
             var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
-            tex.filterMode = FilterMode.Point;
+            tex.filterMode = FilterMode.Bilinear;
+            tex.wrapMode = TextureWrapMode.Clamp;
+            var random = new System.Random(631 + cellId);
+            var inclusions = new Vector2[32];
+            for (int i = 0; i < inclusions.Length; i++)
+            {
+                float a = (float)random.NextDouble() * Mathf.PI * 2f;
+                float d = .38f + (float)random.NextDouble() * .34f;
+                inclusions[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * d;
+            }
+            var pixels = new Color[s * s];
             for (int y = 0; y < s; y++)
             for (int x = 0; x < s; x++)
             {
-                float dx = (x + .5f - s*.5f)/(s*.5f);
-                float dy = (y + .5f - s*.5f)/(s*.5f);
-                float r = Mathf.Sqrt(dx*dx+dy*dy);
-                Color c = Color.clear;
-                // The outer membrane is drawn separately from its authoritative sector state.
-                if (r < .83f) c = new Color(.35f,.65f,.59f,1f);
-                if (r < .3f) c = new Color(.22f,.3f,.35f,1f);
-                tex.SetPixel(x,y,c);
+                float dx = (x + .5f - s*.5f)/(s*.5f) * MembraneStateRenderer.TextureHalfExtent;
+                float dy = (y + .5f - s*.5f)/(s*.5f) * MembraneStateRenderer.TextureHalfExtent;
+                float r = Mathf.Sqrt(dx*dx+dy*dy) / membrane.ContourScale(new Vector2(dx, dy));
+                if (r >= .9f) continue;
+                float edge = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.85f, .895f, r));
+                float grain = Mathf.PerlinNoise(x * .21f + cellId * 37f, y * .21f);
+                float broad = Mathf.PerlinNoise(x * .037f, y * .037f + cellId * 11f);
+                float light = .49f + .12f * (1f - r) + .10f * grain + .1f * broad;
+                float alpha = .65f + .18f * r;
+                // Slightly offset nucleus with a soft envelope and a nucleolus.
+                float nx = dx + .16f * Mathf.Sin(cellId * 7.1f);
+                float ny = dy - .14f * Mathf.Cos(cellId * 3.7f);
+                float nucleus = Mathf.Sqrt(Mathf.Pow(nx / (.25f + .04f * Mathf.Sin(cellId)), 2f) + Mathf.Pow(ny / .21f, 2f));
+                nucleus *= 1f + .065f * Mathf.Sin(Mathf.Atan2(ny, nx) * 3f);
+                float envelope = Mathf.Exp(-Mathf.Pow((nucleus - 1f) / .075f, 2f));
+                if (nucleus < 1f) { light *= .82f + .1f * grain; alpha = .78f; }
+                light -= envelope * .09f;
+                float nucleolus = new Vector2(nx + .065f, ny - .025f).magnitude;
+                light *= 1f - .25f * Mathf.Exp(-nucleolus * nucleolus / .0015f);
+                foreach (var inclusion in inclusions)
+                {
+                    float distance = new Vector2((dx - inclusion.x) * 1.4f, dy - inclusion.y).sqrMagnitude;
+                    float size = .001f + .0008f * (1f + Mathf.Sin(inclusion.x * 29f));
+                    // Phase-bright inclusion with a darker edge; illustrative static texture.
+                    light += .20f * Mathf.Exp(-distance / size);
+                    light -= .09f * Mathf.Exp(-Mathf.Pow((Mathf.Sqrt(distance) - Mathf.Sqrt(size) * 1.5f) / .012f, 2f));
+                }
+                pixels[y * s + x] = new Color(light * .98f, light, light * .95f, alpha * edge);
             }
+            tex.SetPixels(pixels);
             tex.Apply();
-            return Sprite.Create(tex,new Rect(0,0,s,s),new Vector2(.5f,.5f),24f);
+            return Sprite.Create(tex,new Rect(0,0,s,s),new Vector2(.5f,.5f),s / (2f * MembraneStateRenderer.TextureHalfExtent), 0, SpriteMeshType.FullRect);
         }
 
         void CreateCamera()
@@ -225,7 +282,7 @@ namespace Cells.Demo
             camera.orthographic = true;
             camera.orthographicSize = 5f;
             camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = new Color(.045f,.035f,.08f);
+            camera.backgroundColor = new Color(.73f,.76f,.73f);
             obj.transform.position = new Vector3(0,0,-10);
         }
 

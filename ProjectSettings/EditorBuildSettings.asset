@@ -6,6 +6,9 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/CellsDemo/Scenes/MicroscopeCulture.unity
+    guid: dd51507b8923de6409b402ed73ed8df4
+  - enabled: 1
     path: Assets/CellsDemo/Scenes/ChemistryDemo.unity
     guid: 069bcf36e75586948b2d16af2bd33035
   m_configObjects: {}

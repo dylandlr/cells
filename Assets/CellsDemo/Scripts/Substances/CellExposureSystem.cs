@@ -30,7 +30,8 @@ namespace Cells.Substances
             if (!membrane) membrane = GetComponent<MembraneIntegrity>();
         }
 
-        public Vector2 SurfacePosition(int segment) => transform.TransformPoint(MembraneIntegrity.DirectionOf(segment) * membraneRadius);
+        public Vector2 SurfacePosition(int segment) => transform.TransformPoint(membrane
+            ? membrane.SurfacePoint(segment, membraneRadius) : MembraneIntegrity.DirectionOf(segment) * membraneRadius);
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
 
         public void Tick(float dt)

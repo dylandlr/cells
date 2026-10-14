@@ -103,6 +103,75 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void ContactDeformsTheLocalBoundaryAndRelaxesWhenReleased()
+        {
+            var other = new GameObject("neighbor");
+            try
+            {
+                var shape = cell.AddComponent<CellShapeDynamics>();
+                shape.membrane = membrane; shape.Initialize();
+                var otherMembrane = other.AddComponent<MembraneIntegrity>();
+                var otherShape = other.AddComponent<CellShapeDynamics>();
+                otherShape.membrane = otherMembrane; otherShape.Initialize();
+                other.transform.position = new Vector3(1.6f, 0, 0);
+                shape.neighbors = new[] { shape, otherShape };
+                for (int i = 0; i < 200; i++) shape.Tick(.01f);
+                float compressed = membrane.GetStretch(0);
+                Assert.That(compressed, Is.LessThan(.98f));
+                Assert.That(membrane.GetStretch(16), Is.GreaterThan(compressed));
+                Assert.That(exposure.SurfacePosition(0).x, Is.EqualTo(.9f * compressed).Within(1e-5f));
+                Assert.That(membrane.EnclosedArea(.9f), Is.GreaterThan(.85f * Mathf.PI * .9f * .9f));
+                other.transform.position = Vector3.right * 5f;
+                for (int i = 0; i < 400; i++) shape.Tick(.01f);
+                Assert.That(membrane.GetStretch(0), Is.GreaterThan(compressed + .01f));
+                Assert.That(membrane.GetStretch(0), Is.EqualTo(1f).Within(.01f));
+                Assert.That(membrane.integrity, Is.EqualTo(1f), "Mechanical compression must not invent toxin damage.");
+            }
+            finally { Object.DestroyImmediate(other); }
+        }
+
+        [Test]
+        public void InjuryRetractsOnlyTheAffectedBoundaryAndKeepsCoordinatesFinite()
+        {
+            var shape = cell.AddComponent<CellShapeDynamics>();
+            shape.membrane = membrane; shape.neighbors = new CellShapeDynamics[0]; shape.Initialize();
+            membrane.ApplyExposureToSegment(0, .8f);
+            for (int i = 0; i < 200; i++) shape.Tick(.01f);
+            Assert.That(membrane.GetStretch(0), Is.LessThan(.97f));
+            Assert.That(membrane.GetStretch(16), Is.GreaterThan(membrane.GetStretch(0)));
+            for (int i = 0; i < 32; i++)
+            {
+                Assert.That(membrane.GetStretch(i), Is.InRange(.72f, 1.08f));
+                Assert.That(membrane.ContactLength(i, .9f), Is.GreaterThan(0f));
+            }
+        }
+
+        [Test]
+        public void IrregularContourUsesTheSameContactGeometryAndConservesArea()
+        {
+            membrane.contourAmplitude = .19f;
+            membrane.contourPhase = -.5f;
+            cell.transform.rotation = Quaternion.Euler(0, 0, 37f);
+            var local = membrane.SurfacePoint(0, exposure.membraneRadius);
+            Vector2 world = cell.transform.TransformPoint(local);
+            Assert.That(Vector2.Distance(exposure.SurfacePosition(0), world), Is.LessThan(1e-6f));
+            Assert.That(local.magnitude, Is.Not.EqualTo(exposure.membraneRadius).Within(.001f));
+            field.Deposit(toxin.stableId, world, .1f);
+            exposure.Tick(.1f);
+            Assert.That(membrane.GetIntegrity(0), Is.LessThan(1f));
+            Assert.That(membrane.GetIntegrity(16), Is.EqualTo(1f));
+            double area = 0;
+            const int samples = 4096;
+            for (int i = 0; i < samples; i++)
+            {
+                float angle = i * 2f * Mathf.PI / samples;
+                float r = membrane.ContourScale(new Vector2(Mathf.Cos(angle), Mathf.Sin(angle))) * exposure.membraneRadius;
+                area += r * r * Mathf.PI / samples;
+            }
+            Assert.That(membrane.EnclosedArea(exposure.membraneRadius), Is.EqualTo(area).Within(1e-5));
+        }
+
+        [Test]
         public void UniformDamageAndLegacyScalarResetRemainConsistent()
         {
             membrane.ApplyExposure(.2f);

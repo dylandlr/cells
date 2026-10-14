@@ -1,22 +1,22 @@
 {
   "editor": "6000.6.5f1",
   "host": "Windows",
-  "base_commit": "769c64c1cac7ee24aa50aac23c7c0e785b693f65",
-  "static": "51 unique asset GUIDs; 4 assemblies; scene references, package lock, CI version passed",
+  "base_commit": "8807c0818dd992db1639f58385039651fcc5208e",
+  "static": "55 unique asset GUIDs; 4 assemblies; scene references, package lock, CI version passed",
   "windows_build": {
     "result": "Succeeded",
-    "total_bytes": 157609884,
+    "total_bytes": 157628310,
     "manual_player_test": false
   },
   "suites": {
     "editmode": {
       "result": "Passed",
-      "total": "41",
-      "passed": "41",
+      "total": "44",
+      "passed": "44",
       "failed": "0",
       "skipped": "0",
-      "start-time": "2026-10-14 04:46:56Z",
-      "end-time": "2026-10-14 04:46:56Z",
+      "start-time": "2026-10-14 06:07:28Z",
+      "end-time": "2026-10-14 06:07:28Z",
       "tests": [
         {
           "name": "Cells.Tests.ChemicalEventLogTests.LogPreservesSequenceAndOrganismProvenance",
@@ -143,11 +143,23 @@
           "result": "Passed"
         },
         {
+          "name": "Cells.Tests.SpatialMembraneTests.ContactDeformsTheLocalBoundaryAndRelaxesWhenReleased",
+          "result": "Passed"
+        },
+        {
           "name": "Cells.Tests.SpatialMembraneTests.DamagedRegionHasGreaterUptakeAndSamplingDoesNotUseCellCenter",
           "result": "Passed"
         },
         {
           "name": "Cells.Tests.SpatialMembraneTests.DirectionalExposureRespectsCellRotationAndRecordsContactSite",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SpatialMembraneTests.InjuryRetractsOnlyTheAffectedBoundaryAndKeepsCoordinatesFinite",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.SpatialMembraneTests.IrregularContourUsesTheSameContactGeometryAndConservesArea",
           "result": "Passed"
         },
         {
@@ -184,17 +196,21 @@
         }
       ]
     },
-    "playmode": {
+    "playmode_including_opt_in_recording": {
       "result": "Passed",
-      "total": "6",
-      "passed": "6",
+      "total": "9",
+      "passed": "9",
       "failed": "0",
       "skipped": "0",
-      "start-time": "2026-10-14 04:48:51Z",
-      "end-time": "2026-10-14 04:48:55Z",
+      "start-time": "2026-10-14 06:08:39Z",
+      "end-time": "2026-10-14 06:12:16Z",
       "tests": [
         {
           "name": "Cells.Tests.DemoPlayModeTests.CameraRendersSimulationAndSavesEvidence",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.DemoPlayModeTests.CultureSceneKeepsChemistryActiveWithoutBeatingOrChemicalOverlay",
           "result": "Passed"
         },
         {
@@ -216,8 +232,29 @@
         {
           "name": "Cells.Tests.DemoPlayModeTests.SavedSceneBuildsAndSimulatesMaterialTransfers",
           "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.DemoPlayModeTests.ShaderBoundaryFollowsAuthoritativeDeformation",
+          "result": "Passed"
+        },
+        {
+          "name": "Cells.Tests.VideoCaptureTests.RecordLiveSimulation",
+          "result": "Passed"
         }
       ]
     }
+  },
+  "recording": {
+    "path": "Artifacts/cells-deforming-culture.mp4",
+    "frames": 600,
+    "fps": 30,
+    "duration_seconds": 20,
+    "resolution": [
+      1920,
+      1080
+    ],
+    "method": "Unity PlayMode Camera.Render; measured-state captions added afterward",
+    "editor_window_capture": false,
+    "biological_footage": false
   }
 }

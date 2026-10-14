@@ -29,19 +29,18 @@ namespace Cells.Substances
             if (!exchange || !exchange.field || !membrane || !MultiChemicalField2D.Finite(dt)
                 || dt <= 0f || !MultiChemicalField2D.Finite(membraneRadius) || membraneRadius <= 0f
                 || !MultiChemicalField2D.Finite(permeability) || permeability <= 0f) return;
-            float internalArea = Mathf.PI * membraneRadius * membraneRadius;
+            float internalArea = membrane.EnclosedArea(membraneRadius);
             float externalArea = exchange.field.CellArea;
             float inverseAreas = 1f / internalArea + 1f / externalArea;
-            float contactLength = 2f * Mathf.PI * membraneRadius / MembraneIntegrity.SegmentCount;
             for (int i = 0; i < MembraneIntegrity.SegmentCount; i++)
             {
                 if (exchange.nutrientReserve <= 0f) break;
                 float damage = 1f - membrane.GetIntegrity(i);
                 if (damage <= 0f) continue;
-                Vector2 position = transform.TransformPoint(MembraneIntegrity.DirectionOf(i) * membraneRadius);
+                Vector2 position = transform.TransformPoint(membrane.SurfacePoint(i, membraneRadius));
                 float gradient = exchange.nutrientReserve / internalArea - exchange.field.Sample(exchange.nutrientId, position);
                 if (gradient <= 0f) continue;
-                float conductance = permeability * damage * damage * contactLength;
+                float conductance = permeability * damage * damage * membrane.ContactLength(i, membraneRadius);
                 float equilibrationMass = gradient / inverseAreas;
                 float requested = Mathf.Min(exchange.nutrientReserve,
                     equilibrationMass * (1f - Mathf.Exp(-conductance * inverseAreas * dt)));

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Cells.Substances;
 using Cells.Physiology;
+using Cells.Rendering;
 
 namespace Cells.Demo
 {
@@ -19,17 +20,28 @@ namespace Cells.Demo
                 if (!Selected) return Vector2.zero;
                 var exposure = Selected.GetComponent<CellExposureSystem>();
                 float radius = exposure ? exposure.membraneRadius : .9f;
-                return Selected.transform.TransformPoint(MembraneIntegrity.DirectionOf(PipetteSector) * radius);
+                var membrane = Selected.GetComponent<MembraneIntegrity>();
+                return Selected.transform.TransformPoint(membrane ? membrane.SurfacePoint(PipetteSector, radius)
+                    : MembraneIntegrity.DirectionOf(PipetteSector) * radius);
             }
         }
         Camera microscope;
         bool follow;
+        bool chemicalOverlay = true;
         float zoom = 5f;
         readonly List<ChemicalEvent> history = new List<ChemicalEvent>();
         Rect Panel => new Rect(12, 12, Mathf.Min(330, Screen.width - 24), Mathf.Max(100, Screen.height - 24));
         Vector2 scroll;
 
         public void Select(CellMetabolism cell) => Selected = cell;
+        public void SetZoom(float size) => zoom = Mathf.Clamp(size, 1f, 12f);
+        public void SetChemicalOverlay(bool visible)
+        {
+            chemicalOverlay = visible;
+            if (!demo) return;
+            foreach (var overlay in demo.GetComponentsInChildren<ChemicalFieldRenderer>())
+                overlay.GetComponent<SpriteRenderer>().enabled = visible;
+        }
         public void SetPaused(bool paused) => Time.timeScale = paused ? 0f : 1f;
         public float Dose(string substance, float mass)
         {
@@ -85,10 +97,12 @@ namespace Cells.Demo
             GUILayout.Label("Scroll: zoom | Click: inspect | F: follow");
             if (GUILayout.Button(Time.timeScale > 0f ? "Pause [Space]" : "Resume [Space]"))
                 SetPaused(Time.timeScale > 0f);
-            GUILayout.Label("Inspect organism");
+            bool overlayVisible = GUILayout.Toggle(chemicalOverlay, "Show false-color chemical concentrations");
+            if (overlayVisible != chemicalOverlay) SetChemicalOverlay(overlayVisible);
+            GUILayout.Label("Click any cell to inspect / key organisms:");
             GUILayout.BeginHorizontal();
             foreach (var cell in demo.GetComponentsInChildren<CellMetabolism>())
-                if (GUILayout.Button(cell.name)) Select(cell);
+                if ((cell.name == "Secretor" || cell.name == "Grazer") && GUILayout.Button(cell.name)) Select(cell);
             GUILayout.EndHorizontal();
             Vector2 location = InspectionPosition;
             if (Selected)

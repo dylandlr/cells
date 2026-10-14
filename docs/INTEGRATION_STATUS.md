@@ -1,7 +1,7 @@
-# Integration status - October 13, 2026 (America/Chicago)
+# Integration status - October 14, 2026 (America/Chicago)
 
 Repository: `dylandlr/cells`; branch: `feat/substance-ontology`; existing draft PR: #1.
-Latest work continued from spatial-membrane commit `769c64c` in a local
+Latest work continued from nutrient-conservation commit `8807c08` in a local
 Windows workspace with the installed Unity **6000.6.5f1** editor.
 
 ## Implemented
@@ -28,20 +28,20 @@ Windows workspace with the installed Unity **6000.6.5f1** editor.
 ## Verification
 
 - Unity Editor import, runtime/editor C# compilation, and scene generation: passed.
-- EditMode: **41 passed, 0 failed, 0 skipped**. Covers conserved diffusion, reaction stoichiometry
+- EditMode: **44 passed, 0 failed, 0 skipped**. Covers conserved diffusion, reaction stoichiometry
   and time partition, decay, material transfer, membrane rupture/death, deterministic particle
   replay, registry initialization and existing sensor/hazard policies. New checks cover
   rotation-aware contact sites, damage-dependent uptake, local repair budgets, local rupture
   despite a healthy mean, and legacy uniform-integrity reset compatibility. Leakage tests
   cover living/dead cells, 500-step mass conservation, concentration gradients, large-step
   equilibrium, rejected deposits, and particle/reserve/byproduct accounting.
-- PlayMode: **6 passed, 0 failed, 0 skipped**, including directional toxin exposure,
+- PlayMode: **9 passed, 0 failed, 0 skipped**, including directional toxin exposure,
   local rupture, visible opening, opposite-side preservation, and render/physics separation.
   Also checks the complete scene's nutrient/byproduct budget and conservative leakage
   from a dead cell without feeding or energy creation.
-- Static structure: **51 unique asset GUIDs, 4 assemblies**, valid scene script references,
+- Static structure: **55 unique asset GUIDs, 4 assemblies**, valid scene script references,
   matching package lock and CI editor version.
-- Windows development player: **build succeeded**, 157,609,884 bytes reported by Unity. The standalone executable was not manually playtested.
+- Windows development player: **build succeeded**, 157,628,310 bytes reported by Unity. The standalone executable was not manually playtested.
 
 During the first bootstrap pass, initial failures were corrected: an invalid added package name prevented the first import;
 then two new EditMode fixtures relied on Awake being called and needed explicit references.
@@ -51,7 +51,8 @@ Committed compact report: [validation/results.json](validation/results.json).
 Committed camera evidence: [validation/microscope-camera.png](validation/microscope-camera.png)
 and its [provenance](validation/microscope-camera.txt).
 
-Local reports: `TestResults/editmode.xml`, `TestResults/playmode.xml`.
+Local reports: `TestResults/editmode.xml`, `TestResults/playmode-with-video.xml`.
+The PlayMode run includes eight permanent tests and the optional recording test from `tools/capture/`.
 Local logs: `Logs/setup.log`, `Logs/editmode.log`, `Logs/playmode.log`, `Logs/build.log`.
 Generated output folders are intentionally excluded from source control.
 
@@ -79,9 +80,36 @@ and [provenance](validation/membrane-local-rupture.txt). Both camera images excl
 ## Outstanding limits
 
 The legacy Causal Microscope v0.3 archive was unavailable; **no archive migration is claimed**.
-See `MIGRATION.md` for searched locations and next steps. Biology remains illustrative,
-uncalibrated and stationary. Membrane damage is spatial, but mechanical tearing,
+See `MIGRATION.md` for searched locations and next steps. Biology remains illustrative and uncalibrated. Cell centers are anchored while local
+boundaries deform. Membrane damage is spatial, but full mechanical tearing,
 fluid flow through openings, toxin leakage, osmosis and spatial intracellular transport are absent.
 Nutrient leakage uses a well-mixed compartment and sequential conservative surface contacts.
 No evolutionary controllers, full fluid mechanics or research-grade validation are claimed.
 Hosted Linux/GameCI activation and execution have not been verified in this pass.
+
+## Deformable microscope culture
+
+A second saved scene, `MicroscopeCulture.unity`, is the Windows player's start scene.
+It uses phase-contrast-inspired texture, varied irregular contours, rounded particles,
+and optional interpolated chemical false color. Cell interiors are illustrative texture.
+There is no beating, cell division, locomotion or calibrated optical/tissue simulation.
+
+An overdamped radial model responds to local contact and injury, with elasticity,
+contour smoothing and area recovery. The same deformed boundary drives shader sampling,
+exposure, leakage, pipetting and named exchange sites. Tests verify compression, release,
+local retraction, contour area and an actual rendered rim moving from its old contact to
+its new contact. Fixed cell centers do not imply fixed membrane geometry.
+
+[Culture render](validation/microscope-culture.png) and
+[provenance](validation/microscope-culture.txt) were produced by Unity.
+A 20-second 1920x1080 recording was rendered as 600 Unity camera frames and encoded at
+30 fps, with measured-state captions added afterward. This is offline camera-frame capture,
+not proof of real-time 30 fps performance or an Editor-window recording. The recording test
+verified injury, rupture, nutrient leakage, chemical reaction and geometry updates.
+Its [provenance](validation/deforming-video.txt) and reproducible [capture workflow](../tools/capture/README.md)
+are tracked; the local MP4 is `Artifacts/cells-deforming-culture.mp4`.
+
+The first long culture capture exceeded Unity's default 180-second test timeout; it was
+not counted as a pass. The capture harness now has an explicit longer timeout, and the
+final complete run passed. The initial antialiased-edge test also needed contour-relative
+sampling; final render tests check both static rupture and physical-to-optical deformation.
