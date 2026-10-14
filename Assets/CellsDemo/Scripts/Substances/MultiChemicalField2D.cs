@@ -42,6 +42,14 @@ namespace Cells.Substances
             return y * width + x;
         }
 
+        // Read-only grid sampling for microscope rendering; no simulation state mutation.
+        public float SampleCell(string id, int x, int y)
+        {
+            if (!concentrations.TryGetValue(id, out var values)) return 0f;
+            if (x < 0 || x >= width || y < 0 || y >= height) return 0f;
+            return values[y * width + x];
+        }
+
         public float Sample(string id, Vector2 world)
         {
             return concentrations.TryGetValue(id, out var values) ? values[Index(world)] : 0f;
