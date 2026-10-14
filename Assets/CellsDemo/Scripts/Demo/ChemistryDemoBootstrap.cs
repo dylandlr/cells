@@ -2,6 +2,7 @@ using UnityEngine;
 using Cells.Substances;
 using Cells.Physiology;
 using Cells.Rendering;
+using System;
 
 namespace Cells.Demo
 {
@@ -40,9 +41,44 @@ namespace Cells.Demo
             field.Deposit("toxin-B", new Vector2(1f, 0f), initialToxin);
             CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f);
             CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f);
+            CreateParticleDemo();
             CreateCamera();
             AddChemicalOverlay("Nutrients", "nutrient-A", MaterialForm.Suspension, new Color(.48f,.87f,.33f), -22);
             AddChemicalOverlay("Toxins", "toxin-B", MaterialForm.Dissolved, new Color(.72f,.31f,.94f), -21);
+        }
+
+        void CreateParticleDemo()
+        {
+            var particleObject = new GameObject("Tracked particulate substrate");
+            var particles = particleObject.AddComponent<TrackedParticleWorld>();
+            particles.seed = seed;
+            particles.diffusivity = .012f;
+            var random = new System.Random(seed);
+            for (int i = 0; i < 120; i++)
+            {
+                float x = -.6f + (float)random.NextDouble() * 1.2f;
+                float y = -.8f + (float)random.NextDouble() * 1.6f;
+                particles.Spawn("nutrient-A", new Vector2(x, y), .025f, .025f);
+            }
+            var display = new GameObject("Actual nutrient particle display");
+            var particleRenderer = display.AddComponent<TrackedParticleRenderer>();
+            particleRenderer.world = particles;
+            particleRenderer.substanceId = "nutrient-A";
+            particleRenderer.color = new Color(.75f, .97f, .43f);
+            var grazer = GameObject.Find("Grazer");
+            if (grazer)
+            {
+                var mouth = new GameObject("Particulate intake");
+                mouth.transform.SetParent(grazer.transform);
+                mouth.transform.localPosition = Vector3.left * .45f;
+                var feeder = mouth.AddComponent<ParticleFeedingSite>();
+                feeder.organismId = 2;
+                feeder.world = particles;
+                feeder.events = eventLog;
+                feeder.metabolism = grazer.GetComponent<CellMetabolism>();
+                feeder.edibleSubstanceId = "nutrient-A";
+                feeder.captureRadius = .45f;
+            }
         }
 
         void CreateCell(string label, int id, Vector2 position, bool secretor, float resistance)
