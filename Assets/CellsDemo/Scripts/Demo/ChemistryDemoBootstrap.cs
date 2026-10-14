@@ -1,6 +1,7 @@
 using UnityEngine;
 using Cells.Substances;
 using Cells.Physiology;
+using Cells.Rendering;
 
 namespace Cells.Demo
 {
@@ -40,6 +41,8 @@ namespace Cells.Demo
             CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f);
             CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f);
             CreateCamera();
+            AddChemicalOverlay("Nutrients", "nutrient-A", new Color(.48f,.87f,.33f), -22);
+            AddChemicalOverlay("Toxins", "toxin-B", new Color(.72f,.31f,.94f), -21);
         }
 
         void CreateCell(string label, int id, Vector2 position, bool secretor, float resistance)
@@ -52,6 +55,9 @@ namespace Cells.Demo
             membrane.chemicalResistance = resistance;
             var visual = go.AddComponent<SpriteRenderer>();
             visual.sprite = CreateSprite();
+            visual.sortingOrder = 10;
+            var membraneVisual = go.AddComponent<MembraneStateRenderer>();
+            membraneVisual.membrane = membrane;
             visual.color = secretor ? new Color(.66f, .9f, .82f) : new Color(.95f, .75f, .55f);
 
             var exchange = go.AddComponent<CellChemicalExchange>();
@@ -76,6 +82,17 @@ namespace Cells.Demo
                 exposure.uptakeRate = .4f;
                 exposure.damagePerUnit = 3f;
             }
+        }
+
+        void AddChemicalOverlay(string label, string id, Color color, int order)
+        {
+            var go = new GameObject(label + " field visualization");
+            var spriteRenderer = go.AddComponent<SpriteRenderer>();
+            spriteRenderer.sortingOrder = order;
+            var renderer = go.AddComponent<ChemicalFieldRenderer>();
+            renderer.field = field;
+            renderer.substanceId = id;
+            renderer.tint = color;
         }
 
         static Sprite CreateSprite()
