@@ -16,6 +16,7 @@ The smaller two-organism experiment remains available in `ChemistryDemo.unity` a
 **Cells > Create or open chemistry demo**. Windows builds start in the culture view.
 
 - Click a cell or its named button to inspect energy, membrane integrity, and recent events.
+- Pan with middle mouse drag or arrow keys, including while paused.
 - Scroll over the world to zoom; F follows selection; Escape clears it.
 - Space or Pause stops simulation while inspection remains usable.
 - Food, Toxin, and Reagent buttons deposit measured quantities at the selected membrane region (or origin).
@@ -54,3 +55,7 @@ See [integration and test results](docs/INTEGRATION_STATUS.md),
 Actual Unity test reports and runtime imagery, if produced, are distinguished from mockups.
 The optional [camera recording workflow](tools/capture/README.md) produces real Unity
 frames with measured-state captions. It excludes the IMGUI panel and adds no beating.
+
+## Windows builds
+
+See [Windows build and test workflow](docs/WINDOWS_BUILD.md). The PowerShell script runs both Unity test suites and packages the complete Windows x64 player.

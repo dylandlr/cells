@@ -52,6 +52,22 @@ namespace Cells.Tests
                 "Particle ingestion, uptake, digestion and leakage must conserve represented nutrient/byproduct mass.");
         }
 
+        [UnityTest]
+        public IEnumerator MicroscopePanWhilePausedDoesNotMoveOrganisms()
+        {
+            var view = demo.GetComponent<ChemistryDemoView>();
+            var cell = demo.transform.Find("Grazer");
+            Vector3 organismPosition = cell.position;
+            Vector3 cameraPosition = Camera.main.transform.position;
+            view.SetPaused(true);
+            view.Pan(new Vector2(1.25f, -.5f));
+            yield return null;
+            Assert.That(Camera.main.transform.position.x, Is.EqualTo(cameraPosition.x + 1.25f).Within(1e-5f));
+            Assert.That(Camera.main.transform.position.y, Is.EqualTo(cameraPosition.y - .5f).Within(1e-5f));
+            Assert.That(cell.position, Is.EqualTo(organismPosition));
+            Assert.That(Time.timeScale, Is.Zero);
+        }
+
         float NutrientBudget()
         {
             float total = demo.Field.Total("nutrient-A") + demo.Field.Total("metabolic-waste-E")
