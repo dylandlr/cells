@@ -32,6 +32,16 @@ namespace Cells.Demo
         readonly List<ChemicalEvent> history = new List<ChemicalEvent>();
         Rect Panel => new Rect(12, 12, Mathf.Min(330, Screen.width - 24), Mathf.Max(100, Screen.height - 24));
         Vector2 scroll;
+        Vector3 previousMouse;
+
+        // Viewer motion never changes organism or chemical state; works while paused.
+        public void Pan(Vector2 worldDelta)
+        {
+            if (!microscope) microscope = Camera.main;
+            if (!microscope) return;
+            follow = false;
+            microscope.transform.position += new Vector3(worldDelta.x, worldDelta.y, 0f);
+        }
 
         public void Select(CellMetabolism cell) => Selected = cell;
         public void SetZoom(float size) => zoom = Mathf.Clamp(size, 1f, 12f);
@@ -68,6 +78,19 @@ namespace Cells.Demo
             if (Input.GetKeyDown(KeyCode.Space)) SetPaused(Time.timeScale > 0f);
             if (Input.GetKeyDown(KeyCode.Escape)) { Select(null); follow = false; }
             if (Input.GetKeyDown(KeyCode.F)) follow = !follow;
+            if (!overPanel && Input.GetMouseButton(2) && !Input.GetMouseButtonDown(2))
+            {
+                Vector3 before = microscope.ScreenToWorldPoint(previousMouse);
+                Vector3 after = microscope.ScreenToWorldPoint(Input.mousePosition);
+                Pan(before - after);
+            }
+            previousMouse = Input.mousePosition;
+            Vector2 keyboardPan = Vector2.zero;
+            if (Input.GetKey(KeyCode.LeftArrow)) keyboardPan.x -= 1f;
+            if (Input.GetKey(KeyCode.RightArrow)) keyboardPan.x += 1f;
+            if (Input.GetKey(KeyCode.DownArrow)) keyboardPan.y -= 1f;
+            if (Input.GetKey(KeyCode.UpArrow)) keyboardPan.y += 1f;
+            if (keyboardPan != Vector2.zero) Pan(keyboardPan.normalized * zoom * Time.unscaledDeltaTime);
             if (!overPanel && Input.GetMouseButtonDown(0) && demo)
             {
                 Vector2 mouse = microscope.ScreenToWorldPoint(Input.mousePosition);
@@ -95,6 +118,7 @@ namespace Cells.Demo
             GUILayout.Label("CELLS / CAUSAL MICROSCOPE");
             GUILayout.Label("Seed " + demo.seed + " | t = " + Time.fixedTime.ToString("F1") + " s");
             GUILayout.Label("Scroll: zoom | Click: inspect | F: follow");
+            GUILayout.Label("Middle drag / arrows: pan microscope");
             if (GUILayout.Button(Time.timeScale > 0f ? "Pause [Space]" : "Resume [Space]"))
                 SetPaused(Time.timeScale > 0f);
             bool overlayVisible = GUILayout.Toggle(chemicalOverlay, "Show false-color chemical concentrations");
