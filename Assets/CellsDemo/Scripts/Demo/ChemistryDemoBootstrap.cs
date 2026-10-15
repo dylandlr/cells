@@ -76,8 +76,8 @@ namespace Cells.Demo
             for (int x = -4; x <= 4; x++)
             for (int y = -4; y <= 4; y++)
                 field.Deposit("toxin-B", new Vector2(1f + x * field.cellSize, y * field.cellSize), initialToxin / 81f);
-            CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f);
-            CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f);
+            CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f, true);
+            CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f, true);
             if (cultureView) CreateCulture();
             CreateParticleDemo();
             CreateCamera();
@@ -105,7 +105,7 @@ namespace Cells.Demo
                 Vector2 position = new Vector2(column * 1.72f + (row % 2) * .83f, row * 1.47f);
                 position += new Vector2((float)random.NextDouble() - .5f, (float)random.NextDouble() - .5f) * .24f;
                 if (Vector2.Distance(position, new Vector2(-1.5f, 0)) < 1.45f || Vector2.Distance(position, new Vector2(1f, 0)) < 1.45f) continue;
-                CreateCell("Culture cell " + id, id, position, false, .25f);
+                CreateCell("Culture cell " + id, id, position, false, .25f, false);
                 id++;
             }
         }
@@ -146,7 +146,7 @@ namespace Cells.Demo
             }
         }
 
-        void CreateCell(string label, int id, Vector2 position, bool secretor, float resistance)
+        void CreateCell(string label, int id, Vector2 position, bool secretor, float resistance, bool motile)
         {
             var go = Child(label);
             go.transform.position = position;
@@ -185,6 +185,20 @@ namespace Cells.Demo
             leakage.exchange = exchange;
             leakage.membrane = membrane;
             if (cultureView) go.AddComponent<CellShapeDynamics>();
+
+            if (motile)
+            {
+                var motility = go.AddComponent<CellMotility>();
+                motility.field = field;
+                motility.metabolism = metabolism;
+                // Distinct phenotypes make the focal organisms visibly different without
+                // granting them non-physical teleportation or perfect field knowledge.
+                motility.maxSpeed = secretor ? .34f : .48f;
+                motility.attractantGain = secretor ? .65f : 1.15f;
+                motility.repellentGain = secretor ? 1.25f : 1.8f;
+                motility.exploratoryBias = secretor ? .08f : .14f;
+                go.transform.rotation = Quaternion.Euler(0f, 0f, secretor ? 18f : 205f);
+            }
 
             if (!secretor)
             {
