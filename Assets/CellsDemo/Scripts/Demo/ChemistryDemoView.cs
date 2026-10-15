@@ -157,6 +157,7 @@ namespace Cells.Demo
             }
             GUILayout.Label("Suspended food: " + demo.Particles.Particles.Count + " packets / " + demo.Particles.TotalMass("food-particle").ToString("F3") + " mass");
             GUILayout.Label("Neutralized mass: " + demo.Reaction.ReactedMass.ToString("F3"));
+            if (demo.Fluid) GUILayout.Label("Fluid mean |divergence|: " + demo.Fluid.MeanAbsoluteDivergence().ToString("F4"));
             GUILayout.Label("Pipette at " + (Selected ? Selected.name + " membrane" : "field center"));
             if (Selected)
             {
