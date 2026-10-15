@@ -188,7 +188,15 @@ namespace Cells.Demo
 
             if (motile)
             {
+                var actuator = go.AddComponent<CellFlagellarActuator>();
+                actuator.metabolism = metabolism;
+                actuator.beatFrequencyHz = secretor ? 1.7f : 2.5f;
+                actuator.waveAmplitude = secretor ? .17f : .25f;
+                actuator.motorActivation = secretor ? .8f : .92f;
+                var motorVisual = go.AddComponent<FlagellumRenderer>();
+                motorVisual.actuator = actuator;
                 var motility = go.AddComponent<CellMotility>();
+                motility.flagellum = actuator;
                 motility.field = field;
                 motility.metabolism = metabolism;
                 // Distinct phenotypes make the focal organisms visibly different without
