@@ -1,5 +1,6 @@
 using UnityEngine;
 using Cells.Substances;
+using Cells.Fluid;
 
 namespace Cells.Physiology
 {
@@ -14,6 +15,8 @@ namespace Cells.Physiology
         public MultiChemicalField2D field;
         public CellMetabolism metabolism;
         public CellFlagellarActuator flagellum;
+        public FluidGrid2D fluid;
+        [Range(0f,1f)] public float flowEntrainment = .8f;
         public string attractantId = "nutrient-A";
         public string repellentId = "toxin-B";
 
@@ -99,7 +102,8 @@ namespace Cells.Physiology
             float requestedCost = requestedDistance * movementCostPerUnit;
             float paid = metabolism.Spend(requestedCost);
             float fraction = requestedCost <= 1e-8f ? 1f : Mathf.Clamp01(paid / requestedCost);
-            Vector2 displacement = Velocity * (dt * fraction);
+            Vector2 ambientFlow = fluid ? fluid.Sample(p) * flowEntrainment : Vector2.zero;
+            Vector2 displacement = (Velocity * fraction + ambientFlow) * dt;
 
             Vector2 next = p + displacement;
             if (field)
