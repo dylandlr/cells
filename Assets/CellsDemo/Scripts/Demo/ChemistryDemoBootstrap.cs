@@ -78,6 +78,8 @@ namespace Cells.Demo
             Fluid.height = field.height;
             Fluid.spacing = field.cellSize;
             Fluid.Initialize();
+            var fluidOverlay = Child("Measured fluid flow vectors").AddComponent<FluidFlowOverlay>();
+            fluidOverlay.fluid = Fluid;
             field.Deposit("nutrient-A", new Vector2(0f, 0f), initialFood);
             // Spread the challenge dose over several voxels rather than an instantaneous point overdose.
             for (int x = -4; x <= 4; x++)
