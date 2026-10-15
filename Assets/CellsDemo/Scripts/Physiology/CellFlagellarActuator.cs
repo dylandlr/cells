@@ -7,6 +7,7 @@ namespace Cells.Physiology
     /// sampled by motility and by visualization. This is not a resolved Stokes-fluid solver.
     /// </summary>
     [RequireComponent(typeof(CellMetabolism))]
+    [DefaultExecutionOrder(-60)]
     public sealed class CellFlagellarActuator : MonoBehaviour
     {
         [Min(.05f)] public float length = 1.05f;
