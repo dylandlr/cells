@@ -2,6 +2,7 @@ using UnityEngine;
 using Cells.Substances;
 using Cells.Physiology;
 using Cells.Rendering;
+using Cells.Fluid;
 using System;
 
 namespace Cells.Demo
@@ -22,6 +23,7 @@ namespace Cells.Demo
         public SubstanceRegistry Registry { get; private set; }
         public TrackedParticleWorld Particles { get; private set; }
         public ChemicalReaction2D Reaction { get; private set; }
+        public FluidGrid2D Fluid { get; private set; }
 
         GameObject Child(string label)
         {
@@ -71,6 +73,11 @@ namespace Cells.Demo
             Reaction.field = field;
 
             eventLog = Child("Causal chemical log").AddComponent<ChemicalEventLog>();
+            Fluid = Child("Incompressible fluid substrate").AddComponent<FluidGrid2D>();
+            Fluid.width = field.width;
+            Fluid.height = field.height;
+            Fluid.spacing = field.cellSize;
+            Fluid.Initialize();
             field.Deposit("nutrient-A", new Vector2(0f, 0f), initialFood);
             // Spread the challenge dose over several voxels rather than an instantaneous point overdose.
             for (int x = -4; x <= 4; x++)
@@ -190,6 +197,7 @@ namespace Cells.Demo
             {
                 var actuator = go.AddComponent<CellFlagellarActuator>();
                 actuator.metabolism = metabolism;
+                actuator.fluid = Fluid;
                 actuator.beatFrequencyHz = secretor ? 1.7f : 2.5f;
                 actuator.waveAmplitude = secretor ? .17f : .25f;
                 actuator.motorActivation = secretor ? .8f : .92f;
@@ -197,6 +205,7 @@ namespace Cells.Demo
                 motorVisual.actuator = actuator;
                 var motility = go.AddComponent<CellMotility>();
                 motility.flagellum = actuator;
+                motility.fluid = Fluid;
                 motility.field = field;
                 motility.metabolism = metabolism;
                 // Distinct phenotypes make the focal organisms visibly different without
