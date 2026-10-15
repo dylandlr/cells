@@ -129,6 +129,13 @@ namespace Cells.Demo
                     GUILayout.Label("Speed: " + motility.Velocity.magnitude.ToString("F3") + " units/s");
                     GUILayout.Label("Nutrient gradient: " + motility.LastAttractantGradient.ToString("F3"));
                     GUILayout.Label("Toxin gradient: " + motility.LastRepellentGradient.ToString("F3"));
+                    var motor = Selected.GetComponent<CellFlagellarActuator>();
+                    if (motor)
+                    {
+                        GUILayout.Label("Flagellar thrust: " + motor.EffectiveThrust.ToString("F3"));
+                        GUILayout.Label("Beat frequency: " + motor.beatFrequencyHz.ToString("F2") + " Hz");
+                        GUILayout.Label("Motor integrity: " + motor.structuralIntegrity.ToString("P0"));
+                    }
                 }
                 var exchange = Selected.GetComponent<CellChemicalExchange>();
                 var leakage = Selected.GetComponent<MembraneLeakageSystem>();
