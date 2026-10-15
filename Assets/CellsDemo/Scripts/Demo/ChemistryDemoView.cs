@@ -85,6 +85,17 @@ namespace Cells.Demo
                 var next = Selected.transform.position; next.z = -10f;
                 microscope.transform.position = Vector3.Lerp(microscope.transform.position, next, Time.unscaledDeltaTime * 4f);
             }
+            else
+            {
+                Vector2 pan = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+                if (pan.sqrMagnitude > 1f) pan.Normalize();
+                if (pan.sqrMagnitude > 0f)
+                {
+                    Vector3 next = microscope.transform.position + (Vector3)(pan * zoom * .75f * Time.unscaledDeltaTime);
+                    next.z = -10f;
+                    microscope.transform.position = next;
+                }
+            }
         }
 
         void OnGUI()
@@ -94,7 +105,7 @@ namespace Cells.Demo
             scroll = GUILayout.BeginScrollView(scroll);
             GUILayout.Label("CELLS / CAUSAL MICROSCOPE");
             GUILayout.Label("Seed " + demo.seed + " | t = " + Time.fixedTime.ToString("F1") + " s");
-            GUILayout.Label("Scroll: zoom | Click: inspect | F: follow");
+            GUILayout.Label("Scroll: zoom | Click: inspect | F: follow | WASD: pan");
             if (GUILayout.Button(Time.timeScale > 0f ? "Pause [Space]" : "Resume [Space]"))
                 SetPaused(Time.timeScale > 0f);
             bool overlayVisible = GUILayout.Toggle(chemicalOverlay, "Show false-color chemical concentrations");
@@ -112,6 +123,13 @@ namespace Cells.Demo
                 GUILayout.Label("Energy: " + Selected.energy.ToString("F3"));
                 GUILayout.Label("Membrane: " + membrane.integrity.ToString("P1") + (membrane.ruptured ? " / RUPTURED" : ""));
                 GUILayout.Label("Weakest region: " + membrane.WeakestIntegrity.ToString("P1"));
+                var motility = Selected.GetComponent<CellMotility>();
+                if (motility)
+                {
+                    GUILayout.Label("Speed: " + motility.Velocity.magnitude.ToString("F3") + " units/s");
+                    GUILayout.Label("Nutrient gradient: " + motility.LastAttractantGradient.ToString("F3"));
+                    GUILayout.Label("Toxin gradient: " + motility.LastRepellentGradient.ToString("F3"));
+                }
                 var exchange = Selected.GetComponent<CellChemicalExchange>();
                 var leakage = Selected.GetComponent<MembraneLeakageSystem>();
                 if (exchange) GUILayout.Label("Internal nutrient mass: " + exchange.nutrientReserve.ToString("F4"));
