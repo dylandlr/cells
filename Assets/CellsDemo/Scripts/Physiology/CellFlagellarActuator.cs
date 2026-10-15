@@ -1,4 +1,5 @@
 using UnityEngine;
+using Cells.Fluid;
 
 namespace Cells.Physiology
 {
@@ -17,6 +18,8 @@ namespace Cells.Physiology
         [Range(0f,1f)] public float structuralIntegrity = 1f;
         [Min(0f)] public float motorCostPerSecond = .012f;
         public CellMetabolism metabolism;
+        public FluidGrid2D fluid;
+        [Min(0f)] public float fluidCoupling = 1.6f;
 
         public float PhaseRadians { get; private set; }
         public float EffectiveThrust { get; private set; }
@@ -48,6 +51,12 @@ namespace Cells.Physiology
                 * (waveAmplitude / .24f));
             PhaseRadians = Mathf.Repeat(PhaseRadians + 2f * Mathf.PI * beatFrequencyHz * dt
                 * ActualActivation, 2f * Mathf.PI);
+            if (fluid && EffectiveThrust > 0f)
+            {
+                // Equal and opposite reactive forcing: the propulsor pushes water astern.
+                Vector2 aft = transform.TransformPoint(SampleCenterline(.85f));
+                fluid.AddForce(aft, -(Vector2)transform.right * (EffectiveThrust * fluidCoupling));
+            }
         }
 
         /// <summary>Local-space centerline, anchored on the posterior (-X) membrane.</summary>
