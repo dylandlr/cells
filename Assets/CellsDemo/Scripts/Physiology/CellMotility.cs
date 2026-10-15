@@ -13,6 +13,7 @@ namespace Cells.Physiology
     {
         public MultiChemicalField2D field;
         public CellMetabolism metabolism;
+        public CellFlagellarActuator flagellum;
         public string attractantId = "nutrient-A";
         public string repellentId = "toxin-B";
 
@@ -36,6 +37,7 @@ namespace Cells.Physiology
         void Start()
         {
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
+            if (!flagellum) flagellum = GetComponent<CellFlagellarActuator>();
             phase = Mathf.Repeat(transform.position.x * 2.137f + transform.position.y * 5.173f, Mathf.PI * 2f);
         }
 
@@ -86,7 +88,9 @@ namespace Cells.Physiology
             Vector2 thrustDirection = transform.right;
             float stimulus = Mathf.Clamp01(.18f + attractantGradient.magnitude * attractantGain
                                                 + repellentGradient.magnitude * repellentGain);
-            Vector2 targetVelocity = thrustDirection * (maxSpeed * stimulus);
+            // No hidden propulsion: swimming requires actuator output when equipped.
+            float motorThrust = flagellum ? flagellum.EffectiveThrust : 1f;
+            Vector2 targetVelocity = thrustDirection * (maxSpeed * stimulus * motorThrust);
 
             Velocity = Vector2.MoveTowards(Velocity, targetVelocity, acceleration * dt);
             Velocity *= Mathf.Exp(-drag * dt * .12f);
