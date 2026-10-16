@@ -78,6 +78,7 @@ namespace Cells.Demo
             Fluid.height = field.height;
             Fluid.spacing = field.cellSize;
             Fluid.Initialize();
+            field.fluid = Fluid;
             var fluidOverlay = Child("Measured fluid flow vectors").AddComponent<FluidFlowOverlay>();
             fluidOverlay.fluid = Fluid;
             field.Deposit("nutrient-A", new Vector2(0f, 0f), initialFood);
