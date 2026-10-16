@@ -118,19 +118,43 @@ namespace Cells.Substances
         public void Advect(float dt)
         {
             if (!fluid || !Finite(dt) || dt <= 0f) return;
-            float maxVelocity = 0f;
-            // Face velocities are sampled from the fluid after its FixedUpdate.
+            // Sample face speeds once, and choose a substep from the maximum total
+            // outward flux of ANY donor voxel. This is stricter than a center-speed
+            // estimate and gives monotone/nonnegative first-order upwind updates.
+            float[] right = new float[width * height];
+            float[] top = new float[width * height];
             for (int y = 0; y < height; y++)
             for (int x = 0; x < width; x++)
             {
-                Vector2 world = transform.TransformPoint(new Vector3(
-                    (x + .5f - width * .5f) * cellSize,
-                    (y + .5f - height * .5f) * cellSize));
-                Vector2 v = fluid.Sample(world);
-                if (!Finite(v.x) || !Finite(v.y)) return;
-                maxVelocity = Mathf.Max(maxVelocity, Mathf.Abs(v.x) + Mathf.Abs(v.y));
+                int i = y * width + x;
+                if (x + 1 < width)
+                {
+                    Vector2 face = transform.TransformPoint(new Vector3(
+                        (x + 1f - width * .5f) * cellSize,
+                        (y + .5f - height * .5f) * cellSize));
+                    right[i] = fluid.Sample(face).x;
+                    if (!Finite(right[i])) return;
+                }
+                if (y + 1 < height)
+                {
+                    Vector2 face = transform.TransformPoint(new Vector3(
+                        (x + .5f - width * .5f) * cellSize,
+                        (y + 1f - height * .5f) * cellSize));
+                    top[i] = fluid.Sample(face).y;
+                    if (!Finite(top[i])) return;
+                }
             }
-            int count = Mathf.Max(1, Mathf.CeilToInt(maxVelocity * dt /
+            float maxOutflow = 0f;
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                int i = y * width + x;
+                float outward = Mathf.Max(0f, right[i]) + Mathf.Max(0f, top[i]);
+                if (x > 0) outward += Mathf.Max(0f, -right[i - 1]);
+                if (y > 0) outward += Mathf.Max(0f, -top[i - width]);
+                maxOutflow = Mathf.Max(maxOutflow, outward);
+            }
+            int count = Mathf.Max(1, Mathf.CeilToInt(maxOutflow * dt /
                 (cellSize * Mathf.Max(.05f, advectionCfl))));
             float step = dt / count;
             foreach (var pair in concentrations)
@@ -146,10 +170,7 @@ namespace Cells.Substances
                         int i = y * width + x;
                         if (x + 1 < width)
                         {
-                            Vector2 face = transform.TransformPoint(new Vector3(
-                                (x + 1f - width * .5f) * cellSize,
-                                (y + .5f - height * .5f) * cellSize));
-                            float vx = fluid.Sample(face).x;
+                            float vx = right[i];
                             int j = i + 1;
                             float flux = vx * step / cellSize *
                                 (vx >= 0f ? src[i] : src[j]);
@@ -158,10 +179,7 @@ namespace Cells.Substances
                         }
                         if (y + 1 < height)
                         {
-                            Vector2 face = transform.TransformPoint(new Vector3(
-                                (x + .5f - width * .5f) * cellSize,
-                                (y + 1f - height * .5f) * cellSize));
-                            float vy = fluid.Sample(face).y;
+                            float vy = top[i];
                             int j = i + width;
                             float flux = vy * step / cellSize *
                                 (vy >= 0f ? src[i] : src[j]);
