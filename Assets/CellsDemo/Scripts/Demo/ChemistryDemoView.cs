@@ -137,6 +137,16 @@ namespace Cells.Demo
                         GUILayout.Label("Motor integrity: " + motor.structuralIntegrity.ToString("P0"));
                     }
                 }
+                var signaling = Selected.GetComponent<CellChemicalSignaling>();
+                if (signaling)
+                {
+                    GUILayout.Label("Signal concentration: " + signaling.ReadLocal().ToString("F4"));
+                    GUILayout.Label("Signal detected: " + (signaling.LastDetected ? "yes" : "no"));
+                    GUILayout.Label("Signal mass emitted: " + signaling.CumulativeEmittedMass.ToString("F4"));
+                    GUILayout.Label("Signal energy cost: " + signaling.CumulativeEnergySpent.ToString("F4"));
+                    if (Selected.alive && GUILayout.Button("Emit signaling molecule (uses energy)"))
+                        signaling.Emit(signaling.maximumEmissionPerPulse);
+                }
                 var exchange = Selected.GetComponent<CellChemicalExchange>();
                 var leakage = Selected.GetComponent<MembraneLeakageSystem>();
                 if (exchange) GUILayout.Label("Internal nutrient mass: " + exchange.nutrientReserve.ToString("F4"));
