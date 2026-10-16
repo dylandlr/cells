@@ -12,6 +12,10 @@
 - `InternalCompartments2D` resolves three finite-radius interior nodes (nucleoid, storage vesicle and signal vesicle) with drag, tether forces, pairwise repulsion, and membrane-edge contact. The live mesh renderer places separate organelle art on those nodes. This is visual-mechanical compartmentalization; there is **no modeled biochemical exchange between the compartments yet**.
 - The compartment update loop reuses buffers, avoiding per-step heap allocations. Tests cover boundedness, non-overlap, and membrane damage stability.
 
+## Membrane / organelle contact coupling v0.2
+
+When an interior compartment violates a membrane edge clearance, the compartment is projected inward. A bounded opposing displacement is now queued on the adjacent soft-body boundary nodes and applied once on the next body integration step. The diagnostic `LastContactMagnitude` records the applied reaction correction, while `LastContactPenetration` accumulates contact depth. This is reciprocal **geometric feedback**, not a momentum-conserving force or a verified constitutive tissue model. Displacements are capped to avoid numerical instability; constraint projection can remove energy. Added a regression test for queue bounds and single-step consumption.
+
 ## Science and fidelity boundary
 
 This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. Thrust remains approximated by the existing actuator and motility module, **not computed from reaction forces on individual tail segments**. Internal compartments now have independent positions, velocities, finite radii and collisions, but their interiors do not have deformable meshes, modeled reactions, or independent biochemical mass balances. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
