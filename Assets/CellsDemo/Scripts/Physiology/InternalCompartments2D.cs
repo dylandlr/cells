@@ -19,6 +19,7 @@ namespace Cells.Physiology
         [Range(1,12)] public int collisionIterations = 6;
         readonly Vector2[] locations = new Vector2[Count];
         readonly Vector2[] velocities = new Vector2[Count];
+        readonly Vector2[] previous = new Vector2[Count];
         readonly Vector2[] restOffsets = {
             new Vector2(.03f,.04f), new Vector2(-.36f,.19f), new Vector2(.30f,-.23f)
         };
@@ -55,10 +56,9 @@ namespace Cells.Physiology
             float h=Mathf.Min(.25f,dt)/substeps;
             for(int sub=0;sub<substeps;sub++)
             {
-                var before=new Vector2[Count];
                 for(int i=0;i<Count;i++)
                 {
-                    before[i]=locations[i];
+                    previous[i]=locations[i];
                     Vector2 target=body.Core+restOffsets[i];
                     velocities[i]+= (target-locations[i])*tetherStrength*h;
                     velocities[i]*=Mathf.Exp(-drag*h);
@@ -100,7 +100,7 @@ namespace Cells.Physiology
                 }
                 for(int i=0;i<Count;i++)
                 {
-                    velocities[i]=(locations[i]-before[i])/h;
+                    velocities[i]=(locations[i]-previous[i])/h;
                     if(!float.IsFinite(locations[i].x) || !float.IsFinite(locations[i].y)
                         || (locations[i]-body.Core).sqrMagnitude>4f)
                     {
