@@ -94,6 +94,10 @@ namespace Cells.Physiology
             float currentAngle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
             float desiredAngle = Mathf.Atan2(DesiredDirection.y, DesiredDirection.x) * Mathf.Rad2Deg;
             float nextAngle = Mathf.MoveTowardsAngle(currentAngle, desiredAngle, angularSpeedDegrees * dt);
+            // Flagellar deformation can also create a bounded reaction yaw. Keep the
+            // chemotactic controller and the physical appendage contribution explicit.
+            if (hydrodynamics)
+                nextAngle += hydrodynamics.LocalAngularVelocityDegrees * dt;
             transform.rotation = Quaternion.Euler(0f, 0f, nextAngle);
 
             Vector2 thrustDirection = transform.right;
