@@ -39,6 +39,22 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void NoDiffusionPreventsLongRangeTransmission()
+        {
+            var isolated = PhysicalSignalAssayV1.RunCalibrated(
+                631, true, true, .0001f, 0f, 0f);
+            Assert.Greater(isolated.SignalMassEmitted, 0f);
+            for (int seat = 1; seat < PhysicalSignalAssayV1.Agents; seat++)
+            {
+                Assert.AreEqual(0, isolated.Receptions[seat]);
+                Assert.AreEqual(0, isolated.ResponseEnabledSteps[seat]);
+                Assert.AreEqual(0, isolated.SignalInfluencedMoves[seat]);
+            }
+            Assert.That(isolated.SignalMassRemaining,
+                Is.EqualTo(isolated.SignalMassEmitted).Within(.002f));
+        }
+
+        [Test]
         public void ThresholdAndDiffusionMustBePhysicalFiniteParameters()
         {
             Assert.Throws<System.ArgumentOutOfRangeException>(() =>
