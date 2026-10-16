@@ -65,6 +65,43 @@ namespace Cells.Fluid
                 forcing[I(x,y)] += acceleration;
         }
 
+        /// <summary>
+        /// Deposit a zero-net-force swimmer stresslet. Both forces must be inside the
+        /// interior domain; otherwise neither is applied. A force-free swimmer cannot
+        /// generate net fluid momentum merely by beating its flagellum.
+        /// This is a coarse-grained approximation, not an immersed-boundary method.
+        /// </summary>
+        public bool AddForceDipole(Vector2 frontWorld, Vector2 rearWorld, Vector2 acceleration)
+        {
+            if (!Initialized) Initialize();
+            if (!Finite(acceleration.x) || !Finite(acceleration.y)) return false;
+            int front = ForceIndex(frontWorld);
+            int rear = ForceIndex(rearWorld);
+            if (front < 0 || rear < 0 || front == rear) return false;
+            forcing[front] += acceleration;
+            forcing[rear] -= acceleration;
+            return true;
+        }
+
+        static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+
+        int ForceIndex(Vector2 world)
+        {
+            Vector2 local = transform.InverseTransformPoint(world);
+            int x = Mathf.FloorToInt(local.x / spacing + width * .5f);
+            int y = Mathf.FloorToInt(local.y / spacing + height * .5f);
+            return x > 0 && x < width - 1 && y > 0 && y < height - 1 ? I(x, y) : -1;
+        }
+
+        /// <summary>Sum of queued acceleration impulses before the next physics step.</summary>
+        public Vector2 QueuedForceSum()
+        {
+            Vector2 result = Vector2.zero;
+            if (forcing == null) return result;
+            for (int i = 0; i < forcing.Length; i++) result += forcing[i];
+            return result;
+        }
+
         void FixedUpdate()
         {
             accumulated += Time.fixedDeltaTime;
