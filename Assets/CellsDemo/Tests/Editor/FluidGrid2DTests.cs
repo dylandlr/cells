@@ -42,6 +42,24 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void ForceDipoleDoesNotInjectNetMomentum()
+        {
+            Assert.IsTrue(fluid.AddForceDipole(new Vector2(.5f, 0f),
+                new Vector2(-.75f, 0f), Vector2.right * 7f));
+            Assert.Less(fluid.QueuedForceSum().sqrMagnitude, 1e-8f);
+            fluid.Step(.02f);
+            Assert.IsFalse(float.IsNaN(fluid.MeanAbsoluteDivergence()));
+        }
+
+        [Test]
+        public void DipoleRejectsPartialOutOfBoundsWithoutApplyingForce()
+        {
+            Assert.IsFalse(fluid.AddForceDipole(Vector2.zero,
+                new Vector2(999f, 999f), Vector2.right * 8f));
+            Assert.Less(fluid.QueuedForceSum().sqrMagnitude, 1e-8f);
+        }
+
+        [Test]
         public void OutOfBoundsForcingDoesNotDestabilizeGrid()
         {
             fluid.AddForce(new Vector2(999f,999f), new Vector2(100f,100f));
