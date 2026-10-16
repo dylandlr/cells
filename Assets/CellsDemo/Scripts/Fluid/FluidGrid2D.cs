@@ -57,12 +57,9 @@ namespace Cells.Fluid
         public void AddForce(Vector2 world, Vector2 acceleration)
         {
             if (!Initialized) Initialize();
-            if (float.IsNaN(acceleration.x) || float.IsNaN(acceleration.y)) return;
-            Vector2 p = transform.InverseTransformPoint(world);
-            int x = Mathf.FloorToInt(p.x / spacing + width * .5f);
-            int y = Mathf.FloorToInt(p.y / spacing + height * .5f);
-            if (x > 0 && x < width-1 && y > 0 && y < height-1)
-                forcing[I(x,y)] += acceleration;
+            if (!Finite(acceleration.x) || !Finite(acceleration.y)) return;
+            int index = ForceIndex(world);
+            if (index >= 0) forcing[index] += acceleration;
         }
 
         /// <summary>
