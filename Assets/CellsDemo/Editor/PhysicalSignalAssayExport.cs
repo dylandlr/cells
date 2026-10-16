@@ -82,6 +82,16 @@ namespace Cells.EditorTools
             summary.Append(PairedAssayAnalysisV1.ToCsv("source_energy", PairedAssayAnalysisV1.EstimatePaired(source)));
             summary.Append(PairedAssayAnalysisV1.ToCsv("harvest_mass", PairedAssayAnalysisV1.EstimatePaired(harvest)));
             summary.Append(PairedAssayAnalysisV1.ToCsv("receiver_detected_steps", PairedAssayAnalysisV1.EstimatePaired(detected)));
+            int seedsWithDetection = 0;
+            foreach (var record in detected)
+                if (record.Treatment > 0) seedsWithDetection++;
+            if (seedsWithDetection == 0)
+                Debug.LogWarning("cells: no receiver detected signal on any paired seed. " +
+                    "Do NOT interpret utility differences as communication effects. " +
+                    "Inspect signal diffusion, threshold, source timing and spatial geometry.");
+            else
+                Debug.Log("cells physical signaling: receiver detection occurred in " +
+                    seedsWithDetection + " of 30 paired seeds.");
             File.WriteAllText(Path.Combine(folder, "paired_by_seed.csv"), pairs.ToString());
             File.WriteAllText(Path.Combine(folder, "paired_summary.csv"), summary.ToString());
             File.WriteAllText(Path.Combine(folder, "agents.csv"), rows.ToString());
