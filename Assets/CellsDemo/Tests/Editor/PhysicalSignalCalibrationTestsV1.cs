@@ -59,6 +59,8 @@ namespace Cells.Tests
             {
                 Assert.AreEqual(0, passive.ResponseEnabledSteps[seat]);
                 Assert.AreEqual(0, passive.GradientUsedSteps[seat]);
+                Assert.AreEqual(0, passive.SignalInfluencedMoves[seat]);
+                Assert.AreEqual(0f, passive.CumulativeSignalDirectionalAlignment[seat]);
                 Assert.AreEqual(-1, passive.FirstResponseDecisionStep[seat]);
             }
         }
@@ -72,6 +74,9 @@ namespace Cells.Tests
             {
                 Assert.GreaterOrEqual(active.ResponseEnabledSteps[seat],
                     active.GradientUsedSteps[seat]);
+                Assert.LessOrEqual(active.SignalInfluencedMoves[seat],
+                    active.GradientUsedSteps[seat]);
+                Assert.GreaterOrEqual(active.CumulativeMovementDistance[seat], 0f);
                 if (active.ResponseEnabledSteps[seat] == 0)
                     Assert.AreEqual(-1, active.FirstResponseDecisionStep[seat]);
                 else
@@ -89,6 +94,8 @@ namespace Cells.Tests
             CollectionAssert.AreEqual(a.FirstDetectionStep, b.FirstDetectionStep);
             CollectionAssert.AreEqual(a.PeakReceiverConcentration, b.PeakReceiverConcentration);
             CollectionAssert.AreEqual(a.FinalSourceDistance, b.FinalSourceDistance);
+            CollectionAssert.AreEqual(a.SignalInfluencedMoves, b.SignalInfluencedMoves);
+            CollectionAssert.AreEqual(a.CumulativeMovementDistance, b.CumulativeMovementDistance);
         }
     }
 }
