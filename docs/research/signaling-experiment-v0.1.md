@@ -45,3 +45,18 @@ These are **engineering baselines**, not trained agents. In particular a team of
 ## Literature provenance
 
 This design is **our proposed experimental extrapolation** drawing on classical concepts in Nash/correlated equilibrium, repeated stochastic games, regret minimization, empirical game-theoretic analysis, and action abstraction. Do not attribute its exact numbers, outcomes or implementation decisions to any Google Drive paper; the long-form Deep Research paper-by-paper report has not yet been incorporated/verified here.
+
+## Implemented evaluation runner (research tooling, not completed results)
+
+- Runtime: `Assets/CellsDemo/Scripts/Experiments/SignalingExperimentRunnerV1.cs`
+- Unity Editor menu: **Cells → Research → Run Signaling Experiment (30 Seeds)**
+- Tests: `Assets/CellsDemo/Tests/Editor/SignalingExperimentRunnerV1Tests.cs`
+- Local export directory: `ExperimentRuns/signaling-v1/` (outside `Assets`); files: `agents.csv`, `episodes.csv`, `manifest.json`.
+- Profiles: all silent, all random, and four seat rotations each of one periodic signaler + three followers and one silent control + three followers. The current runner uses **30 seeds and 10 profiles per seed = 300 episodes**, plus 1,200 per-agent records. Four seat rotations only apply to mixed profiles. `source_revision` defaults to `unverified` until the execution machine independently captures its Git HEAD.
+- The runner records totals and per-agent returns; it does **not** yet export individual decision traces, raw hidden resource paths, variance/CIs, or a full empirical payoff tensor. The control profile differs from signaling only in one policy, so compare each matched `seed × rotation` pair; this is a policy intervention, not solely an isolated communication-channel ablation.
+- **Before running:** open the Unity project, allow script import, run Unity Test Runner → EditMode and verify the `SignalingGameV1Tests` and `SignalingExperimentRunnerV1Tests` suites. The menu executes C# without Play Mode. These steps have not been verified here; generated results do not exist yet.
+- The local `ExperimentRuns` directory contains generated research artifacts and should remain uncommitted unless explicitly curated as a dataset. Remove the folder or add it to `.gitignore` locally if needed.
+
+### Interpretation guardrails
+
+The present toy model neither conserves a depleting nutrient stock nor models spatial pheromone diffusion. Per-step patch yields regenerate as a payoff opportunity, so this **does not yet implement genuine cumulative scarcity**. Episode return equals net energy change, and initial energy is identical across agents. Therefore, payoff improvements do not establish biological survival, evolved cooperation, or Nash equilibrium. The paper-motivated next step is resource-stock accounting and physically costly signaling.
