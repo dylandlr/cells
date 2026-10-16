@@ -15,6 +15,8 @@ namespace Cells.Rendering
         public MembraneIntegrity membrane;
         public Color cytoplasm = new Color(.16f,.68f,.59f,.79f);
         public Color edgeColor = new Color(.55f,.98f,.85f,.95f);
+        public bool showStress = true;
+        public Color highStressColor = new Color(1f,.36f,.12f,1f);
         Mesh mesh;
         MeshFilter filter;
         MeshRenderer surface;
@@ -105,7 +107,8 @@ namespace Cells.Rendering
                 float integrity=membrane?membrane.GetIntegrity(i):1f;
                 Color healthy=Color.Lerp(cytoplasm,edgeColor,.60f);
                 Color injured=new Color(.95f,.22f,.12f,.82f);
-                colors[i+1]=Color.Lerp(injured,healthy,integrity);
+                Color baseColor=Color.Lerp(injured,healthy,integrity);
+                colors[i+1]=showStress ? Color.Lerp(baseColor,highStressColor,body.StressAt(i)) : baseColor;
                 triangles[i*3]=0;
                 triangles[i*3+1]=i+1;
                 triangles[i*3+2]=(i+1)%SoftCellBody2D.Nodes+1;
