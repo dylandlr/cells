@@ -1,0 +1,57 @@
+name: Standalone playable Windows prototype
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/substance-ontology]
+    paths:
+      - 'Standalone/Cells/**'
+      - '.github/workflows/standalone-windows.yml'
+  pull_request:
+    paths:
+      - 'Standalone/Cells/**'
+      - '.github/workflows/standalone-windows.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish self-contained win-x64 single-file application
+        shell: pwsh
+        run: >
+          dotnet publish Standalone/Cells/Cells.csproj
+          --configuration Release --runtime win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          --output publish/cells-windows
+      - name: Verify compiled executable is present
+        shell: pwsh
+        run: |
+          if (-not (Test-Path publish/cells-windows/Cells.exe)) {
+            throw "Windows executable missing"
+          }
+          $size = (Get-Item publish/cells-windows/Cells.exe).Length
+          if ($size -lt 1000000) { throw "Executable unexpectedly small: $size" }
+      - name: Execute deterministic Windows smoke test
+        shell: pwsh
+        run: |
+          & publish/cells-windows/Cells.exe --smoke-test
+          if ($LASTEXITCODE -ne 0) { throw "Native Windows smoke test failed: $LASTEXITCODE" }
+      - name: Include usage notes
+        shell: pwsh
+        run: Copy-Item Standalone/README.txt publish/cells-windows/README.txt
+      - name: Upload playable Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: cells-standalone-windows-x64
+          path: publish/cells-windows/
+          if-no-files-found: error
+          retention-days: 30
