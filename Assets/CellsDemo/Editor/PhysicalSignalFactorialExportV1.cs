@@ -25,7 +25,7 @@ namespace Cells.EditorTools
                 Application.dataPath, "..", "ExperimentRuns", "physical-factorial-v1"));
             Directory.CreateDirectory(folder);
             var agents = new StringBuilder(
-                "seed,produce,response,seat,net_energy,nutrient_mass,physical_detection_steps,emitted_mass,emission_energy,remaining_signal,decayed_signal\n");
+                "seed,produce,response,seat,net_energy,nutrient_mass,physical_detection_steps,policy_response_steps,gradient_used_steps,emitted_mass,emission_energy,remaining_signal,decayed_signal\n");
             var pairs = new StringBuilder(
                 "seed,receiver_00,receiver_01,receiver_10,receiver_11,response_when_silent,response_when_produced,interaction,source_production_cost\n");
             var interaction = new List<PairedAssayAnalysisV1.Record>();
@@ -33,6 +33,7 @@ namespace Cells.EditorTools
             var placeboResponse = new List<PairedAssayAnalysisV1.Record>();
             var senderCost = new List<PairedAssayAnalysisV1.Record>();
             int seedsWithPhysicalDetection = 0;
+            int seedsWithPolicyResponse = 0;
             int placeboViolations = 0;
             int ledgerViolations = 0;
 
@@ -54,6 +55,8 @@ namespace Cells.EditorTools
                             .Append(F(run.NetEnergy[seat])).Append(',')
                             .Append(F(run.ConsumedMass[seat])).Append(',')
                             .Append(run.Receptions[seat]).Append(',')
+                            .Append(run.ResponseEnabledSteps[seat]).Append(',')
+                            .Append(run.GradientUsedSteps[seat]).Append(',')
                             .Append(F(run.SignalMassEmitted)).Append(',')
                             .Append(F(run.SignalEnergySpent)).Append(',')
                             .Append(F(run.SignalMassRemaining)).Append(',')
@@ -62,9 +65,14 @@ namespace Cells.EditorTools
                 }
 
                 int detected = 0;
+                int responseDecisions = 0;
                 for (int i = 1; i < PhysicalSignalAssayV1.Agents; ++i)
+                {
                     detected += result[1, 1].Receptions[i];
+                    responseDecisions += result[1, 1].ResponseEnabledSteps[i];
+                }
                 if (detected > 0) ++seedsWithPhysicalDetection;
+                if (responseDecisions > 0) ++seedsWithPolicyResponse;
                 if (System.Math.Abs(receiverReturn[0, 1] - receiverReturn[0, 0]) > 1e-5)
                     ++placeboViolations;
                 for (int produce = 0; produce < 2; ++produce)
@@ -114,6 +122,9 @@ namespace Cells.EditorTools
             if (seedsWithPhysicalDetection == 0)
                 Debug.LogWarning("cells: no receiver detected signal in the signaling-treatment arms. " +
                     "The assay cannot assess the behavioral use of transmitted information.");
+            if (seedsWithPhysicalDetection > 0 && seedsWithPolicyResponse == 0)
+                Debug.LogWarning("cells: molecules reached receivers, but no receiver policy activated. " +
+                    "Investigate decision cadence, receptor threshold and signal lifetime.");
             if (placeboViolations > 0)
                 Debug.LogError("cells: zero-production receptor placebo was not inert on " +
                     placeboViolations + " seeds. Check experimental implementation.");
