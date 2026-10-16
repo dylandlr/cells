@@ -16,6 +16,10 @@
 
 When an interior compartment violates a membrane edge clearance, the compartment is projected inward. A bounded opposing displacement is now queued on the adjacent soft-body boundary nodes and applied once on the next body integration step. The diagnostic `LastContactMagnitude` records the applied reaction correction, while `LastContactPenetration` accumulates contact depth. This is reciprocal **geometric feedback**, not a momentum-conserving force or a verified constitutive tissue model. Displacements are capped to avoid numerical instability; constraint projection can remove energy. Added a regression test for queue bounds and single-step consumption.
 
+## Stress visualization
+
+The membrane records per-sector edge strain and a decaying, bounded memory of compartment contact reactions. `SoftCellMeshRenderer2D` maps this diagnostic stress to a high-contrast amber/red vertex gradient on the physical skin. `MaximumStress` and `StressAt(i)` are available for inspection. These are dimensionless surrogate indicators and **do not automatically inflict biological injury**; a validated stress-to-damage response must be developed separately.
+
 ## Science and fidelity boundary
 
 This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. Thrust remains approximated by the existing actuator and motility module, **not computed from reaction forces on individual tail segments**. Internal compartments now have independent positions, velocities, finite radii and collisions, but their interiors do not have deformable meshes, modeled reactions, or independent biochemical mass balances. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
