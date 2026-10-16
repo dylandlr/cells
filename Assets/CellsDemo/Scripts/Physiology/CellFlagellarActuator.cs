@@ -53,9 +53,13 @@ namespace Cells.Physiology
                 * ActualActivation, 2f * Mathf.PI);
             if (fluid && EffectiveThrust > 0f)
             {
-                // Equal and opposite reactive forcing: the propulsor pushes water astern.
+                // A low-Reynolds-number swimmer is force-free. Represent its
+                // coarse-grained near-field flow by a front/rear force dipole,
+                // not a net momentum source. This is not resolved hydrodynamics.
+                Vector2 front = transform.TransformPoint(new Vector3(.48f, 0f));
                 Vector2 aft = transform.TransformPoint(SampleCenterline(.85f));
-                fluid.AddForce(aft, -(Vector2)transform.right * (EffectiveThrust * fluidCoupling));
+                fluid.AddForceDipole(front, aft,
+                    (Vector2)transform.right * (EffectiveThrust * fluidCoupling));
             }
         }
 
