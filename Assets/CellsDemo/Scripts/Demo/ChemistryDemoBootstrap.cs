@@ -244,11 +244,16 @@ namespace Cells.Demo
                 var softTail = go.AddComponent<SoftFlagellum2D>();
                 softTail.motor = actuator;
                 softTail.Initialize();
+                var hydro = go.AddComponent<FlagellarHydrodynamics2D>();
+                hydro.tail = softTail;
+                hydro.motor = actuator;
+                hydro.fluid = Fluid;
                 var motorVisual = go.AddComponent<FlagellumRenderer>();
                 motorVisual.actuator = actuator;
                 motorVisual.softFlagellum = softTail;
                 var motility = go.AddComponent<CellMotility>();
                 motility.flagellum = actuator;
+                motility.hydrodynamics = hydro;
                 motility.fluid = Fluid;
                 motility.field = field;
                 motility.metabolism = metabolism;
