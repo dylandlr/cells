@@ -29,3 +29,10 @@ game-theoretic EXP3 research, field/fluid mechanics or microscopy scene.
 The standalone build is unsigned and Windows Smart App Control may block it.
 Do not disable Windows security protections solely to execute an untrusted binary.
 Verify the downloaded package's GitHub repository and provenance.
+
+VISUAL UPDATE — v0.3
+--------------------
+The Windows prototype renders procedurally animated flagella, membrane outlines,
+internal nuclei, nutrient-energy inclusions, signaling markers and phenotype-linked
+colors. The microscope view adds a reticle, measurement grid and population trait
+summary. Visual anatomy is illustrative, not derived from a mechanical cell model.
