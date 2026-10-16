@@ -241,8 +241,12 @@ namespace Cells.Demo
                 actuator.beatFrequencyHz = secretor ? 1.7f : 2.5f;
                 actuator.waveAmplitude = secretor ? .17f : .25f;
                 actuator.motorActivation = secretor ? .8f : .92f;
+                var softTail = go.AddComponent<SoftFlagellum2D>();
+                softTail.motor = actuator;
+                softTail.Initialize();
                 var motorVisual = go.AddComponent<FlagellumRenderer>();
                 motorVisual.actuator = actuator;
+                motorVisual.softFlagellum = softTail;
                 var motility = go.AddComponent<CellMotility>();
                 motility.flagellum = actuator;
                 motility.fluid = Fluid;
