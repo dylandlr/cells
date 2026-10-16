@@ -42,6 +42,25 @@ spatially sampled across 32 regions with state-driven visible openings; fluid fl
 pores, full mechanical tearing, osmosis, evolution, and learned behavior remain future work.
 Nutrient leakage uses a well-mixed internal compartment and conservative surface transfers. Human substance names and colors are not organism sensor inputs.
 
+## Live motility diagnostics (experimental)
+
+The two swimming focal organisms have a measured-state overlay:
+green = simulated swimmer velocity, blue = local fluid advection,
+amber = signed appendage-induced angular velocity (tangential marker).
+These arrows are drawn in `LateUpdate` from physics state and never
+actuate the organism. They are initially enabled and can be disabled
+individually using the `SwimmerTelemetryOverlay` component checkboxes.
+
+The microscope's whole-field flow overlay still samples the fluid grid.
+The displayed swimmer vector is the model's current velocity before
+fluid advection; it is not a measured trajectory derivative. Chemistry
+steering may also turn the organism and is deliberately **not** shown by
+the amber marker.
+
+Visual appearance and performance have not yet been verified in Unity
+Play Mode; run the local scene and Unity tests before using any footage
+as research evidence.
+
 ## Coupled flagellar mobility (experimental)
 
 Free-swimming organisms use a symmetric planar 3-DOF resistance matrix,
