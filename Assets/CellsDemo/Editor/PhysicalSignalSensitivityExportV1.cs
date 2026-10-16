@@ -22,7 +22,7 @@ namespace Cells.EditorTools
             const int firstSeed = 7100;
             const int repetitions = 10;
             var csv = new StringBuilder(
-                "schema,seed,threshold,diffusivity,production,response,seat,first_detection_step,detected_steps,peak_local_concentration,final_source_distance,consumed_nutrient,net_energy,emitted_signal,remaining_signal,decayed_signal,initial_nutrient,remaining_nutrient\n");
+                "schema,seed,threshold,diffusivity,production,response,seat,first_detection_step,first_policy_response_step,detected_steps,response_enabled_steps,gradient_used_steps,peak_local_concentration,final_source_distance,consumed_nutrient,net_energy,emitted_signal,remaining_signal,decayed_signal,initial_nutrient,remaining_nutrient\n");
 
             foreach (float d in diffusion)
             foreach (float threshold in thresholds)
@@ -40,7 +40,10 @@ namespace Cells.EditorTools
                             .Append(F(threshold)).Append(',').Append(F(d)).Append(",1,")
                             .Append(response ? "1," : "0,").Append(seat).Append(',')
                             .Append(result.FirstDetectionStep[seat]).Append(',')
+                            .Append(result.FirstResponseDecisionStep[seat]).Append(',')
                             .Append(result.Receptions[seat]).Append(',')
+                            .Append(result.ResponseEnabledSteps[seat]).Append(',')
+                            .Append(result.GradientUsedSteps[seat]).Append(',')
                             .Append(F(result.PeakReceiverConcentration[seat])).Append(',')
                             .Append(F(result.FinalSourceDistance[seat])).Append(',')
                             .Append(F(result.ConsumedMass[seat])).Append(',')
