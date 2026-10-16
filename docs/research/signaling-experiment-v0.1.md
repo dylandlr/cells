@@ -97,3 +97,19 @@ This assay advances `MultiChemicalField2D` manually at 0.1 simulation units for 
 2. Check per-run mass ledger `emitted ~= remaining + decayed`, assuming no external signal sinks and no nutrient/other chemical decay.
 3. Run 30 seed pairs, publish raw data and paired `on - off` outcomes by seed. Report uncertainty; if signal does not reach receivers, diagnose geometry, sensor threshold, diffusion and timescale rather than tune to desired outcome.
 4. Extend assay to controlled fluid advection and physical cell motility, then separate effects of signal production vs response via factorial interventions.
+
+## Paired inference implementation (v0.1)
+
+`PairedAssayAnalysisV1` computes **treatment-minus-control** differences from one independent observation per environment seed, not from individual agent rows. It reports paired mean difference, sample standard deviation, standard error, and 2.5th/97.5th percentile bootstrap bounds (4,000 resamples, deterministic bootstrap RNG seed). The percentile interval is exploratory and **not a proof of treatment effectiveness**; bias-corrected, studentized, and sensitivity analyses remain future work.
+
+The Unity Editor physical assay export now includes:
+- `agents.csv`: per-agent net energy, consumption, reception counts and episode-wide mass ledger.
+- `paired_by_seed.csv`: source and receiver aggregate outcomes matched by seed, including treatment-control deltas.
+- `paired_summary.csv`: seed-level effect estimates for collective energy, receivers' energy, source energy, harvest mass, and receiver detected steps.
+- `manifest.json`: current fixed configuration and limitations.
+
+### Critical interpretation note
+
+Receiver detection count is an **intermediate mechanism check**, not an independent primary reward. In particular, an all-zero signal-detection count indicates a transport/sensing scale problem; it is not evidence that communication has no strategic value. The experiment compares a source that emits molecule pulses versus one that remains silent. This changes emission costs AND environmental concentration simultaneously. Subsequent factorial ablations should disable receptors, clamp source costs independently, and vary production/transport separately to identify mechanisms.
+
+No Unity test results or statistically measured effect sizes have been recorded yet. Any claims about chemical communication improving utility must await compilation, real execution, diagnosis of signal reach, and predeclared control checks.
