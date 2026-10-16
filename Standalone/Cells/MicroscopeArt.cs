@@ -4,109 +4,170 @@ using System.Drawing.Drawing2D;
 
 namespace CellsStandalone;
 
-/// <summary>
-/// Procedural microscope appearance tied to inherited phenotypes.
-/// Visual anatomy is illustrative, not literal biophysical organelle simulation.
-/// </summary>
+/// <summary>Illustrative phenotype-linked microscope rendering, not calibrated cell anatomy.</summary>
 internal static class MicroscopeArt
 {
-    public static void DrawEnvironment(Graphics g, Rectangle rect, MicroWorld world, bool chemistry)
+    private static float Noise(int x, int y)
     {
-        using var background = new SolidBrush(Color.FromArgb(7, 18, 28));
-        g.FillRectangle(background, rect);
-        float wx = rect.Width / (float)MicroWorld.Width;
-        float wy = rect.Height / (float)MicroWorld.Height;
-        using var tile = new SolidBrush(Color.Black);
-        for (int x=0; x<MicroWorld.Width; x++)
-        for (int y=0; y<MicroWorld.Height; y++)
+        unchecked
         {
-            double n = world.FoodAt(x,y), t=world.ToxinAt(x,y), s=world.SignalAt(x,y);
-            int r=(int)Math.Clamp(8+t*290+s*95,0,255);
-            int green=(int)Math.Clamp(21+n*320+s*62,0,255);
-            int blue=(int)Math.Clamp(31+t*130+s*220,0,255);
-            tile.Color = chemistry ? Color.FromArgb(r,green,blue) : Color.FromArgb(9,27,38);
-            g.FillRectangle(tile,rect.Left+x*wx,rect.Top+y*wy,wx+1,wy+1);
+            uint v=(uint)(x*374761393+y*668265263);
+            v=(v^(v>>13))*1274126177u;
+            return (v^(v>>16))/4294967295f;
         }
-        // Optical reticle and consistent measurement grid.
-        using var gridPen=new Pen(Color.FromArgb(17,104,146,154),1);
-        for(int x=0;x<=MicroWorld.Width;x+=8)
-        {
-            float px=rect.Left+x*wx;
-            g.DrawLine(gridPen,px,rect.Top,px,rect.Bottom);
-        }
-        for(int y=0;y<=MicroWorld.Height;y+=8)
-        {
-            float py=rect.Top+y*wy;
-            g.DrawLine(gridPen,rect.Left,py,rect.Right,py);
-        }
-        using var centerPen=new Pen(Color.FromArgb(44,147,199,202),1);
-        float cx=rect.Left+rect.Width/2f,cy=rect.Top+rect.Height/2f;
-        g.DrawEllipse(centerPen,cx-12,cy-12,24,24);
-        g.DrawLine(centerPen,cx-20,cy,cx-14,cy);
-        g.DrawLine(centerPen,cx+14,cy,cx+20,cy);
-        g.DrawLine(centerPen,cx,cy-20,cx,cy-14);
-        g.DrawLine(centerPen,cx,cy+14,cx,cy+20);
     }
 
-    public static void DrawCell(Graphics g, CellAgent cell, Rectangle rect, int tick, bool selected)
+    public static void DrawEnvironment(Graphics g, Rectangle rect, MicroWorld world, bool chemistry)
     {
-        float scale = rect.Width/(float)MicroWorld.Width;
-        float x=rect.Left+(float)cell.X*scale;
-        float y=rect.Top+(float)cell.Y*(rect.Height/(float)MicroWorld.Height);
-        float radius=Math.Max(4.5f,scale*(float)(.40+.12*cell.Genes.Uptake));
+        using var backdrop=new LinearGradientBrush(rect,
+            Color.FromArgb(7,24,34),Color.FromArgb(3,11,21),LinearGradientMode.ForwardDiagonal);
+        g.FillRectangle(backdrop,rect);
+        var clip=g.Save();
+        g.SetClip(rect);
+        float wx=rect.Width/(float)MicroWorld.Width,wy=rect.Height/(float)MicroWorld.Height;
+        using var tile=new SolidBrush(Color.Black);
+        for(int x=0;x<MicroWorld.Width;x++)
+        for(int y=0;y<MicroWorld.Height;y++)
+        {
+            double n=world.FoodAt(x,y),t=world.ToxinAt(x,y),s=world.SignalAt(x,y);
+            float grain=Noise(x,y)*5f;
+            int red=(int)Math.Clamp(7+grain+t*265+s*90,0,255);
+            int green=(int)Math.Clamp(22+grain+n*295+s*65,0,255);
+            int blue=(int)Math.Clamp(32+grain+t*125+s*210,0,255);
+            tile.Color=chemistry?Color.FromArgb(red,green,blue):
+                Color.FromArgb(9+(int)grain,24+(int)grain,34+(int)grain);
+            g.FillRectangle(tile,rect.Left+x*wx,rect.Top+y*wy,wx+1,wy+1);
+        }
+
+        // Sparse dust motes and bacteria-sized debris have deterministic positions.
+        // They are purely optical texture and should not be mistaken for simulated agents.
+        for(int i=0;i<185;i++)
+        {
+            float px=rect.Left+Noise(i,72)*rect.Width;
+            float py=rect.Top+Noise(i,94)*rect.Height;
+            float radius=.45f+Noise(i,86)*1.1f;
+            using var mote=new SolidBrush(Color.FromArgb(25+(int)(Noise(i,99)*33),147,200,180));
+            g.FillEllipse(mote,px,py,radius,radius);
+        }
+
+        // Reticle grid is deliberately subtle so chemistry remains continuous-looking.
+        using var grid=new Pen(Color.FromArgb(13,130,194,194),1);
+        for(int x=0;x<=MicroWorld.Width;x+=10)
+        {
+            float px=rect.Left+x*wx;
+            g.DrawLine(grid,px,rect.Top,px,rect.Bottom);
+        }
+        for(int y=0;y<=MicroWorld.Height;y+=10)
+        {
+            float py=rect.Top+y*wy;
+            g.DrawLine(grid,rect.Left,py,rect.Right,py);
+        }
+        using var scalePen=new Pen(Color.FromArgb(165,160,211,202),2);
+        float sx=rect.Right-110,sy=rect.Bottom-22;
+        g.DrawLine(scalePen,sx,sy,sx+80,sy);
+        g.DrawLine(scalePen,sx,sy-4,sx,sy+4);
+        g.DrawLine(scalePen,sx+80,sy-4,sx+80,sy+4);
+        using var labelBrush=new SolidBrush(Color.FromArgb(175,204,228,222));
+        using var labelFont=new Font("Consolas",8,FontStyle.Regular);
+        g.DrawString("10 SIM UNITS",labelFont,labelBrush,sx-2,sy-18);
+        g.Restore(clip);
+    }
+
+    private static GraphicsPath Body(float length,float height,int shape,float pulse)
+    {
+        var path=new GraphicsPath();
+        if(shape==0) // Oval swimmer
+            path.AddEllipse(-length,-height,length*2,height*2);
+        else if(shape==1) // Elongated, tapered swimmer
+        {
+            path.AddBezier(-length,0,-length*.85f,-height*1.35f,length*.35f,-height*.9f,length,0);
+            path.AddBezier(length,0,length*.38f,height*.85f,-length*.90f,height*1.3f,-length,0);
+        }
+        else // Lobed membrane
+        {
+            PointF[] pts=new PointF[36];
+            for(int i=0;i<pts.Length;i++)
+            {
+                float a=i*(float)(2*Math.PI/pts.Length);
+                float ripple=1f+.095f*(float)Math.Sin(a*3+pulse);
+                pts[i]=new PointF(length*ripple*(float)Math.Cos(a),
+                                  height*ripple*(float)Math.Sin(a));
+            }
+            path.AddClosedCurve(pts,.48f);
+        }
+        return path;
+    }
+
+    public static void DrawCell(Graphics g,CellAgent cell,Rectangle rect,int tick,bool selected)
+    {
+        float sw=rect.Width/(float)MicroWorld.Width;
+        float sh=rect.Height/(float)MicroWorld.Height;
+        float x=rect.Left+(float)cell.X*sw,y=rect.Top+(float)cell.Y*sh;
+        float radius=Math.Max(4.6f,sw*(float)(.44+.14*cell.Genes.Uptake));
         float angle=(float)Math.Atan2(cell.VelocityY,cell.VelocityX);
         if(Math.Abs(cell.VelocityX)+Math.Abs(cell.VelocityY)<.01)angle=(float)cell.Direction;
-
-        var state=g.Save();
+        var original=g.Save();
         g.TranslateTransform(x,y);
-        g.RotateTransform(angle*180/(float)Math.PI);
-        float bodyL=radius*(float)(1.0+Math.Clamp(cell.Genes.Speed-.75,0,.75)*.42);
-        float bodyH=radius*(float)(.86+Math.Clamp(cell.Genes.ToxinResistance-.5,0,1)*.2);
-        float wave=(float)Math.Sin(tick*.24+cell.Id*1.27);
+        g.RotateTransform(angle*180f/(float)Math.PI);
+
+        int form=(int)Math.Clamp(Math.Floor(cell.Genes.Speed*2.5),0,2);
+        float length=radius*(form==1?1.48f:form==2?1.13f:1f);
+        float height=radius*(form==1?.68f:1f);
+        float wobble=(float)Math.Sin(tick*.19+cell.Id*.8);
+        float phase=(float)Math.Sin(tick*.35+cell.Id*1.72);
         Color tint=cell.Tint;
-        using var halo=new SolidBrush(Color.FromArgb(22,tint));
-        g.FillEllipse(halo,-bodyL*1.5f,-bodyH*1.6f,bodyL*3,bodyH*3.2f);
+        using var glow=new SolidBrush(Color.FromArgb(24,tint));
+        g.FillEllipse(glow,-length*1.55f,-height*1.7f,length*3.1f,height*3.4f);
 
-        // Flagellum: curved animated attachment follows propulsion direction.
-        using var tailPen=new Pen(Color.FromArgb(175,tint),Math.Max(.75f,radius*.15f));
-        tailPen.StartCap=LineCap.Round; tailPen.EndCap=LineCap.Round;
-        using var tail=new GraphicsPath();
-        tail.AddBezier(-bodyL*.8f,0,-bodyL*1.5f,bodyH*.35f*wave,
-            -bodyL*1.9f,-bodyH*.9f*wave,-bodyL*2.8f,bodyH*.50f*wave);
-        g.DrawPath(tailPen,tail);
+        // Thin undulating propulsive appendage; motility speed influences amplitude.
+        using var flagellum=new Pen(Color.FromArgb(190,tint),Math.Max(1f,radius*.17f));
+        flagellum.StartCap=LineCap.Round;
+        using var flagPath=new GraphicsPath();
+        float amplitude=height*(.50f+.25f*(float)cell.Genes.Speed);
+        flagPath.AddBezier(-length*.92f,0,-length*1.5f,phase*amplitude,
+            -length*2.1f,-phase*amplitude,-length*3f,phase*amplitude*.80f);
+        g.DrawPath(flagellum,flagPath);
+        if(form==2)
+        {
+            using var second=new Pen(Color.FromArgb(122,tint),Math.Max(.8f,radius*.11f));
+            g.DrawBezier(second,-length*.8f,height*.35f,-length*1.3f,height*.95f,
+                -length*1.8f,-height*.7f,-length*2.3f,height*.7f*phase);
+        }
 
-        var shape=new RectangleF(-bodyL,-bodyH,bodyL*2,bodyH*2);
-        using var cellFill=new LinearGradientBrush(shape,
-            Color.FromArgb(145,tint),Color.FromArgb(52,tint),65f);
-        g.FillEllipse(cellFill,shape);
-        using var membrane=new Pen(Color.FromArgb(226,tint),Math.Max(1.2f,radius*.14f));
-        g.DrawEllipse(membrane,shape);
+        using var silhouette=Body(length,height,form,wobble);
+        using var membraneFill=new SolidBrush(Color.FromArgb(151,tint));
+        g.FillPath(membraneFill,silhouette);
+        using var lining=new Pen(Color.FromArgb(232,tint),Math.Max(1.1f,radius*.18f));
+        g.DrawPath(lining,silhouette);
+        using var interior=new SolidBrush(Color.FromArgb(94,9,29,45));
+        g.FillEllipse(interior,-length*.61f,-height*.62f,length*1.27f,height*1.25f);
+        using var vacuole=new Pen(Color.FromArgb(115,180,246,216),Math.Max(.65f,radius*.09f));
+        g.DrawEllipse(vacuole,-length*.5f,-height*.25f,length*.55f,height*.6f);
+        using var dna=new SolidBrush(Color.FromArgb(228,236,239,208));
+        g.FillEllipse(dna,length*.08f,-height*.29f,length*.48f,height*.58f);
 
-        // Energy stores and vacuoles are visual cues based on current energy.
-        using var cytoplasm=new SolidBrush(Color.FromArgb(95,8,27,42));
-        g.FillEllipse(cytoplasm,-bodyL*.50f,-bodyH*.43f,bodyL*1.0f,bodyH*.86f);
-        using var nucleus=new SolidBrush(Color.FromArgb(225,225,244,210));
-        g.FillEllipse(nucleus,-bodyL*.10f,-bodyH*.29f,bodyL*.58f,bodyH*.58f);
-        using var granule=new SolidBrush(Color.FromArgb(200,255,204,113));
-        int granules=(int)Math.Clamp(cell.Energy/2,0,5);
+        using var granule=new SolidBrush(Color.FromArgb(231,250,197,111));
+        int granules=(int)Math.Clamp(cell.Energy/1.9,0,6);
         for(int i=0;i<granules;i++)
         {
-            float t=i*2.39996f+cell.Id*.13f;
-            float dx=(float)Math.Cos(t)*bodyL*.50f,dy=(float)Math.Sin(t)*bodyH*.48f;
-            float sz=Math.Max(1.0f,radius*.17f);
-            g.FillEllipse(granule,dx,dy,sz,sz);
+            float a=i*2.4f+cell.Id*.3f+tick*.016f;
+            float gx=(float)Math.Cos(a)*length*.49f,gy=(float)Math.Sin(a)*height*.48f;
+            float size=Math.Max(1.25f,radius*.16f);
+            g.FillEllipse(granule,gx-size*.5f,gy-size*.5f,size,size);
         }
-        // A signaling-specialist phenotype has a distinct anterior receptor marking.
+
         if(cell.Signaler)
         {
-            using var chemoreceptor=new SolidBrush(Color.FromArgb(240,255,196,83));
-            g.FillEllipse(chemoreceptor,bodyL*.54f,-bodyH*.15f,Math.Max(2f,radius*.31f),Math.Max(2f,radius*.31f));
+            using var receptor=new SolidBrush(Color.FromArgb(244,255,206,100));
+            float size=Math.Max(2f,radius*.28f);
+            g.FillEllipse(receptor,length*.64f-size*.5f,-size*.5f,size,size);
         }
         if(selected)
         {
-            using var selectionPen=new Pen(Color.FromArgb(225,250,251,232),1.3f){DashStyle=DashStyle.Dash};
-            g.DrawEllipse(selectionPen,-bodyL*1.65f,-bodyH*1.65f,bodyL*3.3f,bodyH*3.3f);
+            using var outline=new Pen(Color.FromArgb(239,245,250,229),1.5f)
+                {DashStyle=DashStyle.Dash};
+            g.DrawEllipse(outline,-length*1.65f,-height*1.7f,length*3.3f,height*3.4f);
         }
-        g.Restore(state);
+        g.Restore(original);
     }
 }
