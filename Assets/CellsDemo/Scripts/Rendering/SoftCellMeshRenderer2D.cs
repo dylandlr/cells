@@ -11,6 +11,7 @@ namespace Cells.Rendering
     public sealed class SoftCellMeshRenderer2D : MonoBehaviour
     {
         public SoftCellBody2D body;
+        public InternalCompartments2D compartments;
         public MembraneIntegrity membrane;
         public Color cytoplasm = new Color(.16f,.68f,.59f,.79f);
         public Color edgeColor = new Color(.55f,.98f,.85f,.95f);
@@ -22,13 +23,15 @@ namespace Cells.Rendering
         readonly Color[] colors = new Color[SoftCellBody2D.Nodes+1];
         readonly int[] triangles = new int[SoftCellBody2D.Nodes*3];
         LineRenderer rim;
-        Transform nucleus;
-        SpriteRenderer nucleusVisual;
+        readonly Transform[] organelleNodes = new Transform[InternalCompartments2D.Count];
+        Sprite organelleSprite;
+        Texture2D organelleTexture;
 
         void Awake()
         {
             if(!body) body=GetComponent<SoftCellBody2D>();
             if(!membrane) membrane=GetComponent<MembraneIntegrity>();
+            if(!compartments) compartments=GetComponent<InternalCompartments2D>();
             var skin=new GameObject("Live membrane mesh / driven by physics");
             skin.transform.SetParent(transform,false);
             filter=skin.AddComponent<MeshFilter>();
@@ -54,14 +57,21 @@ namespace Cells.Rendering
             rim.sortingOrder=14;
             rim.startColor=rim.endColor=edgeColor;
             if(material)rim.sharedMaterial=material;
-            var organelle=new GameObject("Interior density node");
-            organelle.transform.SetParent(transform,false);
-            nucleus=organelle.transform;
-            nucleusVisual=organelle.AddComponent<SpriteRenderer>();
-            nucleusVisual.sprite=MakeOrganelleSprite();
-            nucleusVisual.color=new Color(.88f,.95f,.75f,.84f);
-            nucleusVisual.sortingOrder=13;
-            nucleus.localScale=new Vector3(.28f,.28f,1f);
+            organelleSprite=MakeOrganelleSprite();
+            organelleTexture=organelleSprite.texture;
+            string[] names={"Nucleoid mass", "Storage vacuole", "Signal vesicle"};
+            Color[] tints={new Color(.90f,.96f,.80f,.92f),
+                new Color(.66f,.89f,.98f,.72f),new Color(.99f,.72f,.42f,.86f)};
+            for(int i=0;i<organelleNodes.Length;i++)
+            {
+                var organelle=new GameObject(names[i]+" / physically constrained");
+                organelle.transform.SetParent(transform,false);
+                organelleNodes[i]=organelle.transform;
+                var visual=organelle.AddComponent<SpriteRenderer>();
+                visual.sprite=organelleSprite;
+                visual.color=tints[i];
+                visual.sortingOrder=13;
+            }
             UpdateGeometry();
         }
 
@@ -106,19 +116,23 @@ namespace Cells.Rendering
             mesh.colors=colors;
             mesh.triangles=triangles;
             mesh.RecalculateBounds();
-            if(nucleus)nucleus.localPosition=new Vector3(body.Core.x,body.Core.y,-.02f);
+            for(int i=0;i<organelleNodes.Length;i++)
+            {
+                if(!organelleNodes[i])continue;
+                Vector2 p=compartments && compartments.Initialized
+                    ? compartments.Position(i) : body.Core;
+                float radius=compartments ? compartments.Radius(i) : .16f;
+                organelleNodes[i].localPosition=new Vector3(p.x,p.y,-.02f);
+                organelleNodes[i].localScale=new Vector3(radius*2,radius*2,1f);
+            }
         }
         void OnDestroy()
         {
             if(mesh)Destroy(mesh);
             if(material)Destroy(material);
-            if(nucleusVisual && nucleusVisual.sprite)
-            {
-                var sprite=nucleusVisual.sprite;
-                var tex=sprite.texture;
-                Destroy(sprite);
-                if(tex)Destroy(tex);
-            }
+            if(organelleSprite)Destroy(organelleSprite);
+            if(organelleTexture)Destroy(organelleTexture);
+
         }
     }
 }
