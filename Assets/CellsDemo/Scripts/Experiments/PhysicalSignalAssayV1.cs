@@ -36,6 +36,9 @@ namespace Cells.Experiments
             public int[] FirstResponseDecisionStep;
             public int[] ResponseEnabledSteps;
             public int[] GradientUsedSteps;
+            public int[] SignalInfluencedMoves;
+            public float[] CumulativeMovementDistance;
+            public float[] CumulativeSignalDirectionalAlignment;
             public float[] PeakReceiverConcentration;
             public float[] FinalSourceDistance;
         }
@@ -103,6 +106,9 @@ namespace Cells.Experiments
                 var firstDecision = new int[Agents];
                 var responseSteps = new int[Agents];
                 var steeringSteps = new int[Agents];
+                var influencedMoves = new int[Agents];
+                var travelDistance = new float[Agents];
+                var directionalAlignment = new float[Agents];
                 var peakConcentration = new float[Agents];
                 for (int i = 0; i < Agents; i++) { firstDetection[i] = -1; firstDecision[i] = -1; }
                 for (int i = 0; i < Agents; i++)
@@ -185,7 +191,6 @@ namespace Cells.Experiments
                         }
                         Vector2 signalSteering = policyFollowing
                             ? receptor[i].ReadGradient() * .5f : Vector2.zero;
-                        if (signalSteering.sqrMagnitude > 1e-9f) steeringSteps[i]++;
                         Vector2 gradient = foodGrad + signalSteering;
                         if (gradient.sqrMagnitude > 1e-9f)
                         {
@@ -195,6 +200,22 @@ namespace Cells.Experiments
                             {
                                 metabolism[i].Spend(cost);
                                 agents[i].transform.position = p + shift;
+                                travelDistance[i] += shift.magnitude;
+                                // Report actual executed movement, not merely a nonzero
+                                // receptor gradient or an unaffordable motor command.
+                                if (signalSteering.sqrMagnitude > 1e-9f)
+                                {
+                                    steeringSteps[i]++;
+                                    // The steering signal influenced direction only if
+                                    // it changed the chosen unit movement relative to
+                                    // nutrient-only chemotaxis.
+                                    Vector2 foodDirection = foodGrad.sqrMagnitude > 1e-9f
+                                        ? foodGrad.normalized : Vector2.zero;
+                                    if ((shift.normalized - foodDirection).sqrMagnitude > 1e-6f)
+                                        influencedMoves[i]++;
+                                    directionalAlignment[i] += Vector2.Dot(
+                                        shift.normalized, signalSteering.normalized);
+                                }
                             }
                         }
                     }
@@ -233,6 +254,9 @@ namespace Cells.Experiments
                     FirstResponseDecisionStep = firstDecision,
                     ResponseEnabledSteps = responseSteps,
                     GradientUsedSteps = steeringSteps,
+                    SignalInfluencedMoves = influencedMoves,
+                    CumulativeMovementDistance = travelDistance,
+                    CumulativeSignalDirectionalAlignment = directionalAlignment,
                     PeakReceiverConcentration = peakConcentration,
                     FinalSourceDistance = finalDistances
                 };
