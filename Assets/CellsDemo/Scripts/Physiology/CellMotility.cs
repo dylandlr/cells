@@ -15,6 +15,7 @@ namespace Cells.Physiology
         public MultiChemicalField2D field;
         public CellMetabolism metabolism;
         public CellFlagellarActuator flagellum;
+        public FlagellarHydrodynamics2D hydrodynamics;
         public FluidGrid2D fluid;
         [Range(0f,1f)] public float flowEntrainment = .8f;
         public string attractantId = "nutrient-A";
@@ -44,6 +45,7 @@ namespace Cells.Physiology
         {
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
             if (!flagellum) flagellum = GetComponent<CellFlagellarActuator>();
+            if (!hydrodynamics) hydrodynamics = GetComponent<FlagellarHydrodynamics2D>();
             phase = Mathf.Repeat(transform.position.x * 2.137f + transform.position.y * 5.173f, Mathf.PI * 2f);
         }
 
@@ -100,7 +102,9 @@ namespace Cells.Physiology
                                                 + signalGradient.magnitude * signalAttractantGain);
             // No hidden propulsion: swimming requires actuator output when equipped.
             float motorThrust = flagellum ? flagellum.EffectiveThrust : 1f;
-            Vector2 targetVelocity = thrustDirection * (maxSpeed * stimulus * motorThrust);
+            Vector2 targetVelocity = hydrodynamics
+                ? (Vector2)transform.TransformDirection(hydrodynamics.LocalSwimmingVelocity) * stimulus
+                : thrustDirection * (maxSpeed * stimulus * motorThrust);
 
             Velocity = Vector2.MoveTowards(Velocity, targetVelocity, acceleration * dt);
             Velocity *= Mathf.Exp(-drag * dt * .12f);
