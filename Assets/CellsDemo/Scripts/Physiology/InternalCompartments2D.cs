@@ -17,6 +17,8 @@ namespace Cells.Physiology
         [Range(0f,20f)] public float drag = 6f;
         [Range(0f,10f)] public float tetherStrength = 1.6f;
         [Range(1,12)] public int collisionIterations = 6;
+        [Range(0f,.5f)] public float membraneReaction = .16f;
+        public float LastContactPenetration { get; private set; }
         readonly Vector2[] locations = new Vector2[Count];
         readonly Vector2[] velocities = new Vector2[Count];
         readonly Vector2[] previous = new Vector2[Count];
@@ -54,6 +56,7 @@ namespace Cells.Physiology
             const float maxStep=.01f;
             int substeps=Mathf.CeilToInt(Mathf.Min(.25f,dt)/maxStep);
             float h=Mathf.Min(.25f,dt)/substeps;
+            LastContactPenetration=0f;
             for(int sub=0;sub<substeps;sub++)
             {
                 for(int i=0;i<Count;i++)
@@ -95,7 +98,20 @@ namespace Cells.Physiology
                         // CCW membrane: constrain the compartment center inside
                         // the boundary by at least its finite collision radius.
                         if(signed<radii[i]+.015f)
-                            locations[i]+=inward*(radii[i]+.015f-signed)*.7f;
+                        {
+                            float penetration=radii[i]+.015f-signed;
+                            locations[i]+=inward*penetration*.7f;
+                            // Coupling: each compartment contact creates equal
+                            // and opposite *directional* membrane deformation.
+                            // Applied once per substep, not per solver iteration.
+                            if(iter==0 && membraneReaction>0f)
+                            {
+                                LastContactPenetration+=penetration;
+                                Vector2 reaction=-inward*Mathf.Min(penetration,.10f)*membraneReaction;
+                                body.QueueContact(j,reaction*.5f);
+                                body.QueueContact((j+1)%SoftCellBody2D.Nodes,reaction*.5f);
+                            }
+                        }
                     }
                 }
                 for(int i=0;i<Count;i++)
