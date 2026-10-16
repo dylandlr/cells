@@ -140,3 +140,21 @@ For each test seed, the same underlying environment and common seat-specific ran
 The outputs appear in `ExperimentRuns/exp3-strategies-v1/heldout/`: `episodes.csv` (one record per seed × condition), `agents.csv` (one record per agent), `paired_by_seed.csv` (matched raw collective returns), `paired_summary.csv` (learned-minus-uniform and learned-minus-silent seed-level mean effects, uncertainty estimates), and `manifest.json`. The primary comparison is **frozen EXP3 minus uniform**. Holdout data is not used for model selection.
 
 **Methodological limits:** evaluation is for the *symbolic* signaling game, not spatial chemical motility. Training involves adapting opponents, so this does not prove EXP3 regret bounds or equilibrium convergence. Frozen policy distributions are sampled once per test episode. The common random number design may reduce variance but is not a causal intervention isolating signaling. Per-seat policies may exploit initial seat asymmetry; seat-rotation and opponent deviation tests are still future work. Source revision defaults to `unverified` on export. Automated EditMode tests must pass before any result is interpreted.
+
+## Empirical game-theoretic restricted deviations v0.1
+
+A new **restricted unilateral deviation study** complements EXP3 training and held-out evaluation.
+
+- Source: `Assets/CellsDemo/Scripts/Experiments/RestrictedDeviationStudyV1.cs`
+- Tests: `Assets/CellsDemo/Tests/Editor/RestrictedDeviationStudyV1Tests.cs`
+- Menu: **Cells → Research → Evaluate Restricted Strategy Deviations (30 Seeds)**
+- Export: `ExperimentRuns/restricted-deviations-v1/paired_samples.csv`, `deviation_estimates.csv`, `manifest.json`
+
+There are four frozen policies (`silent`, `follower`, `signaler`, `random`). For each **homogeneous** resident profile, the evaluator substitutes one deviating agent at one seat with each of the three remaining policies and replays the same 30 environment seeds. This gives 4 resident policies × 3 deviation policies × 4 seats = **48 conditional comparisons**, 30 seed-paired observations each (**1,440 per-seed deviation samples**). It computes the changed agent's own payoff difference and a 95% percentile-bootstrap interval using seed-level paired differences. Raw rows also record collective payoffs before and after deviation.
+
+For resident strategy `r`, deviation `d`, seat `i`, and random seed `s`, the estimated unilateral advantage is
+`mean_s [ u_i(d, r_-i; s) - u_i(r, r_-i; s) ]`.
+
+A positive estimated advantage suggests that the **homogeneous resident profile is exploitable within this restricted library** at that seat, subject to uncertainty. A nonpositive estimate does **not** establish Nash equilibrium: the action space is larger than four fixed scripts, environments have sampling variability, and only homogeneous resident profiles are evaluated. The full 4^4=256 pure profiles, learned-mixed-profile incentives, confidence-aware restricted best responses, spatial signaling chemistry, and approximate-equilibrium analysis remain follow-on work.
+
+**Verification gate:** run EditMode tests and Unity menu export; inspect paired CSVs, verify 48 comparisons and 1,440 raw observations, and avoid selecting a "best" policy from the same test seeds used for statistical inference. No empirical study results have been executed or confirmed here.
