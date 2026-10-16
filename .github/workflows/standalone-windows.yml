@@ -55,6 +55,38 @@ jobs:
           $hash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLowerInvariant()
           "$hash  Cells.exe" | Set-Content -Path publish/cells-windows/SHA256SUMS.txt -Encoding ascii
           Write-Host "Windows executable SHA256=$hash"
+      - name: Scan executable with Microsoft Defender when available
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $report = 'publish/cells-windows/SECURITY-SCAN.txt'
+          $exe = (Resolve-Path 'publish/cells-windows/Cells.exe').Path
+          $scanStarted = Get-Date
+          try {
+            $status = Get-MpComputerStatus -ErrorAction Stop
+            if (-not $status -or -not $status.AntivirusEnabled) {
+              "INCONCLUSIVE: Defender antivirus is not available or enabled on the hosted runner." | Set-Content $report
+              Write-Warning (Get-Content $report)
+            } else {
+              Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+              $detections = @(Get-MpThreatDetection -ErrorAction Stop | Where-Object {
+                $_.InitialDetectionTime -ge $scanStarted -and
+                (($_.Resources -join ' ') -like '*Cells.exe*')
+              })
+              if ($detections.Count -gt 0) {
+                "DETECTED: Defender reported $($detections.Count) detection(s) for Cells.exe." | Set-Content $report
+                throw "Defender detected a threat. Do not publish this executable."
+              }
+              "NO DETECTIONS: Defender custom scan on Windows hosted runner. Engine=$($status.AMEngineVersion), signatures=$($status.AntivirusSignatureVersion), scanned_at=$($scanStarted.ToUniversalTime().ToString('o')). Not a security guarantee or Chrome verdict." | Set-Content $report
+              Write-Host (Get-Content $report)
+            }
+          } catch {
+            if (Test-Path $report) {
+              if ((Get-Content $report -Raw) -match '^DETECTED:') { throw }
+            }
+            "INCONCLUSIVE: Defender scan not completed: $($_.Exception.Message)" | Set-Content $report
+            Write-Warning (Get-Content $report)
+          }
       - name: Attest Windows binary build provenance
         if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v2
