@@ -42,6 +42,25 @@ spatially sampled across 32 regions with state-driven visible openings; fluid fl
 pores, full mechanical tearing, osmosis, evolution, and learned behavior remain future work.
 Nutrient leakage uses a well-mixed internal compartment and conservative surface transfers. Human substance names and colors are not organism sensor inputs.
 
+## Coupled flagellar mobility (experimental)
+
+Free-swimming organisms use a symmetric planar 3-DOF resistance matrix,
+derived from the current local segment geometry, to jointly solve
+translation (x/y) and rotation about z. A Cholesky-based solver rejects
+ill-conditioned or non-positive-definite matrices. Velocity and yaw remain
+bounded, with force/torque diagnostics tested independently from Unity.
+
+This model is a local resistive-force approximation, not a validated
+low-Reynolds-number Navier–Stokes / Stokes boundary solver. It does not
+currently account for near-wall hydrodynamic corrections, full
+body/appendage hydrodynamic interactions, or exact reciprocal coupling
+to the rendered fluid field. The same simulated organism may be steered
+by a separate chemical policy; its policy yaw is not a hydrodynamic torque.
+
+Unity Editor tests for the new solver have been authored but have not
+been executed in this environment. Run the Unity Test Runner before
+accepting the physics increment.
+
 ## Provenance and validation
 
 Continues `feat/substance-ontology`, PR #1. The separately described **Causal Microscope
