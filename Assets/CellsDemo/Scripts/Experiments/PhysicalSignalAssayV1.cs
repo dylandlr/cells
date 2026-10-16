@@ -30,6 +30,11 @@ namespace Cells.Experiments
             public float SignalEnergySpent;
             public float SignalMassRemaining;
             public float SignalMassDecayed;
+            public float NutrientMassInitial;
+            public float NutrientMassRemaining;
+            public int[] FirstDetectionStep;
+            public float[] PeakReceiverConcentration;
+            public float[] FinalSourceDistance;
         }
 
         public static Result Run(int seed, bool enableSignaling)
@@ -43,6 +48,21 @@ namespace Cells.Experiments
         /// </summary>
         public static Result Run(int seed, bool enableSignaling, bool enableResponse)
         {
+            return RunCalibrated(seed, enableSignaling, enableResponse, .001f, .18f, .13f);
+        }
+
+        /// <summary>
+        /// Parameterized sensitivity probe. Concentration thresholds and transport
+        /// rates are simulation units, not biologically calibrated measurements.
+        /// </summary>
+        public static Result RunCalibrated(int seed, bool enableSignaling, bool enableResponse,
+            float detectionThreshold, float signalDiffusivity, float signalDecayRate)
+        {
+            if (!MultiChemicalField2D.Finite(detectionThreshold) || detectionThreshold <= 0f ||
+                !MultiChemicalField2D.Finite(signalDiffusivity) || signalDiffusivity < 0f ||
+                !MultiChemicalField2D.Finite(signalDecayRate) || signalDecayRate < 0f)
+                throw new ArgumentOutOfRangeException("signal calibration parameters");
+
             var rng = new System.Random(seed);
             var root = new GameObject("physical-signal-assay");
             SubstanceDefinition food = null, signal = null;
@@ -56,8 +76,8 @@ namespace Cells.Experiments
                 signal = ScriptableObject.CreateInstance<SubstanceDefinition>();
                 signal.stableId = "signal-S";
                 signal.classification = SubstanceClass.Signal;
-                signal.diffusionCoefficient = .18f;
-                signal.decayRate = .13f;
+                signal.diffusionCoefficient = signalDiffusivity;
+                signal.decayRate = signalDecayRate;
                 field.species = new[] { food, signal };
                 field.Initialize();
 
@@ -68,6 +88,7 @@ namespace Cells.Experiments
                 for (int dy = -1; dy <= 1; dy++)
                     field.Deposit("nutrient-A", patch + new Vector2(dx, dy) * .25f, .5f);
 
+                float nutrientInitial = field.Total("nutrient-A");
                 var agents = new GameObject[Agents];
                 var metabolism = new CellMetabolism[Agents];
                 var receptor = new CellChemicalSignaling[Agents];
@@ -75,6 +96,9 @@ namespace Cells.Experiments
                 var startingEnergy = new float[Agents];
                 var consumed = new float[Agents];
                 var receptions = new int[Agents];
+                var firstDetection = new int[Agents];
+                var peakConcentration = new float[Agents];
+                for (int i = 0; i < Agents; i++) firstDetection[i] = -1;
                 for (int i = 0; i < Agents; i++)
                 {
                     agents[i] = new GameObject("assay-cell-" + i);
@@ -89,7 +113,7 @@ namespace Cells.Experiments
                     receptor[i].field = field;
                     receptor[i].metabolism = metabolism[i];
                     receptor[i].receptorOffset = .35f;
-                    receptor[i].detectionThreshold = .001f;
+                    receptor[i].detectionThreshold = detectionThreshold;
                     receptor[i].maximumEmissionPerPulse = .09f;
                     policy[i] = agents[i].AddComponent<LocalSignalPolicyV1>();
                     policy[i].metabolism = metabolism[i];
@@ -138,7 +162,12 @@ namespace Cells.Experiments
                             field.Sample("nutrient-A", p - Vector2.up * d));
                         float localSignal = receptor[i].ReadLocal();
                         bool heard = localSignal >= receptor[i].detectionThreshold;
-                        if (heard) receptions[i]++;
+                        peakConcentration[i] = Mathf.Max(peakConcentration[i], localSignal);
+                        if (heard)
+                        {
+                            receptions[i]++;
+                            if (firstDetection[i] < 0) firstDetection[i] = t;
+                        }
                         Vector2 gradient = foodGrad + (heard && enableResponse ? receptor[i].ReadGradient() * .5f
                             : Vector2.zero);
                         if (gradient.sqrMagnitude > 1e-9f)
@@ -165,6 +194,10 @@ namespace Cells.Experiments
                     field.Step(Dt);
                 }
 
+                var finalDistances = new float[Agents];
+                for (int i = 1; i < Agents; i++)
+                    finalDistances[i] = Vector2.Distance(agents[i].transform.position,
+                        agents[0].transform.position);
                 var returns = new float[Agents];
                 for (int i = 0; i < Agents; i++)
                     returns[i] = metabolism[i].energy - startingEnergy[i];
@@ -176,7 +209,12 @@ namespace Cells.Experiments
                     TotalHarvestMass = harvested, SignalMassEmitted = emitted,
                     SignalEnergySpent = spent,
                     SignalMassRemaining = field.Total("signal-S"),
-                    SignalMassDecayed = field.DecayedMass
+                    SignalMassDecayed = field.DecayedMass,
+                    NutrientMassInitial = nutrientInitial,
+                    NutrientMassRemaining = field.Total("nutrient-A"),
+                    FirstDetectionStep = firstDetection,
+                    PeakReceiverConcentration = peakConcentration,
+                    FinalSourceDistance = finalDistances
                 };
             }
             finally
