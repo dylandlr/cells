@@ -85,6 +85,26 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void ReportedDisplacementMatchesActualTranslation()
+        {
+            var cell = new GameObject("velocity accounting");
+            cell.transform.SetParent(root.transform);
+            var metabolism = cell.AddComponent<CellMetabolism>();
+            metabolism.energy = 5f;
+            var motility = cell.AddComponent<CellMotility>();
+            motility.metabolism = metabolism;
+            motility.drag = 0f;
+            motility.exploratoryBias = 0f;
+            Vector2 before = cell.transform.position;
+            const float dt = .02f;
+            motility.Tick(dt);
+            Vector2 measured = ((Vector2)cell.transform.position - before) / dt;
+            Assert.Less((motility.LastDisplacementVelocity-measured).magnitude,1e-6f);
+            Assert.Less((motility.LastDisplacementVelocity-
+                motility.LastActiveVelocity-motility.LastFluidVelocity).magnitude,1e-6f);
+        }
+
+        [Test]
         public void ToxinGradientProducesRepellentSteering()
         {
             var fieldGo = new GameObject("field");
