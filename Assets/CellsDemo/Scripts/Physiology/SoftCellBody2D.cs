@@ -31,6 +31,8 @@ namespace Cells.Physiology
         readonly Vector2[] previous = new Vector2[Nodes];
         readonly Vector2[] velocities = new Vector2[Nodes];
         readonly Vector2[] rest = new Vector2[Nodes];
+        readonly Vector2[] pendingContact = new Vector2[Nodes];
+        public float LastContactMagnitude { get; private set; }
         Vector2 core, previousCore, coreVelocity;
         float restArea;
         bool initialized;
@@ -38,6 +40,16 @@ namespace Cells.Physiology
         public Vector2 Core => core;
         public Vector2 Node(int i) => positions[(i % Nodes + Nodes) % Nodes];
         public Vector2 NodeVelocity(int i) => velocities[(i % Nodes + Nodes) % Nodes];
+
+        /// <summary>Queues a bounded local membrane correction. This is coarse
+        /// position-level contact coupling, not a momentum-conserving impulse.</summary>
+        public void QueueContact(int segment, Vector2 displacement)
+        {
+            if (!initialized || segment<0 || segment>=Nodes ||
+                !float.IsFinite(displacement.x) || !float.IsFinite(displacement.y)) return;
+            pendingContact[segment] += Vector2.ClampMagnitude(displacement,.015f);
+            pendingContact[segment] = Vector2.ClampMagnitude(pendingContact[segment],.035f);
+        }
 
         void Awake() => Initialize();
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
@@ -53,7 +65,9 @@ namespace Cells.Physiology
                     : MembraneIntegrity.DirectionOf(i)*restRadius;
                 positions[i]=previous[i]=rest[i];
                 velocities[i]=Vector2.zero;
+                pendingContact[i]=Vector2.zero;
             }
+            LastContactMagnitude=0f;
             core=previousCore=coreVelocity=Vector2.zero;
             restArea=Mathf.Abs(SignedArea());
             initialized=true;
@@ -73,10 +87,13 @@ namespace Cells.Physiology
             if(!(dt>0f) || float.IsNaN(dt) || float.IsInfinity(dt))return;
             int count=Mathf.CeilToInt(Mathf.Min(dt,.25f)/maxSubstep);
             float h=Mathf.Min(dt,.25f)/count;
-            for(int sub=0;sub<count;sub++) Step(h);
+            LastContactMagnitude=0f;
+            for(int i=0;i<Nodes;i++) LastContactMagnitude+=pendingContact[i].magnitude;
+            for(int sub=0;sub<count;sub++) Step(h, sub==0);
+            for(int i=0;i<Nodes;i++) pendingContact[i]=Vector2.zero;
         }
 
-        void Step(float dt)
+        void Step(float dt, bool firstSubstep)
         {
             float damp=Mathf.Exp(-dragRate*dt);
             previousCore=core;
@@ -93,6 +110,7 @@ namespace Cells.Physiology
                 }
                 velocities[i]=Vector2.Lerp(velocities[i],localFlow,1f-damp);
                 positions[i]+=velocities[i]*dt;
+                if(firstSubstep) positions[i]+=pendingContact[i];
                 if(flagellum && i>=Nodes/2-2 && i<=Nodes/2+2)
                 {
                     // A localized moving posterior attachment deforms the shell;
