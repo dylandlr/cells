@@ -258,6 +258,10 @@ namespace Cells.Demo
                 motility.field = field;
                 motility.metabolism = metabolism;
                 policy.motility = motility;
+                var telemetry = go.AddComponent<SwimmerTelemetryOverlay>();
+                telemetry.swimmer = motility;
+                telemetry.hydro = hydro;
+                telemetry.fluid = Fluid;
                 // Distinct phenotypes make the focal organisms visibly different without
                 // granting them non-physical teleportation or perfect field knowledge.
                 motility.maxSpeed = secretor ? .34f : .48f;
