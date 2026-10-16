@@ -37,6 +37,21 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void ContactStressIsObservableBoundedAndDecays()
+        {
+            body.QueueContact(3,new Vector2(.012f,.009f));
+            body.Tick(.02f);
+            float first=body.StressAt(3);
+            Assert.Greater(first,0f);
+            Assert.LessOrEqual(first,1f);
+            Assert.GreaterOrEqual(body.MaximumStress,first);
+            for(int i=0;i<200;i++)body.Tick(.02f);
+            Assert.IsTrue(float.IsFinite(body.StressAt(3)));
+            Assert.GreaterOrEqual(body.StressAt(3),0f);
+            Assert.LessOrEqual(body.StressAt(3),1f);
+        }
+
+        [Test]
         public void StressAndMembraneInjuryDoNotExplodeConstraints()
         {
             membrane.ApplyExposureToSegment(4,.6f);
