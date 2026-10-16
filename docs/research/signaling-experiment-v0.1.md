@@ -127,3 +127,16 @@ The abstract `SignalingGameV1` now has a separate **four-agent independent EXP3 
 **Scientific limits.** Strategies are frozen, and only their episode-selection probabilities learn. Four agents learn simultaneously, meaning each faces nonstationary opponents. Consequently, standard adversarial-bandit regret bounds cannot be interpreted as convergence to Nash equilibrium, and training CSVs are **not held-out evaluation**. `Exp3EpisodeSelectorV1` is an algorithmic baseline; it is not fitted to the physical-signaling assay and does not validate strategic emergence in physical chemistry. Run Unity EditMode tests before publishing results.
 
 **Next gate**: add checkpoint/evaluation splits, frozen-policy rollouts under held-out seeds, paired fixed-strategy baselines and payoff tensors with uncertainty, followed by deliberate physical-environment adapter work.
+
+## Held-out EXP3 evaluation (source implemented; Unity run unverified)
+
+The Unity menu command **Cells → Research → Train EXP3 Strategies (300 Episodes)** now trains independent episode-level selectors, freezes their **per-seat probability vectors**, and then performs **100 held-out environment-seed evaluations** using seeds 100000–100099. The training environment seeds are 631–930. The evaluator verifies that seed intervals do not overlap and makes no updates on test seeds.
+
+For each test seed, the same underlying environment and common seat-specific random quantiles are reused for:
+- `learned_frozen`: each seat samples from its frozen learned policy probabilities;
+- `uniform_frozen`: each seat samples uniformly from the same four scripted strategies;
+- `all_silent`: each seat plays the fixed SilentGreedy strategy.
+
+The outputs appear in `ExperimentRuns/exp3-strategies-v1/heldout/`: `episodes.csv` (one record per seed × condition), `agents.csv` (one record per agent), `paired_by_seed.csv` (matched raw collective returns), `paired_summary.csv` (learned-minus-uniform and learned-minus-silent seed-level mean effects, uncertainty estimates), and `manifest.json`. The primary comparison is **frozen EXP3 minus uniform**. Holdout data is not used for model selection.
+
+**Methodological limits:** evaluation is for the *symbolic* signaling game, not spatial chemical motility. Training involves adapting opponents, so this does not prove EXP3 regret bounds or equilibrium convergence. Frozen policy distributions are sampled once per test episode. The common random number design may reduce variance but is not a causal intervention isolating signaling. Per-seat policies may exploit initial seat asymmetry; seat-rotation and opponent deviation tests are still future work. Source revision defaults to `unverified` on export. Automated EditMode tests must pass before any result is interpreted.
