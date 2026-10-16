@@ -14,3 +14,7 @@
 .DS_Store
 Artifacts/
 TestResults/
+
+# Locally generated simulation research datasets and Unity batch-test reports
+ExperimentRuns/
+UnityTestResults/
