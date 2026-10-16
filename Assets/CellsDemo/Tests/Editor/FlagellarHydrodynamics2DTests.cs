@@ -55,6 +55,7 @@ namespace Cells.Tests
                 hydro.Tick(.02f);
             }
             Assert.Less(hydro.LocalSwimmingVelocity.sqrMagnitude,1e-10f);
+            Assert.AreEqual(0f,hydro.LocalAngularVelocityDegrees,1e-7f);
             Assert.Less(fluid.QueuedForceSum().magnitude,1e-5f);
         }
 
@@ -72,6 +73,9 @@ namespace Cells.Tests
                 var u=hydro.LocalSwimmingVelocity;
                 Assert.IsTrue(float.IsFinite(u.x)&&float.IsFinite(u.y));
                 Assert.LessOrEqual(u.magnitude,hydro.maximumSwimSpeed+.0001f);
+                Assert.IsTrue(float.IsFinite(hydro.LocalAngularVelocityDegrees));
+                Assert.LessOrEqual(Mathf.Abs(hydro.LocalAngularVelocityDegrees),
+                    hydro.maximumAngularSpeedDegrees+.0001f);
                 Assert.GreaterOrEqual(hydro.SegmentDissipation,0f);
                 maxObserved=Mathf.Max(maxObserved,u.magnitude);
             }
@@ -154,6 +158,7 @@ namespace Cells.Tests
             tail.Tick(.02f);
             hydro.Tick(.02f);
             Assert.AreEqual(0f,hydro.LocalSwimmingVelocity.magnitude,1e-7f);
+            Assert.AreEqual(0f,hydro.LocalAngularVelocityDegrees,1e-7f);
         }
     }
 }
