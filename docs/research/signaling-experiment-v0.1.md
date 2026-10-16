@@ -113,3 +113,17 @@ The Unity Editor physical assay export now includes:
 Receiver detection count is an **intermediate mechanism check**, not an independent primary reward. In particular, an all-zero signal-detection count indicates a transport/sensing scale problem; it is not evidence that communication has no strategic value. The experiment compares a source that emits molecule pulses versus one that remains silent. This changes emission costs AND environmental concentration simultaneously. Subsequent factorial ablations should disable receptors, clamp source costs independently, and vary production/transport separately to identify mechanisms.
 
 No Unity test results or statistically measured effect sizes have been recorded yet. Any claims about chemical communication improving utility must await compilation, real execution, diagnosis of signal reach, and predeclared control checks.
+
+## EXP3 episode-level strategy learning v0.1 (implemented, unverified)
+
+The abstract `SignalingGameV1` now has a separate **four-agent independent EXP3 training harness**:
+- `Assets/CellsDemo/Scripts/Experiments/Exp3EpisodeSelectorV1.cs`: numerically stable log-weights, smoothed exploration probabilities `(1-gamma)*softmax(logWeights)+gamma/K`, single pending chosen strategy, and importance-weighted observed-reward update `logWeight[arm] += gamma * reward01 / (K * selectionProbability)`. Only the selected arm receives feedback.
+- `Assets/CellsDemo/Scripts/Experiments/Exp3StrategyTrainingV1.cs`: four controllers select strategies at episode boundaries from `silent`, `follower`, `signaler`, and `random`; play full 80-step episodes, then update independently using their own realized episode return. Exogenous seeds and selection seeds are recorded separately.
+- `Assets/CellsDemo/Editor/Exp3TrainingExportV1.cs`: Unity Editor menu **Cells → Research → Train EXP3 Strategies (300 Episodes)**; CSV exports under `ExperimentRuns/exp3-strategies-v1/`: `training_episodes.csv`, `final_policy.csv`, `manifest.json`. The source SHA is intentionally marked `unverified` unless supplied by the execution environment.
+- `Assets/CellsDemo/Tests/Editor/Exp3StrategyTestsV1.cs`: 7 tests for initial probabilities, bounded feedback, exploration floors, update ordering, deterministic replay and validation.
+
+**Reward contract.** In this version of the abstract game, per-step individual return is bounded by [-1,4]. Each 80-step realized episode utility is normalized by `(utility / horizon + 1) / 5` and must satisfy this documented bound; out-of-range inputs raise exceptions. This is a designed simulation-specific scaling, **not** a universal EXP3 reward transform. No per-step reward or unplayed-arm payoff is supplied to the selector.
+
+**Scientific limits.** Strategies are frozen, and only their episode-selection probabilities learn. Four agents learn simultaneously, meaning each faces nonstationary opponents. Consequently, standard adversarial-bandit regret bounds cannot be interpreted as convergence to Nash equilibrium, and training CSVs are **not held-out evaluation**. `Exp3EpisodeSelectorV1` is an algorithmic baseline; it is not fitted to the physical-signaling assay and does not validate strategic emergence in physical chemistry. Run Unity EditMode tests before publishing results.
+
+**Next gate**: add checkpoint/evaluation splits, frozen-policy rollouts under held-out seeds, paired fixed-strategy baselines and payoff tensors with uncertainty, followed by deliberate physical-environment adapter work.
