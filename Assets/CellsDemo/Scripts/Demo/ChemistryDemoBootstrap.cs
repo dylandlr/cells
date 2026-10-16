@@ -205,10 +205,21 @@ namespace Cells.Demo
             var signaling = go.AddComponent<CellChemicalSignaling>();
             signaling.field = field;
             signaling.metabolism = metabolism;
-            signaling.demoAutoPulse = secretor;
+            signaling.demoAutoPulse = false; // Scripted agent policy owns the emission decision.
             signaling.demoPulsePeriod = 1.8f;
             signaling.maximumEmissionPerPulse = .035f;
             signaling.energyPerUnitMass = 2f;
+            // Signal originates from actual local food; receiver reacts to local receptor levels.
+            // Other culture cells stay silent as an observable comparison group.
+            var policy = go.AddComponent<LocalSignalPolicyV1>();
+            policy.metabolism = metabolism;
+            policy.signaling = signaling;
+            policy.role = secretor ? LocalSignalPolicyV1.Role.SignalWhenFed
+                : (id == 2 ? LocalSignalPolicyV1.Role.FollowSignal : LocalSignalPolicyV1.Role.Silent);
+            policy.nutrientThreshold = .15f;
+            policy.minimumEnergy = 1f;
+            policy.decisionInterval = 1.8f;
+            policy.signalPulseMass = .035f;
             var leakage = go.AddComponent<MembraneLeakageSystem>();
             leakage.exchange = exchange;
             leakage.membrane = membrane;
@@ -229,6 +240,7 @@ namespace Cells.Demo
                 motility.fluid = Fluid;
                 motility.field = field;
                 motility.metabolism = metabolism;
+                policy.motility = motility;
                 // Distinct phenotypes make the focal organisms visibly different without
                 // granting them non-physical teleportation or perfect field knowledge.
                 motility.maxSpeed = secretor ? .34f : .48f;
