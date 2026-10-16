@@ -26,6 +26,12 @@ The membrane records per-sector edge strain and a decaying, bounded memory of co
 
 This is a **proxy resistive-force calculation**, not calibrated fluid mechanics. Axial/lateral body drag is diagonalized, no full mobility tensor or wall correction is solved, the tail's preferred waveform is still motor-prescribed, and the segment reaction to fluid is approximated by a single dipole. Further validation must compare direction, speed, beat-frequency scaling, energy, and grid refinement against low-Reynolds reference problems. A battery of Unity tests was added for zero-power motion, bounded outputs, and zero net queued fluid force.
 
+## Controlled flagellar sweep (experimental protocol)
+
+Unity EditMode parameterized tests now sample `(frequency, amplitude, structural integrity)` under a fixed 0.02-second solver step for 500 steps with 100 warm-up steps. Each condition reports **signed X/Y travel**, **absolute path traveled**, **segment drag/dissipation proxy**, and **motor ATP expended**. The zero-integrity control must produce no active travel. All conditions must remain finite and below the declared velocity cap.
+
+Signed displacement is reported separately from path length because back-and-forth waving can generate visual motion but **zero net propulsion**. No assumption is made that faster beating necessarily increases *net* swimming speed; that must emerge from the model and be compared with a low-Re reference. Outputs are written to NUnit test logs only until licensed Unity runners become available. Passing the standalone .NET workflow does not execute this assay.
+
 ## Science and fidelity boundary
 
 This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. The new optional hydrodynamics component computes a **coarse drag balance from node motions**, but is not a calibrated hydrodynamic force solver. Internal compartments now have independent positions, velocities, finite radii and collisions, but their interiors do not have deformable meshes, modeled reactions, or independent biochemical mass balances. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
