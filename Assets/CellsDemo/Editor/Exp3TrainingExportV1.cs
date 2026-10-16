@@ -18,8 +18,17 @@ namespace Cells.EditorTools
             File.WriteAllText(Path.Combine(directory, "training_episodes.csv"), result.EpisodesCsv);
             File.WriteAllText(Path.Combine(directory, "final_policy.csv"), result.FinalPolicyCsv);
             File.WriteAllText(Path.Combine(directory, "manifest.json"), result.ManifestJson);
+            var heldout = Exp3HeldOutEvaluationV1.Evaluate(result, 100000, 100, 29013);
+            string testFolder = Path.Combine(directory, "heldout");
+            Directory.CreateDirectory(testFolder);
+            File.WriteAllText(Path.Combine(testFolder, "episodes.csv"), heldout.EpisodesCsv);
+            File.WriteAllText(Path.Combine(testFolder, "agents.csv"), heldout.AgentsCsv);
+            File.WriteAllText(Path.Combine(testFolder, "paired_by_seed.csv"), heldout.PairedBySeedCsv);
+            File.WriteAllText(Path.Combine(testFolder, "paired_summary.csv"), heldout.SummaryCsv);
+            File.WriteAllText(Path.Combine(testFolder, "manifest.json"), heldout.ManifestJson);
             Debug.Log("cells: EXP3 training export complete: " + result.Episodes +
-                " training episodes. Training outcomes are not held-out results. " + directory);
+                " training episodes plus " + heldout.HeldOutSeeds +
+                " independent held-out seeds. No gameplay/physics claims. " + directory);
             EditorUtility.RevealInFinder(directory);
         }
     }
