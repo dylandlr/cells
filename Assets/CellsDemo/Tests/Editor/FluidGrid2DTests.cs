@@ -68,6 +68,16 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void NonFiniteForceIsIgnored()
+        {
+            fluid.AddForce(Vector2.zero, new Vector2(float.PositiveInfinity, 1f));
+            fluid.AddForce(Vector2.zero, new Vector2(float.NaN, 1f));
+            Assert.Less(fluid.QueuedForceSum().sqrMagnitude, 1e-8f);
+            fluid.Step(.02f);
+            Assert.AreEqual(0f, fluid.MeanAbsoluteDivergence(), 1e-6f);
+        }
+
+        [Test]
         public void ProjectedFlowHasFiniteDivergence()
         {
             for(int i=0;i<30;i++)
