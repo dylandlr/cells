@@ -51,7 +51,7 @@ namespace Cells.Physiology
                 * (waveAmplitude / .24f));
             PhaseRadians = Mathf.Repeat(PhaseRadians + 2f * Mathf.PI * beatFrequencyHz * dt
                 * ActualActivation, 2f * Mathf.PI);
-            if (fluid && EffectiveThrust > 0f)
+            if (fluid && EffectiveThrust > 0f && !GetComponent<FlagellarHydrodynamics2D>())
             {
                 // A low-Reynolds-number swimmer is force-free. Represent its
                 // coarse-grained near-field flow by a front/rear force dipole,
