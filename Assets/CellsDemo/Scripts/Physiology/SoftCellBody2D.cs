@@ -32,6 +32,10 @@ namespace Cells.Physiology
         readonly Vector2[] velocities = new Vector2[Nodes];
         readonly Vector2[] rest = new Vector2[Nodes];
         readonly Vector2[] pendingContact = new Vector2[Nodes];
+        readonly float[] sectorStress = new float[Nodes];
+        readonly float[] contactStress = new float[Nodes];
+        public float MaximumStress { get; private set; }
+        public float StressAt(int segment) => sectorStress[(segment % Nodes + Nodes) % Nodes];
         public float LastContactMagnitude { get; private set; }
         Vector2 core, previousCore, coreVelocity;
         float restArea;
@@ -48,6 +52,7 @@ namespace Cells.Physiology
             if (!initialized || segment<0 || segment>=Nodes ||
                 !float.IsFinite(displacement.x) || !float.IsFinite(displacement.y)) return;
             pendingContact[segment] += Vector2.ClampMagnitude(displacement,.015f);
+            contactStress[segment] = Mathf.Clamp01(contactStress[segment] + displacement.magnitude * 8f);
             pendingContact[segment] = Vector2.ClampMagnitude(pendingContact[segment],.035f);
         }
 
@@ -66,6 +71,7 @@ namespace Cells.Physiology
                 positions[i]=previous[i]=rest[i];
                 velocities[i]=Vector2.zero;
                 pendingContact[i]=Vector2.zero;
+                sectorStress[i]=contactStress[i]=0f;
             }
             LastContactMagnitude=0f;
             core=previousCore=coreVelocity=Vector2.zero;
@@ -91,6 +97,25 @@ namespace Cells.Physiology
             for(int i=0;i<Nodes;i++) LastContactMagnitude+=pendingContact[i].magnitude;
             for(int sub=0;sub<count;sub++) Step(h, sub==0);
             for(int i=0;i<Nodes;i++) pendingContact[i]=Vector2.zero;
+            MeasureStress();
+        }
+
+        // Strain is an observable diagnostic derived from actual deformed edges.
+        // Contact memory decays over time; no mechanical injury is applied
+        // until a calibrated force-to-damage contract exists.
+        void MeasureStress()
+        {
+            MaximumStress=0f;
+            for(int i=0;i<Nodes;i++)
+            {
+                int j=(i+1)%Nodes;
+                float reference=(rest[j]-rest[i]).magnitude;
+                float strain=reference>1e-6f
+                    ? Mathf.Abs((positions[j]-positions[i]).magnitude/reference-1f):0f;
+                sectorStress[i]=Mathf.Clamp01(strain*1.5f + contactStress[i]);
+                MaximumStress=Mathf.Max(MaximumStress,sectorStress[i]);
+                contactStress[i]*=.88f;
+            }
         }
 
         void Step(float dt, bool firstSubstep)
