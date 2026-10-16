@@ -43,8 +43,9 @@ jobs:
       - name: Execute deterministic Windows smoke test
         shell: pwsh
         run: |
-          & publish/cells-windows/Cells.exe --smoke-test
-          if ($LASTEXITCODE -ne 0) { throw "Native Windows smoke test failed: $LASTEXITCODE" }
+          $exe = (Resolve-Path publish/cells-windows/Cells.exe).Path
+          $process = Start-Process -FilePath $exe -ArgumentList "--smoke-test" -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Native Windows smoke test failed: $($process.ExitCode)" }
       - name: Include usage notes
         shell: pwsh
         run: Copy-Item Standalone/README.txt publish/cells-windows/README.txt
