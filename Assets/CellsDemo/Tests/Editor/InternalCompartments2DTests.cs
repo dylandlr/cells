@@ -57,6 +57,23 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void MembraneContactQueueIsBoundedAndConsumed()
+        {
+            // Directly probe the same reaction queue used by organelle contacts.
+            Vector2 before=body.Node(0);
+            body.QueueContact(0,new Vector2(100f,100f));
+            body.QueueContact(0,new Vector2(100f,100f));
+            body.Tick(.02f);
+            Assert.Greater(body.LastContactMagnitude,0f);
+            Assert.LessOrEqual(body.LastContactMagnitude,.0351f);
+            Vector2 after=body.Node(0);
+            Assert.IsTrue(float.IsFinite(after.x) && float.IsFinite(after.y));
+            Assert.Greater((after-before).sqrMagnitude,1e-9f);
+            body.Tick(.02f);
+            Assert.AreEqual(0f,body.LastContactMagnitude,1e-7f);
+        }
+
+        [Test]
         public void InjuryDoesNotProduceUnboundedInternalMotion()
         {
             cell.GetComponent<MembraneIntegrity>().ApplyExposureToSegment(5,.7f);
