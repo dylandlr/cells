@@ -37,6 +37,7 @@ namespace Cells.Experiments
             public string FinalPolicyCsv;
             public string ManifestJson;
             public int Episodes;
+            public int FirstEnvironmentSeed;
             // Defensive snapshot: probabilities are frozen after training.
             public double[][] FrozenSeatProbabilities;
         }
@@ -106,6 +107,7 @@ namespace Cells.Experiments
             return new Output
             {
                 Episodes = episodes,
+                FirstEnvironmentSeed = firstSeed,
                 FrozenSeatProbabilities = frozen,
                 EpisodesCsv = log.ToString(),
                 FinalPolicyCsv = final.ToString(),
