@@ -197,3 +197,30 @@ The presence of the workflow does **not** establish a passing status. The exact 
 The GitHub Actions run [38847159419](https://github.com/dylandlr/cells/actions/runs/38847159419) completed **successfully**: both `Build plain C# experiments` and `Run deterministic research invariants` steps passed. This confirms the headless research code compiles under .NET 8 and the executable checks ran. It does not constitute Unity PlayMode or EditMode coverage.
 
 By contrast, Unity workflow run [38847163264](https://github.com/dylandlr/cells/actions/runs/38847163264) failed at `Verify Unity activation configuration exists`; the `Unity test suite` step was skipped in both EditMode and PlayMode. A supported GameCI Unity license or licensed runner must be configured before Unity C# compilation and biological model tests can be validated. No scientific results should be reported yet.
+
+## Physical signaling factorial intervention (v0.1, source committed)
+
+`PhysicalSignalAssayV1.Run(seed, produce, respond)` now supports a **2 × 2 factorial design**, keeping the original `Run(seed, produce)` overload equivalent to `respond=true`. Emission is controlled independently of whether receiver agents use the detected signal gradient in navigation. Critically, receivers can still **physically detect and record** the molecules when `respond=false`; this separates sensing from behavioral use.
+
+Unity menu: **Cells → Research → Run Physical Signaling 2x2 Factorial (30 Seeds)**.
+Export: `ExperimentRuns/physical-factorial-v1/agents.csv`, `paired_by_seed.csv`, `paired_summary.csv`, `manifest.json`. The run plan is 30 matched environment seeds × 4 interventions = **120 episodes**, **480 agent rows**.
+
+Four experimental arms:
+- `produce=0, respond=0`: neither molecule production nor behavioral following.
+- `produce=0, respond=1`: placebo receptor-policy enabled, but no substance emitted.
+- `produce=1, respond=0`: sender pays the secretion cost while receivers **cannot** act on the molecular information.
+- `produce=1, respond=1`: production and active gradient-following jointly enabled.
+
+Primary *mechanism-isolating* estimand is the receiver-energy difference-in-differences:
+`[U_receiver(1,1)-U_receiver(1,0)] - [U_receiver(0,1)-U_receiver(0,0)]`.
+The independent emission-only comparison `U_sender(1,0)-U_sender(0,0)` isolates the sender's metabolic cost when the receiving cells cannot respond. Each contrast is computed **within seed**, then summarized with percentile-bootstrap intervals. This is evidence about the toy assay under controlled assumptions, not biological cooperation or a learned equilibrium.
+
+Added EditMode regression tests check no-production behavioral invariance, unchanged receiver returns under production-only treatment, source emission-energy accounting, reproducibility of all four arms, and backward-compatible API behavior. **Tests remain unexecuted until Unity licensing works.**
+
+### Potential assay failure modes to investigate before reporting effects
+
+1. A physically real but too-short-lived signal may never reach receivers; inspect nonzero `physical_detection_steps` and spatial separation before interpreting the interaction estimate.
+2. Initial source placement directly at a nutrient patch is deliberately favorable. Follow-up seeds should vary nutrient geography and source discovery.
+3. Receiver translation uses the simplified discrete gradient controller, not continuous hydrodynamic motility. Energy returns and food acquisition depend on the arbitrary grid/time discretization.
+4. The assay has no molecular synthesis delays, reaction pathways, receptor desensitization, misinformation, or evolutionary fitness. These must not be inferred from a positive statistical estimate.
+5. The Unity license-configuration check is blocking both EditMode and PlayMode CI; the independent .NET research checks passing cannot validate this physically coupled assay.
