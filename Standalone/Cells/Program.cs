@@ -251,8 +251,8 @@ internal sealed class MicroscopeWindow : Form
     public MicroscopeWindow()
     {
         Text="cells  /  microscopic ecology prototype";
-        MinimumSize=new Size(850,600);
-        ClientSize=new Size(1150,780);
+        MinimumSize=new Size(900,650);
+        ClientSize=new Size(1240,820);
         BackColor=Color.FromArgb(6,16,24);
         ForeColor=Color.FromArgb(230,246,242);
         DoubleBuffered=true;
@@ -316,7 +316,7 @@ internal sealed class MicroscopeWindow : Form
         using var heading=new SolidBrush(Color.FromArgb(179,245,226));
         using var muted=new SolidBrush(Color.FromArgb(139,171,180));
         g.DrawString("cells",titleFont,heading,24,14);
-        g.DrawString("MICROSCOPE  /  EVOLVING MICROBIOME  •  v0.3",monoFont,muted,120,25);
+        g.DrawString("MICROSCOPE  /  PHENOTYPE STUDY  •  v0.4",monoFont,muted,120,25);
         string stats=$"t = {world.Ticks*.04:0.0}s    alive {world.Cells.Count}    births {world.Births}    deaths {world.Deaths}    generations {world.MaximumGeneration}    pulses {world.Signals}    total ATP {world.TotalEnergy:0.0}";
         g.DrawString(stats,uiFont,heading,26,56);
         g.DrawString($"TRAITS  swimming {world.MeanSpeed:0.00}  /  toxin defense {world.MeanResistance:0.00}    •    Green nutrients  /  Magenta toxins  /  Gold signals", monoFont,muted,26,82);
@@ -334,7 +334,8 @@ internal sealed class MicroscopeWindow : Form
             ? $"EVOLUTION  mean speed {world.MeanSpeed:0.00}   mean toxin resistance {world.MeanResistance:0.00}    |    Select a cell to inspect its genome"
             : $"CELL #{selected.Id}  parent #{selected.ParentId}  gen {selected.Generation}  ATP {selected.Energy:0.0}  age {selected.Age:0.0}  " +
               $"speed {selected.Genes.Speed:0.00}  sense {selected.Genes.Sensing:0.00}  uptake {selected.Genes.Uptake:0.00}  toxin defense {selected.Genes.ToxinResistance:0.00}  signal {selected.Genes.Signaling:0.00}";
-        g.DrawString(inspector,monoFont,heading,rect.Left,rect.Bottom+34);
+        using var detailFont=new Font("Consolas",8.2f,FontStyle.Regular);
+        g.DrawString(inspector,detailFont,heading,new RectangleF(rect.Left,rect.Bottom+34,rect.Width,34));
         g.DrawString("Simplified, uncalibrated Windows ecology prototype. Genes mutate at reproduction; not the Unity biology engine.",
             monoFont,muted,rect.Left,rect.Bottom+55);
     }
