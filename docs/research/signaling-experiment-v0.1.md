@@ -73,3 +73,27 @@ The Unity microscope now contains a **separate preliminary physical signal mecha
 - `CellChemicalSignalingTests` cover mass-energy accounting, out-of-bounds rejection, unknown signals, affordable emission, diffusion detection, and emission bounds.
 
 **Next scientific gate:** encode a policy-controllable action to emit a pulse (or stay silent), a receiver observation derived strictly from sensed spatial concentration (with receptor noise and thresholds), then compare explicit signaling enable/disable interventions under fixed matched seeds. A signaling molecule is not itself proof that meaningful information or cooperation has emerged.
+
+## First matched-seed spatial chemistry assay (v1)
+
+Source: `Assets/CellsDemo/Scripts/Experiments/PhysicalSignalAssayV1.cs`.
+Unity Editor command: **Cells → Research → Run Physical Signal Assay (30 Paired Seeds)**.
+Tests: `PhysicalSignalAssayV1Tests.cs`; generated dataset under `ExperimentRuns/physical-signal-v1/`.
+
+This assay advances `MultiChemicalField2D` manually at 0.1 simulation units for 80 transport steps, with four cells and two arms (signaling disabled vs enabled) using identical patch placements for each seed. Only the source cell's policy changes between arms. Three receiver cells move based on locally sampled nutrient and (if present) signal gradients, harvest via `Withdraw` and gain energy via `Feed`. A locally fed source cell emits signal at an energy cost through `LocalSignalPolicyV1` and `CellChemicalSignaling`. Signal molecules diffuse and decay through the genuine field solver; emitted/remaining/decayed mass is reported for accounting. The Unity export generates 30 seeds × 2 arms × 4 agents = 240 agent records.
+
+### Important scientific boundaries
+
+- This assay uses **simplified explicit discrete movement**, not the `CellMotility` / `FluidGrid2D` motion model. It is **physics-coupled chemical transport** only in the qualified sense of simulated diffusion and decay; hydrodynamic coupling is switched off.
+- The source is initially placed at the nutrient site to isolate signal transmission rather than discovery. Receivers do not see hidden patch locations, but their field-gradient controller is engineered, not trained.
+- Source emission can reduce source utility; receivers may gain or lose individual utility. **No assumptions of improvement or cooperation are justified before observing results**.
+- This assay does not model starvation mortality or reproduction meaningfully, enforce depletion in a well-mixed bulk environment, support LLMs/EXP3, or estimate an empirical Nash equilibrium.
+- Signal diffusion, threshold, emission rate, nutrient uptake, energy conversion, discrete step length, and observation cadence are in **arbitrary units**. Their sensitivity must be assessed before interpreting findings.
+- Testing status: committed source/tests; Unity compilation, execution, and exported CSVs are not yet independently verified.
+
+### Acceptance gates
+
+1. Execute EditMode tests, require the disabled arm to emit exactly zero signal and enabled arm to debit actual chemical emission.
+2. Check per-run mass ledger `emitted ~= remaining + decayed`, assuming no external signal sinks and no nutrient/other chemical decay.
+3. Run 30 seed pairs, publish raw data and paired `on - off` outcomes by seed. Report uncertainty; if signal does not reach receivers, diagnose geometry, sensor threshold, diffusion and timescale rather than tune to desired outcome.
+4. Extend assay to controlled fluid advection and physical cell motility, then separate effects of signal production vs response via factorial interventions.
