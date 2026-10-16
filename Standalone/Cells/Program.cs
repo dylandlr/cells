@@ -17,8 +17,26 @@ internal static class Program
             var sim = new MicroWorld(631);
             for (int i = 0; i < 500; i++) sim.Tick();
             if (sim.Ticks != 500 || sim.Cells.Count == 0 ||
-                !double.IsFinite(sim.TotalEnergy) || sim.Cells.Any(c => !double.IsFinite(c.X + c.Y + c.Energy)))
+                !double.IsFinite(sim.TotalEnergy) ||
+                sim.Cells.Any(c => !double.IsFinite(c.X + c.Y + c.Energy) ||
+                    c.Genes.Speed < .3 || c.Genes.Speed > 1.8 ||
+                    c.Genes.Uptake < .3 || c.Genes.Uptake > 1.8))
                 Environment.Exit(2);
+            // Verify heritable genomes mutate within their declared bounds.
+            var parent = new Genome { Speed=1, Sensing=1, Uptake=1,
+                ToxinResistance=1, Signaling=1 };
+            var rng = new Random(101);
+            bool observedMutation = false;
+            for (int i=0;i<100;i++)
+            {
+                var child = parent.Inherit(rng);
+                if (child.Speed != parent.Speed) observedMutation = true;
+                if (child.Speed < .3 || child.Speed > 1.8 ||
+                    child.Sensing < .3 || child.Sensing > 1.8 ||
+                    child.ToxinResistance < .3 || child.ToxinResistance > 1.8)
+                    Environment.Exit(3);
+            }
+            if (!observedMutation) Environment.Exit(4);
             Console.WriteLine("PASS: standalone cells 500-tick deterministic smoke test");
             return;
         }
