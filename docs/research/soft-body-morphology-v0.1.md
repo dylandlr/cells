@@ -9,15 +9,18 @@
 - `ChemistryDemoBootstrap` attaches this body and mesh to the **two motile focal cells**, disabling their legacy sprite/membrane rendering. The stationary culture still uses the previous sector shape solver.
 - The flagellum now has a separately integrated 18-node chain with segment-length constraints, drag and motor-preferred curvature. The LineRenderer uses the simulated chain instead of directly sampling the motor curve.\n- Editor tests cover finite state, area retention, injury stability, dynamic mesh topology and the segmented flagellar chain.
 
+- `InternalCompartments2D` resolves three finite-radius interior nodes (nucleoid, storage vesicle and signal vesicle) with drag, tether forces, pairwise repulsion, and membrane-edge contact. The live mesh renderer places separate organelle art on those nodes. This is visual-mechanical compartmentalization; there is **no modeled biochemical exchange between the compartments yet**.
+- The compartment update loop reuses buffers, avoiding per-step heap allocations. Tests cover boundedness, non-overlap, and membrane damage stability.
+
 ## Science and fidelity boundary
 
-This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. Thrust remains approximated by the existing actuator and motility module, **not computed from reaction forces on individual tail segments**. The organelle currently follows a simulated interior core position but is not a resolved, deformable compartment. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
+This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. Thrust remains approximated by the existing actuator and motility module, **not computed from reaction forces on individual tail segments**. Internal compartments now have independent positions, velocities, finite radii and collisions, but their interiors do not have deformable meshes, modeled reactions, or independent biochemical mass balances. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
 
 ## Next physical milestones
 
 1. Calculate motility from flagellar segment drag/reaction forces (instead of the coarse dipole thrust proxy) and incorporate bending energy and reciprocal fluid coupling.
 2. Local membrane permeability/leakage as a function of node-adjacent sector integrity and collision/contact.
-3. Dynamic internal compartments with mass, exclusion radii, drag, and envelope pressure (rather than visual-only inclusions).
+3. Expand internal compartments to deformable meshes, explicit biochemical budgets, and contact-aware membrane tension (current compartments are finite-radius particles).
 4. Deterministic test scene for mesh stability, collisions, mass/energy accounting, and recorded comparisons with analytical overdamped limits.
 5. Zoomable 2.5D microscope rendering with shader-based membrane thickness and consistent depth sorting.
 
