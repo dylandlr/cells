@@ -69,7 +69,7 @@ namespace Cells.Editor
         public static void Run(string path)
         {
             var builder=new StringBuilder();
-            builder.AppendLine("frequency_hz,amplitude,integrity,net_x,net_y,net_distance,absolute_path,peak_speed,stroke_dissipation,motor_atp,steps,warmup");
+            builder.AppendLine("frequency_hz,amplitude,integrity,net_x,net_y,net_distance,absolute_path,peak_speed,stroke_dissipation,motor_atp,steps,warmup,measured_steps,measured_seconds,warmup_motor_atp");
             foreach(var condition in Conditions)
             {
                 var organism=new GameObject("isolated propulsion assay");
@@ -94,11 +94,13 @@ namespace Cells.Editor
                     hydro.fluidReactionGain=0f;
                     hydro.ResetHistory();
                     hydro.Tick(Step);
-                    float startEnergy=metabolism.energy;
+                    float initialEnergy=metabolism.energy;
+                    float startEnergy=initialEnergy;
                     float pathLength=0f,dissipation=0f,peakSpeed=0f;
                     Vector2 net=Vector2.zero;
                     for(int step=0;step<Iterations;step++)
                     {
+                        if(step==Warmup) startEnergy=metabolism.energy;
                         motor.Tick(Step);
                         tail.Tick(Step);
                         hydro.Tick(Step);
@@ -125,7 +127,10 @@ namespace Cells.Editor
                         .Append(F(peakSpeed)).Append(',')
                         .Append(F(dissipation)).Append(',')
                         .Append(F(startEnergy-metabolism.energy)).Append(',')
-                        .Append(Iterations).Append(',').Append(Warmup).AppendLine();
+                        .Append(Iterations).Append(',').Append(Warmup).Append(',')
+                        .Append(Iterations-Warmup).Append(',')
+                        .Append(F((Iterations-Warmup)*Step)).Append(',')
+                        .Append(F(initialEnergy-startEnergy)).AppendLine();
                 }
                 finally { UnityEngine.Object.DestroyImmediate(organism); }
             }

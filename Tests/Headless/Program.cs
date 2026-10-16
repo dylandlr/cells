@@ -28,6 +28,7 @@ internal static class Program
     private static void Main()
     {
         Console.WriteLine("cells: headless research verification (Unity-independent)");
+        passed += PlanarDragChecks.Run();
         var randoms = new SignalingGameV1.IPolicy[] {
             new SignalingGameV1.RandomPolicy(), new SignalingGameV1.RandomPolicy(),
             new SignalingGameV1.RandomPolicy(), new SignalingGameV1.RandomPolicy()

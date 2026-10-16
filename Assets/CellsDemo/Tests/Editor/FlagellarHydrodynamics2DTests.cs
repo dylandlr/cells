@@ -108,6 +108,7 @@ namespace Cells.Tests
             int samples=0;
             for(int i=0;i<500;i++)
             {
+                if(i==100) initialEnergy=motor.metabolism.energy;
                 motor.Tick(dt);
                 tail.Tick(dt);
                 hydro.Tick(dt);
@@ -125,6 +126,9 @@ namespace Cells.Tests
             Assert.GreaterOrEqual(absoluteTravel,0f);
             Assert.GreaterOrEqual(dissipated,0f);
             Assert.LessOrEqual(motor.metabolism.energy,initialEnergy);
+            // Match the ATP window to the 400 measured motion samples.
+            float expectedAtp=integrity>0f ? motor.motorCostPerSecond*400*dt : 0f;
+            Assert.AreEqual(expectedAtp,initialEnergy-motor.metabolism.energy,.002f);
             if(integrity==0f)
             {
                 Assert.Less(absoluteTravel,1e-6f);

@@ -60,7 +60,7 @@ namespace Cells.Physiology
             bool active = motor && motor.ActualActivation > 0f
                 && motor.structuralIntegrity > 0f && motor.EffectiveThrust > 0f;
             Vector2 dragWeightedStroke=Vector2.zero;
-            float dragX=bodyDrag, dragY=bodyDrag;
+            float dragX=bodyDrag, dragY=bodyDrag, dragXY=0f;
             SegmentDissipation=0f;
             StrokeMagnitude=0f;
             float segmentLength = motor ? motor.length/(SoftFlagellum2D.NodeCount-1) : .06f;
@@ -83,6 +83,8 @@ namespace Cells.Physiology
                     perpendicularDrag*normal.x*normal.x)*segmentLength;
                 dragY+=(parallelDrag*tangent.y*tangent.y+
                     perpendicularDrag*normal.y*normal.y)*segmentLength;
+                dragXY+=(parallelDrag*tangent.x*tangent.y+
+                    perpendicularDrag*normal.x*normal.y)*segmentLength;
                 SegmentDissipation+=Mathf.Max(0f,
                     (parallelDrag*along*along+perpendicularDrag*across*across)*segmentLength*dt);
                 StrokeMagnitude+=change.magnitude*segmentLength;
@@ -97,8 +99,11 @@ namespace Cells.Physiology
                 SegmentDissipation=StrokeMagnitude=0f;
                 return;
             }
-            Vector2 predicted=new Vector2(-dragWeightedStroke.x/dragX,
-                -dragWeightedStroke.y/dragY)*couplingGain;
+            // Inclined segments couple X and Y drag; diagonal division is not
+            // rotation invariant. Solve the complete symmetric 2x2 tensor.
+            PlanarDragBalance.Solve(dragX,dragXY,dragY,
+                dragWeightedStroke.x,dragWeightedStroke.y,out double ux,out double uy);
+            Vector2 predicted=new Vector2((float)ux,(float)uy)*couplingGain;
             LocalSwimmingVelocity=Vector2.ClampMagnitude(predicted,maximumSwimSpeed);
             if (!float.IsFinite(LocalSwimmingVelocity.x) || !float.IsFinite(LocalSwimmingVelocity.y))
                 LocalSwimmingVelocity=Vector2.zero;

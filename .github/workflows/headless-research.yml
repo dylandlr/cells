@@ -5,11 +5,13 @@ on:
       - feat/substance-ontology
     paths:
       - 'Assets/CellsDemo/Scripts/Experiments/**'
+      - 'Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs'
       - 'Tests/Headless/**'
       - '.github/workflows/headless-research.yml'
   pull_request:
     paths:
       - 'Assets/CellsDemo/Scripts/Experiments/**'
+      - 'Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs'
       - 'Tests/Headless/**'
       - '.github/workflows/headless-research.yml'
   workflow_dispatch:
