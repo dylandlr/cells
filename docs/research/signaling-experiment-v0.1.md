@@ -224,3 +224,13 @@ Added EditMode regression tests check no-production behavioral invariance, uncha
 3. Receiver translation uses the simplified discrete gradient controller, not continuous hydrodynamic motility. Energy returns and food acquisition depend on the arbitrary grid/time discretization.
 4. The assay has no molecular synthesis delays, reaction pathways, receptor desensitization, misinformation, or evolutionary fitness. These must not be inferred from a positive statistical estimate.
 5. The Unity license-configuration check is blocking both EditMode and PlayMode CI; the independent .NET research checks passing cannot validate this physically coupled assay.
+
+## Signal propagation observability and calibration probe
+
+The physics-coupled `PhysicalSignalAssayV1` now captures additional mechanistic diagnostics: initial nutrient mass, remaining nutrient mass, per-receiver first detection step (or -1), peak local receptor concentration, and final source-to-receiver distance. The values come from the actual `MultiChemicalField2D` and locally queried `CellChemicalSignaling` samples. The original two-argument and three-argument `Run` APIs remain unchanged. `RunCalibrated` accepts explicit receptor threshold, signal diffusivity, and signal decay; it validates finite nonnegative transport coefficients and strictly positive thresholds.
+
+**Diagnostic sensitivity sweep:** Unity Editor menu **Cells → Research → Probe Signal Detection Sensitivity (10 Seeds)** runs a preregistered grid of three thresholds `{0.0001, 0.001, 0.01}`, three diffusion coefficients `{0.06, 0.18, 0.36}`, 10 matched seeds `7100..7109`, and two response conditions (emission always enabled). That is **180 configured episodes**. Export location: `ExperimentRuns/signal-sensitivity-v1/observations.csv` with `manifest.json`. Avoid interpreting these exploratory seeds as an independent test of a setting selected from the same sweep.
+
+**New checks:** `PhysicalSignalCalibrationTestsV1` checks that non-production results in no detected molecules, verifies both nutrient and emitted-signal mass ledgers, checks threshold/diffusivity parameter validation, and tests deterministic detection telemetry. These tests are committed, not executed; Unity licensing remains a prerequisite.
+
+**Interpretation:** A detected molecule is not necessarily informative to a cell; positive or negative gradient steering gains must be separated from raw exposure. This sweep identifies if thresholds and transport scales prevent detection, not whether signaling improves evolution or cooperation. All coefficients remain arbitrary simulation units.
