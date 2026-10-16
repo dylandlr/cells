@@ -7,15 +7,15 @@
 - Boundary node motion can sample `FluidGrid2D` locally (drag / entrainment) and responds to posterior motor activity as a local deformation.
 - `SoftCellMeshRenderer2D` triangulates the live membrane and places its interior organelle visual on the core node. It does *not* invent physical movement.
 - `ChemistryDemoBootstrap` attaches this body and mesh to the **two motile focal cells**, disabling their legacy sprite/membrane rendering. The stationary culture still uses the previous sector shape solver.
-- Editor tests cover finite state, area retention, injury stability, and dynamic mesh topology.
+- The flagellum now has a separately integrated 18-node chain with segment-length constraints, drag and motor-preferred curvature. The LineRenderer uses the simulated chain instead of directly sampling the motor curve.\n- Editor tests cover finite state, area retention, injury stability, dynamic mesh topology and the segmented flagellar chain.
 
 ## Science and fidelity boundary
 
-This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor's flagellar curve is still kinematic; thrust remains approximated by the existing actuator and motility module. The organelle currently follows a simulated interior core position but is not a resolved, deformable compartment. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
+This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. Thrust remains approximated by the existing actuator and motility module, **not computed from reaction forces on individual tail segments**. The organelle currently follows a simulated interior core position but is not a resolved, deformable compartment. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
 
 ## Next physical milestones
 
-1. Explicit segment-node flagella with bending constraints, active curvature, and reciprocal drag coupling. Replace the old kinematic LineRenderer.
+1. Calculate motility from flagellar segment drag/reaction forces (instead of the coarse dipole thrust proxy) and incorporate bending energy and reciprocal fluid coupling.
 2. Local membrane permeability/leakage as a function of node-adjacent sector integrity and collision/contact.
 3. Dynamic internal compartments with mass, exclusion radii, drag, and envelope pressure (rather than visual-only inclusions).
 4. Deterministic test scene for mesh stability, collisions, mass/energy accounting, and recorded comparisons with analytical overdamped limits.
