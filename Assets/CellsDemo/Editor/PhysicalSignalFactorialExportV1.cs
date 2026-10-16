@@ -32,6 +32,9 @@ namespace Cells.EditorTools
             var effectWithProduction = new List<PairedAssayAnalysisV1.Record>();
             var placeboResponse = new List<PairedAssayAnalysisV1.Record>();
             var senderCost = new List<PairedAssayAnalysisV1.Record>();
+            int seedsWithPhysicalDetection = 0;
+            int placeboViolations = 0;
+            int ledgerViolations = 0;
 
             for (int n = 0; n < count; ++n)
             {
@@ -58,6 +61,20 @@ namespace Cells.EditorTools
                     }
                 }
 
+                int detected = 0;
+                for (int i = 1; i < PhysicalSignalAssayV1.Agents; ++i)
+                    detected += result[1, 1].Receptions[i];
+                if (detected > 0) ++seedsWithPhysicalDetection;
+                if (System.Math.Abs(receiverReturn[0, 1] - receiverReturn[0, 0]) > 1e-5)
+                    ++placeboViolations;
+                for (int produce = 0; produce < 2; ++produce)
+                for (int respond = 0; respond < 2; ++respond)
+                {
+                    var trial = result[produce, respond];
+                    if (System.Math.Abs(trial.SignalMassRemaining + trial.SignalMassDecayed
+                        - trial.SignalMassEmitted) > .002)
+                        ++ledgerViolations;
+                }
                 double placebo = receiverReturn[0, 1] - receiverReturn[0, 0];
                 double responseBenefit = receiverReturn[1, 1] - receiverReturn[1, 0];
                 double differenceInDifferences = responseBenefit - placebo;
@@ -94,6 +111,15 @@ namespace Cells.EditorTools
             summary.Append(PairedAssayAnalysisV1.ToCsv("source_production_net_energy",
                 PairedAssayAnalysisV1.EstimatePaired(senderCost)));
 
+            if (seedsWithPhysicalDetection == 0)
+                Debug.LogWarning("cells: no receiver detected signal in the signaling-treatment arms. " +
+                    "The assay cannot assess the behavioral use of transmitted information.");
+            if (placeboViolations > 0)
+                Debug.LogError("cells: zero-production receptor placebo was not inert on " +
+                    placeboViolations + " seeds. Check experimental implementation.");
+            if (ledgerViolations > 0)
+                Debug.LogError("cells: chemical emission mass accounting failed on " +
+                    ledgerViolations + " treatment episodes.");
             File.WriteAllText(Path.Combine(folder, "agents.csv"), agents.ToString());
             File.WriteAllText(Path.Combine(folder, "paired_by_seed.csv"), pairs.ToString());
             File.WriteAllText(Path.Combine(folder, "paired_summary.csv"), summary.ToString());
