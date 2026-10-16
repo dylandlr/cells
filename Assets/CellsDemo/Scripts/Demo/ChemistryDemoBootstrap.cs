@@ -63,7 +63,15 @@ namespace Cells.Demo
             metabolicWaste.stableId = "metabolic-waste-E"; metabolicWaste.displayName = "Metabolic byproduct";
             metabolicWaste.classification = SubstanceClass.Waste; metabolicWaste.diffusionCoefficient = .14f;
             metabolicWaste.visualization.baseColor = new Color(.85f, .55f, .25f);
-            field.species = new[] { food, poison, neutralizer, waste, metabolicWaste };
+            var signal = ScriptableObject.CreateInstance<SubstanceDefinition>();
+            signal.stableId = "signal-S";
+            signal.displayName = "Diffusing signaling molecule";
+            signal.classification = SubstanceClass.Signal;
+            signal.materialForm = MaterialForm.Dissolved;
+            signal.diffusionCoefficient = .22f;
+            signal.decayRate = .13f;
+            signal.visualization.baseColor = new Color(.95f, .76f, .22f);
+            field.species = new[] { food, poison, neutralizer, waste, metabolicWaste, signal };
             ownedAssets.AddRange(field.species);
             field.Initialize();
             Registry = fieldObject.AddComponent<SubstanceRegistry>();
@@ -96,6 +104,7 @@ namespace Cells.Demo
             AddChemicalOverlay("Neutralizer", "neutralizer-C", MaterialForm.Dissolved, neutralizer.visualization.baseColor, -20);
             AddChemicalOverlay("Waste", "waste-D", MaterialForm.Dissolved, waste.visualization.baseColor, -23);
             AddChemicalOverlay("Metabolic byproduct", "metabolic-waste-E", MaterialForm.Dissolved, metabolicWaste.visualization.baseColor, -24);
+            AddChemicalOverlay("Signaling molecule", "signal-S", MaterialForm.Dissolved, signal.visualization.baseColor, -19);
             var view = GetComponent<ChemistryDemoView>();
             if (!view) view = gameObject.AddComponent<ChemistryDemoView>();
             view.demo = this;
@@ -191,6 +200,15 @@ namespace Cells.Demo
             exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", membrane.SurfacePoint(16, .9f));
             exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", membrane.SurfacePoint(0, .9f));
             exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", membrane.SurfacePoint(24, .9f));
+            // Demo phenotype only: Secretor emits periodic real chemical pulses;
+            // Grazer receives local concentration, without a behavioral policy yet.
+            var signaling = go.AddComponent<CellChemicalSignaling>();
+            signaling.field = field;
+            signaling.metabolism = metabolism;
+            signaling.demoAutoPulse = secretor;
+            signaling.demoPulsePeriod = 1.8f;
+            signaling.maximumEmissionPerPulse = .035f;
+            signaling.energyPerUnitMass = 2f;
             var leakage = go.AddComponent<MembraneLeakageSystem>();
             leakage.exchange = exchange;
             leakage.membrane = membrane;
