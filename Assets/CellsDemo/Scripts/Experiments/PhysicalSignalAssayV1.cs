@@ -21,6 +21,7 @@ namespace Cells.Experiments
         {
             public int Seed;
             public bool Signaling;
+            public bool ResponseEnabled;
             public float[] NetEnergy;
             public float[] ConsumedMass;
             public int[] Receptions;
@@ -32,6 +33,15 @@ namespace Cells.Experiments
         }
 
         public static Result Run(int seed, bool enableSignaling)
+        {
+            return Run(seed, enableSignaling, true);
+        }
+
+        /// <summary>
+        /// Separate signal production from the receiver's behavioral response.
+        /// Receivers still measure physical concentration when response is disabled.
+        /// </summary>
+        public static Result Run(int seed, bool enableSignaling, bool enableResponse)
         {
             var rng = new System.Random(seed);
             var root = new GameObject("physical-signal-assay");
@@ -129,7 +139,7 @@ namespace Cells.Experiments
                         float localSignal = receptor[i].ReadLocal();
                         bool heard = localSignal >= receptor[i].detectionThreshold;
                         if (heard) receptions[i]++;
-                        Vector2 gradient = foodGrad + (heard ? receptor[i].ReadGradient() * .5f
+                        Vector2 gradient = foodGrad + (heard && enableResponse ? receptor[i].ReadGradient() * .5f
                             : Vector2.zero);
                         if (gradient.sqrMagnitude > 1e-9f)
                         {
@@ -161,6 +171,7 @@ namespace Cells.Experiments
                 return new Result
                 {
                     Seed = seed, Signaling = enableSignaling,
+                    ResponseEnabled = enableResponse,
                     NetEnergy = returns, ConsumedMass = consumed, Receptions = receptions,
                     TotalHarvestMass = harvested, SignalMassEmitted = emitted,
                     SignalEnergySpent = spent,
