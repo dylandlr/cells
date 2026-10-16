@@ -61,6 +61,12 @@ namespace Cells.Experiments
                 throw new ArgumentOutOfRangeException("heldOutSeeds");
             // IMPORTANT: caller must additionally audit the training manifest for seed overlap.
             // The exporter uses a disjoint hard-coded interval and asserts it below.
+            long trainingStart = training.FirstEnvironmentSeed;
+            long trainingEndExclusive = trainingStart + training.Episodes;
+            long testStart = firstTestSeed;
+            long testEndExclusive = testStart + heldOutSeeds;
+            if (trainingStart < testEndExclusive && testStart < trainingEndExclusive)
+                throw new ArgumentException("Training and test environment seed intervals overlap.");
             var learned = training.FrozenSeatProbabilities;
             for (int i = 0; i < learned.Length; i++) Select(learned[i], 0);
 
@@ -73,7 +79,7 @@ namespace Cells.Experiments
                 "seed,learned_return,uniform_return,silent_return,learned_minus_uniform,learned_minus_silent\n");
             var vsUniform = new System.Collections.Generic.List<PairedAssayAnalysisV1.Record>();
             var vsSilent = new System.Collections.Generic.List<PairedAssayAnalysisV1.Record>();
-            var uniform = { 0.25, 0.25, 0.25, 0.25 };
+            var uniform = new double[] { 0.25, 0.25, 0.25, 0.25 };
             for (int n = 0; n < heldOutSeeds; ++n)
             {
                 int seed = firstTestSeed + n;
