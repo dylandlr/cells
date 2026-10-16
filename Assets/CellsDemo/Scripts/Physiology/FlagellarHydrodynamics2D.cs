@@ -22,8 +22,11 @@ namespace Cells.Physiology
         [Min(0f)] public float couplingGain = .65f;
         [Min(0f)] public float maximumSwimSpeed = .65f;
         [Min(0f)] public float fluidReactionGain = .45f;
+        [Min(.01f)] public float rotationalBodyDrag = 1.15f;
+        [Min(0f)] public float maximumAngularSpeedDegrees = 55f;
         public Vector2 LocalSwimmingVelocity { get; private set; }
         public float SegmentDissipation { get; private set; }
+        public float LocalAngularVelocityDegrees { get; private set; }
         public float StrokeMagnitude { get; private set; }
 
         readonly Vector2[] previous = new Vector2[SoftFlagellum2D.NodeCount];
@@ -39,6 +42,7 @@ namespace Cells.Physiology
         {
             hasHistory = false;
             LocalSwimmingVelocity = Vector2.zero;
+            LocalAngularVelocityDegrees = 0f;
             SegmentDissipation = StrokeMagnitude = 0f;
         }
 
@@ -60,6 +64,7 @@ namespace Cells.Physiology
             bool active = motor && motor.ActualActivation > 0f
                 && motor.structuralIntegrity > 0f && motor.EffectiveThrust > 0f;
             Vector2 dragWeightedStroke=Vector2.zero;
+            float strokeTorque=0f;
             float dragX=bodyDrag, dragY=bodyDrag, dragXY=0f;
             SegmentDissipation=0f;
             StrokeMagnitude=0f;
@@ -79,6 +84,8 @@ namespace Cells.Physiology
                 Vector2 resistance=(parallelDrag*along*tangent+
                     perpendicularDrag*across*normal)*segmentLength;
                 dragWeightedStroke+=resistance;
+                Vector2 midpoint=.5f*(tail.Node(i)+tail.Node(i-1));
+                strokeTorque+=midpoint.x*resistance.y-midpoint.y*resistance.x;
                 dragX+=(parallelDrag*tangent.x*tangent.x+
                     perpendicularDrag*normal.x*normal.x)*segmentLength;
                 dragY+=(parallelDrag*tangent.y*tangent.y+
@@ -96,6 +103,7 @@ namespace Cells.Physiology
             if (!active)
             {
                 LocalSwimmingVelocity=Vector2.zero;
+                LocalAngularVelocityDegrees=0f;
                 SegmentDissipation=StrokeMagnitude=0f;
                 return;
             }
@@ -107,6 +115,15 @@ namespace Cells.Physiology
             LocalSwimmingVelocity=Vector2.ClampMagnitude(predicted,maximumSwimSpeed);
             if (!float.IsFinite(LocalSwimmingVelocity.x) || !float.IsFinite(LocalSwimmingVelocity.y))
                 LocalSwimmingVelocity=Vector2.zero;
+            // Coarse reaction yaw from the distributed flagellar resistance. A full
+            // 3x3 translation/rotation mobility solve is future work, so this is
+            // intentionally bounded and exposed as a diagnostic rather than hidden torque.
+            float omegaRadians = strokeTorque / Mathf.Max(.01f, rotationalBodyDrag);
+            LocalAngularVelocityDegrees = Mathf.Clamp(
+                omegaRadians * Mathf.Rad2Deg * couplingGain,
+                -maximumAngularSpeedDegrees, maximumAngularSpeedDegrees);
+            if (!float.IsFinite(LocalAngularVelocityDegrees))
+                LocalAngularVelocityDegrees=0f;
             // Effective equal/opposite flow forcing; never insert a net fluid
             // momentum source. No legacy motor stresslet when this component exists.
             if (fluid && fluidReactionGain>0f)
