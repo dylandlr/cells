@@ -225,7 +225,7 @@ internal sealed class MicroscopeWindow : Form
     private int selectedId;
     private CellAgent? Selected => world.Cells.FirstOrDefault(c=>c.Id==selectedId);
     private Point mouse=Point.Empty;
-    private const int UiHeight=96;
+    private const int UiHeight=106;
     private readonly Font uiFont=new("Segoe UI",10,FontStyle.Regular);
     private readonly Font titleFont=new("Segoe UI Semibold",17,FontStyle.Bold);
     private readonly Font monoFont=new("Consolas",9,FontStyle.Regular);
@@ -282,7 +282,7 @@ internal sealed class MicroscopeWindow : Form
     private Rectangle WorldRect()
     {
         int left=24, top=UiHeight+14, availableW=ClientSize.Width-48;
-        int availableH=ClientSize.Height-top-122;
+        int availableH=ClientSize.Height-top-126;
         double ratio=(double)MicroWorld.Width/MicroWorld.Height;
         int w=Math.Min(availableW,(int)(availableH*ratio));
         int h=(int)(w/ratio);
@@ -298,44 +298,13 @@ internal sealed class MicroscopeWindow : Form
         using var heading=new SolidBrush(Color.FromArgb(179,245,226));
         using var muted=new SolidBrush(Color.FromArgb(139,171,180));
         g.DrawString("cells",titleFont,heading,24,14);
-        g.DrawString("MICROSCOPE  /  EMERGENT ECOLOGY — WINDOWS PROTOTYPE",monoFont,muted,120,25);
+        g.DrawString("MICROSCOPE  /  EVOLVING MICROBIOME  •  v0.3",monoFont,muted,120,25);
         string stats=$"t = {world.Ticks*.04:0.0}s    alive {world.Cells.Count}    births {world.Births}    deaths {world.Deaths}    generations {world.MaximumGeneration}    pulses {world.Signals}    total ATP {world.TotalEnergy:0.0}";
-        g.DrawString(stats,uiFont,heading,26,56);
+        g.DrawString(stats,uiFont,heading,26,56);\n        g.DrawString($"TRAITS  swimming {world.MeanSpeed:0.00}  /  toxin defense {world.MeanResistance:0.00}    •    Green nutrients  /  Magenta toxins  /  Gold signals", monoFont,muted,26,82);
         var rect=WorldRect();
-        using var fieldBrush=new SolidBrush(Color.FromArgb(8,24,34));
-        g.FillRectangle(fieldBrush,rect);
-        float w=rect.Width/(float)MicroWorld.Width,h=rect.Height/(float)MicroWorld.Height;
-        using var nutrientBrush=new SolidBrush(Color.Black);
-        for(int x=0;x<MicroWorld.Width;x++)
-        for(int y=0;y<MicroWorld.Height;y++)
-        {
-            double n=world.FoodAt(x,y),t=world.ToxinAt(x,y),s=world.SignalAt(x,y);
-            int r=(int)Math.Clamp(8+t*440+s*130,0,255);
-            int green=(int)Math.Clamp(22+n*420+s*110,0,255);
-            int blue=(int)Math.Clamp(34+t*190+s*320,0,255);
-            nutrientBrush.Color=showChemistry?Color.FromArgb(r,green,blue):Color.FromArgb(9,29,38);
-            g.FillRectangle(nutrientBrush,rect.Left+x*w,rect.Top+y*h,w+1,h+1);
-        }
+        MicroscopeArt.DrawEnvironment(g,rect,world,showChemistry);
         foreach(var c in world.Cells)
-        {
-            float px=rect.Left+(float)c.X*w;
-            float py=rect.Top+(float)c.Y*h;
-            float radius=Math.Max(4f,w*(float)(.43+.10*c.Genes.Uptake));
-            using var halo=new SolidBrush(Color.FromArgb(35,c.Tint));
-            using var membrane=new Pen(c.Tint,1.8f);
-            using var nucleus=new SolidBrush(Color.FromArgb(235,243,220));
-            g.FillEllipse(halo,px-radius*1.5f,py-radius*1.5f,radius*3,radius*3);
-            g.DrawEllipse(membrane,px-radius,py-radius,radius*2,radius*2);
-            g.FillEllipse(nucleus,px-1.5f,py-1.5f,3,3);
-            if(c.Id==selectedId)
-            {
-                using var selection=new Pen(Color.White,1.2f);
-                g.DrawEllipse(selection,px-radius*1.9f,py-radius*1.9f,radius*3.8f,radius*3.8f);
-            }
-            using var tail=new Pen(Color.FromArgb(145,c.Tint),1f);
-            g.DrawLine(tail,px-(float)Math.Cos(c.Direction)*radius,py-(float)Math.Sin(c.Direction)*radius,
-                px-(float)Math.Cos(c.Direction)*radius*2.1f,py-(float)Math.Sin(c.Direction)*radius*2.1f);
-        }
+            MicroscopeArt.DrawCell(g,c,rect,world.Ticks,c.Id==selectedId);
         using var border=new Pen(Color.FromArgb(65,139,151),1f);
         g.DrawRectangle(border,rect);
         string pausedText=paused?"PAUSED":"RUNNING";
