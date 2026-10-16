@@ -272,9 +272,13 @@ namespace Cells.Demo
                 softBody.fluid = Fluid;
                 softBody.flagellum = go.GetComponent<CellFlagellarActuator>();
                 softBody.Initialize();
+                var compartments = go.AddComponent<InternalCompartments2D>();
+                compartments.body = softBody;
+                compartments.Initialize();
                 var meshView = go.AddComponent<SoftCellMeshRenderer2D>();
                 meshView.body = softBody;
                 meshView.membrane = membrane;
+                meshView.compartments = compartments;
                 // Preserve physiology and membrane integrity; replace just
                 // the legacy sprite and its texture-based boundary rendering.
                 membraneVisual.enabled = false;
