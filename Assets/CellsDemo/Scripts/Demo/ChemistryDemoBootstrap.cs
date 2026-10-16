@@ -89,7 +89,15 @@ namespace Cells.Demo
             field.fluid = Fluid;
             var fluidOverlay = Child("Measured fluid flow vectors").AddComponent<FluidFlowOverlay>();
             fluidOverlay.fluid = Fluid;
-            field.Deposit("nutrient-A", new Vector2(0f, 0f), initialFood);
+            // Reserve a small portion of the same finite food budget for the
+            // secretor's local receptor. Without local food, the demonstrated
+            // nutrient-dependent signaling policy may never emit a molecule.
+            // This is an intentionally staged demo stimulus, not spontaneous
+            // cooperative discovery or an additional resource source.
+            float availableFood = Mathf.Max(0f, initialFood);
+            float secretorPatch = availableFood * .15f;
+            field.Deposit("nutrient-A", new Vector2(-1.5f, 0f), secretorPatch);
+            field.Deposit("nutrient-A", new Vector2(0f, 0f), availableFood - secretorPatch);
             // Spread the challenge dose over several voxels rather than an instantaneous point overdose.
             for (int x = -4; x <= 4; x++)
             for (int y = -4; y <= 4; y++)
