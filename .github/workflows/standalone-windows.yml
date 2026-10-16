@@ -14,6 +14,8 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   build-windows:
@@ -46,6 +48,18 @@ jobs:
           $exe = (Resolve-Path publish/cells-windows/Cells.exe).Path
           $process = Start-Process -FilePath $exe -ArgumentList "--smoke-test" -PassThru -Wait
           if ($process.ExitCode -ne 0) { throw "Native Windows smoke test failed: $($process.ExitCode)" }
+      - name: Generate reproducible SHA-256 file
+        shell: pwsh
+        run: |
+          $exe = "publish/cells-windows/Cells.exe"
+          $hash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  Cells.exe" | Set-Content -Path publish/cells-windows/SHA256SUMS.txt -Encoding ascii
+          Write-Host "Windows executable SHA256=$hash"
+      - name: Attest Windows binary build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: publish/cells-windows/Cells.exe
       - name: Include usage notes
         shell: pwsh
         run: Copy-Item Standalone/README.txt publish/cells-windows/README.txt
