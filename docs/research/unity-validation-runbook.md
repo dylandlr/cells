@@ -40,3 +40,19 @@ If the license configuration is still absent, the workflow intentionally fails b
 ## Remaining engineering work
 
 Once real Unity test reports are available: fix compile/runtime failures first; record a known-good Unity scene and short real gameplay capture; then replace the simplified motor controller with explicit `CellMotility` / `CellFlagellarActuator` integration under seed-matched calibration. Do not tune on held-out evaluation seeds.
+
+## Build a playable Windows development executable
+
+A local wrapper around the repository's existing `Cells.Editor.DemoProjectSetup.BuildWindows` method is now available:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Tools\Build-Windows.ps1
+```
+
+This uses a locally installed, **licensed** Unity editor with Windows Build Support. The command invokes Unity batch mode, creates/opens both existing demonstration scenes, builds `Build/Cells.exe`, and checks that both the executable and `Build/Cells_Data` exist. Build diagnostics are saved to `UnityTestResults/WindowsBuild.log`. An explicit editor path can be supplied with `-UnityEditor`.
+
+**Do not distribute only the EXE**. Unity's Windows player requires the complete `Build/` directory, including data, DLLs and supporting files. This build uses `BuildOptions.Development`; it is not signed. Windows Smart App Control may refuse to launch an unsigned executable. Do not attempt to disable the security controls as an implementation shortcut; use a trusted local Unity PlayMode test while signing and distribution are planned.
+
+The demonstration now reserves 15% of its existing initial nutrient budget in the secretor's local grid voxel, with the remainder at the original center position. This is a scripted initial challenge intended to make the nutrient-triggered signaling mechanism visible and does not demonstrate autonomous discovery, cooperation or genuine emergent evolution. Total initial nutrient mass is unchanged for nonnegative `initialFood` settings.
+
+At commit time the Windows wrapper was **not executed** in the assistant environment: no licensed Unity editor or Windows player verification available. Use the local test script before interpreting gameplay footage or distributing a build.
