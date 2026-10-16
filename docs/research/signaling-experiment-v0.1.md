@@ -158,3 +158,21 @@ For resident strategy `r`, deviation `d`, seat `i`, and random seed `s`, the est
 A positive estimated advantage suggests that the **homogeneous resident profile is exploitable within this restricted library** at that seat, subject to uncertainty. A nonpositive estimate does **not** establish Nash equilibrium: the action space is larger than four fixed scripts, environments have sampling variability, and only homogeneous resident profiles are evaluated. The full 4^4=256 pure profiles, learned-mixed-profile incentives, confidence-aware restricted best responses, spatial signaling chemistry, and approximate-equilibrium analysis remain follow-on work.
 
 **Verification gate:** run EditMode tests and Unity menu export; inspect paired CSVs, verify 48 comparisons and 1,440 raw observations, and avoid selecting a "best" policy from the same test seeds used for statistical inference. No empirical study results have been executed or confirmed here.
+
+## Full restricted empirical game (v0.1 source implementation)
+
+The new `EmpiricalPayoffTensorV1` enumerates all **4^4 = 256** ordered joint strategy profiles of four agents using the frozen policy library `silent`, `follower`, `signaler`, `random`. It preserves individual seat asymmetries rather than averaging them away. Each profile is evaluated on the same 30 exogenous environment seeds (300000–300029), producing **7,680 intended episodes** and an empirical table of four mean individual payoffs per joint profile.
+
+Unity Editor command: **Cells → Research → Evaluate Full Strategy Payoff Tensor (30 Seeds)**. Expected local outputs in `ExperimentRuns/payoff-tensor-v1/`:
+- `tensor.csv`: 256 indexed profiles, their four policy indices and four mean payoff estimates.
+- `learned_mixture.csv`: four seat-specific EXP3 frozen selection distributions, trained on 631–930.
+- `learned_deviation.csv`, `uniform_deviation.csv`, `silent_deviation.csv`: expected utilities and best restricted unilateral deviation gains against the indicated independent mixed profiles.
+- `manifest.json`: environment version, seeds, profile count, and analysis caveats.
+
+**Analysis equation**: for independently mixed selection probabilities `pi_i(s_i)` and empirical payoff table `U_i(s_0,s_1,s_2,s_3)`, compute
+`V_i(pi) = sum_s [prod_j pi_j(s_j)] U_i(s)`.
+The restricted incentive to deviate to any single frozen strategy is
+`epsilon_i^restricted(pi) = max(0, max_a V_i(a,pi_-i)-V_i(pi))`.
+A small restricted epsilon on this four-strategy table does **not** establish full-game Nash equilibrium or convergence: off-library policy deviations are absent and payoff table means have statistical uncertainty. No payoff confidence bounds have yet been propagated through this contraction; these estimates must be labeled preliminary even after Unity executes. The EXP3 frozen mixture is *not* selected using tensor evaluation seeds.
+
+**Test gates:** `EmpiricalPayoffTensorV1Tests` covers 256-profile bijection, table population, pure-profile consistency, nonnegative restricted gain, repeatability, and invalid mixture rejection. Run EditMode tests and inspect CSV output before interpreting any payoff or claiming observed emergence. The Unity runtime and experiments have not been run in this development environment.
