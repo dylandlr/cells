@@ -244,3 +244,14 @@ The assay now gates signal-guided steering on `LocalSignalPolicyV1.FollowEnabled
 **Critical interpretation warning:** A positive number of receptor detections with zero response-policy ticks indicates a timescale/decision-cadence mismatch, not successful information use. Zero gradient-steering ticks despite activated following can reflect uniform local concentration. Only a verified, executed assay can establish whether these occur. Two new EditMode tests assert that passive detection cannot activate following and that gradient use requires a policy activation.
 
 The local-response controller is still a scripted and discretized motility rule, not a learned strategy or complete biological membrane transduction model. All simulator time constants and coefficients remain uncalibrated.
+
+## Executed motor effects versus sensing-only telemetry
+
+The spatial-signaling assay now distinguishes **sensor availability**, **decision state**, and **executed motor action**. Previously, `GradientUsedSteps` incremented for a nonzero signal gradient even if movement was not executed because the agent could not pay motor energy. It is now counted only after successful movement. The assay also records:
+- `SignalInfluencedMoves`: number of executed steps where the combined steering direction differed from nutrient-only steering;
+- `CumulativeMovementDistance`: total executed path length in world units;
+- `CumulativeSignalDirectionalAlignment`: sum of directional dot products between executed movement and local signal gradient, for qualifying motor steps.
+
+These diagnostic observables appear in physical factorial and sensitivity exports. They **do not** replace causal comparisons between paired treatments: a directional difference from nutrient-only steering is a within-state diagnostic, not a full counterfactual trajectory, because histories and local nutrient states can diverge between experimental arms.
+
+Revised EditMode tests require silent-response controls to have zero signal-influenced moves and check that influenced steps cannot exceed actual signal-gradient motor steps. Testing remains blocked until Unity license configuration permits the Unity test runner.
