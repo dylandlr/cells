@@ -176,3 +176,18 @@ The restricted incentive to deviate to any single frozen strategy is
 A small restricted epsilon on this four-strategy table does **not** establish full-game Nash equilibrium or convergence: off-library policy deviations are absent and payoff table means have statistical uncertainty. No payoff confidence bounds have yet been propagated through this contraction; these estimates must be labeled preliminary even after Unity executes. The EXP3 frozen mixture is *not* selected using tensor evaluation seeds.
 
 **Test gates:** `EmpiricalPayoffTensorV1Tests` covers 256-profile bijection, table population, pure-profile consistency, nonnegative restricted gain, repeatability, and invalid mixture rejection. Run EditMode tests and inspect CSV output before interpreting any payoff or claiming observed emergence. The Unity runtime and experiments have not been run in this development environment.
+
+## Independent verification infrastructure (v0.1)
+
+We added `Tests/Headless/Cells.HeadlessChecks.csproj` and `Tests/Headless/Program.cs` linking the **actual research C# sources** into a .NET 8 console executable without Unity assembly dependencies. It checks deterministic seeded replays, EXP3 reward contracts, non-overlapping train/test seeds, bootstrap calculations, 256-profile encoding/decoding, restricted deviations and mixed-policy payoff consistency. This is *not* a mocked implementation or a claim of physical-model validity.
+
+Run locally with .NET SDK 8:
+
+```sh
+dotnet build Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release
+dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build
+```
+
+GitHub Actions `.github/workflows/headless-research.yml` executes both commands on pull requests and changes to the headless research layer. This is independent of `.github/workflows/unity-tests.yml`, which requires an actual Unity installation and functioning license setup.
+
+The presence of the workflow does **not** establish a passing status. The exact check-run status and logs must be inspected before claims of successful compilation. Even passing headless checks would **not** prove correct fluid projection, biological calibration, spatial transport, Unity importer behavior, or empirical cooperation.
