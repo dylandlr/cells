@@ -8,6 +8,7 @@ namespace Cells.Rendering
     public sealed class FlagellumRenderer : MonoBehaviour
     {
         public CellFlagellarActuator actuator;
+        public SoftFlagellum2D softFlagellum;
         public int samples = 28;
         public float width = .035f;
         LineRenderer filament;
@@ -16,6 +17,7 @@ namespace Cells.Rendering
         void Awake()
         {
             if (!actuator) actuator = GetComponent<CellFlagellarActuator>();
+            if (!softFlagellum) softFlagellum = GetComponent<SoftFlagellum2D>();
             var child = new GameObject("Flagellum / driven by actuator");
             child.transform.SetParent(transform, false);
             filament = child.AddComponent<LineRenderer>();
@@ -38,12 +40,15 @@ namespace Cells.Rendering
         void LateUpdate()
         {
             if (!filament || !actuator) return;
-            int count = Mathf.Clamp(samples, 4, 128);
+            if (!softFlagellum) softFlagellum = GetComponent<SoftFlagellum2D>();
+            int count = softFlagellum && softFlagellum.Initialized
+                ? SoftFlagellum2D.NodeCount : Mathf.Clamp(samples, 4, 128);
             if (filament.positionCount != count) filament.positionCount = count;
             filament.enabled = actuator.structuralIntegrity > 0f;
             for (int i = 0; i < count; i++)
             {
-                Vector2 local = actuator.SampleCenterline(i / (float)(count - 1));
+                Vector2 local = softFlagellum && softFlagellum.Initialized
+                    ? softFlagellum.Node(i) : actuator.SampleCenterline(i / (float)(count - 1));
                 filament.SetPosition(i, new Vector3(local.x, local.y, 0f));
             }
         }
