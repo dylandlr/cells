@@ -60,3 +60,16 @@ This design is **our proposed experimental extrapolation** drawing on classical 
 ### Interpretation guardrails
 
 The present toy model neither conserves a depleting nutrient stock nor models spatial pheromone diffusion. Per-step patch yields regenerate as a payoff opportunity, so this **does not yet implement genuine cumulative scarcity**. Episode return equals net energy change, and initial energy is identical across agents. Therefore, payoff improvements do not establish biological survival, evolved cooperation, or Nash equilibrium. The paper-motivated next step is resource-stock accounting and physically costly signaling.
+
+## Physical chemistry adapter milestone (added 2026-10-15)
+
+The Unity microscope now contains a **separate preliminary physical signal mechanism**, not yet coupled to the above abstract game's action stream:
+
+- `CellChemicalSignaling.Emit(mass)` debits available metabolic energy for the actual deposited dissolved mass. Rejected deposits cost no energy, and finite positive rates are required.
+- `CellChemicalSignaling.ReadLocal()` and `ReadGradient()` read only local concentrations/gradients, avoiding omniscient signal broadcasts. Sensor thresholds and emission efficiencies are arbitrary test values, not measured cell biology.
+- The demo registers `signal-S` with diffusion coefficient `.22` and decay rate `.13` in arbitrary simulation units, and displays it using a microscope false-color overlay.
+- The demo Secretor emits periodic pulses; the Grazer has a passive detector. **No agent policy consumes those observations yet; there is no demonstrated learned communication.**
+- The existing `MultiChemicalField2D` drives diffusion, advection, and decay. One must run Unity to validate ordering, transport mass budgets, signal availability at distance, and inspector visualization.
+- `CellChemicalSignalingTests` cover mass-energy accounting, out-of-bounds rejection, unknown signals, affordable emission, diffusion detection, and emission bounds.
+
+**Next scientific gate:** encode a policy-controllable action to emit a pulse (or stay silent), a receiver observation derived strictly from sensed spatial concentration (with receptor noise and thresholds), then compare explicit signaling enable/disable interventions under fixed matched seeds. A signaling molecule is not itself proof that meaningful information or cooperation has emerged.
