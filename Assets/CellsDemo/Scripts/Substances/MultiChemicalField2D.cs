@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Cells.Fluid;
 
 namespace Cells.Substances
 {
@@ -9,6 +10,9 @@ namespace Cells.Substances
     public sealed class MultiChemicalField2D : MonoBehaviour
     {
         public SubstanceDefinition[] species = Array.Empty<SubstanceDefinition>();
+        [Tooltip("Optional velocity field. When connected, dissolved masses advect with the fluid.")]
+        public FluidGrid2D fluid;
+        [Range(.05f, .95f)] public float advectionCfl = .45f;
         [Min(3)] public int width = 96;
         [Min(3)] public int height = 54;
         [Min(.1f)] public float cellSize = .25f;
@@ -105,9 +109,77 @@ namespace Cells.Substances
             }
         }
 
+        /// <summary>
+        /// Conservative first-order finite-volume upwind transport. Every interior face
+        /// moves the exact same mass out of its donor and into its receiver.
+        /// Domain boundaries are impermeable. CFL substeps keep donor mass nonnegative.
+        /// This transports passive dissolved quantities; it does not solve fluid dynamics.
+        /// </summary>
+        public void Advect(float dt)
+        {
+            if (!fluid || !Finite(dt) || dt <= 0f) return;
+            float maxVelocity = 0f;
+            // Face velocities are sampled from the fluid after its FixedUpdate.
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                Vector2 world = transform.TransformPoint(new Vector3(
+                    (x + .5f - width * .5f) * cellSize,
+                    (y + .5f - height * .5f) * cellSize));
+                Vector2 v = fluid.Sample(world);
+                if (!Finite(v.x) || !Finite(v.y)) return;
+                maxVelocity = Mathf.Max(maxVelocity, Mathf.Abs(v.x) + Mathf.Abs(v.y));
+            }
+            int count = Mathf.Max(1, Mathf.CeilToInt(maxVelocity * dt /
+                (cellSize * Mathf.Max(.05f, advectionCfl))));
+            float step = dt / count;
+            foreach (var pair in concentrations)
+            {
+                float[] src = pair.Value;
+                float[] dst = buffers[pair.Key];
+                for (int pass = 0; pass < count; pass++)
+                {
+                    Array.Copy(src, dst, src.Length);
+                    for (int y = 0; y < height; y++)
+                    for (int x = 0; x < width; x++)
+                    {
+                        int i = y * width + x;
+                        if (x + 1 < width)
+                        {
+                            Vector2 face = transform.TransformPoint(new Vector3(
+                                (x + 1f - width * .5f) * cellSize,
+                                (y + .5f - height * .5f) * cellSize));
+                            float vx = fluid.Sample(face).x;
+                            int j = i + 1;
+                            float flux = vx * step / cellSize *
+                                (vx >= 0f ? src[i] : src[j]);
+                            dst[i] -= flux;
+                            dst[j] += flux;
+                        }
+                        if (y + 1 < height)
+                        {
+                            Vector2 face = transform.TransformPoint(new Vector3(
+                                (x + .5f - width * .5f) * cellSize,
+                                (y + 1f - height * .5f) * cellSize));
+                            float vy = fluid.Sample(face).y;
+                            int j = i + width;
+                            float flux = vy * step / cellSize *
+                                (vy >= 0f ? src[i] : src[j]);
+                            dst[i] -= flux;
+                            dst[j] += flux;
+                        }
+                    }
+                    var tmp = src; src = dst; dst = tmp;
+                }
+                concentrations[pair.Key] = src;
+                buffers[pair.Key] = dst;
+            }
+        }
+
         public void Step(float dt)
         {
             if (!Finite(dt) || dt <= 0f) return;
+            Advect(dt);
             foreach (var speciesDefinition in species)
             {
                 if (!speciesDefinition || !concentrations.TryGetValue(speciesDefinition.stableId, out var src)) continue;
