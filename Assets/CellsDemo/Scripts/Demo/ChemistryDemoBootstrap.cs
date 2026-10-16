@@ -258,6 +258,25 @@ namespace Cells.Demo
                 go.transform.rotation = Quaternion.Euler(0f, 0f, secretor ? 18f : 205f);
             }
 
+            // The two motile focal organisms use the new physically skinned
+            // body; the large static culture still uses its existing sector
+            // membrane so we do not run competing shape solvers on one cell.
+            if (motile)
+            {
+                var softBody = go.AddComponent<SoftCellBody2D>();
+                softBody.membrane = membrane;
+                softBody.fluid = Fluid;
+                softBody.flagellum = go.GetComponent<CellFlagellarActuator>();
+                softBody.Initialize();
+                var meshView = go.AddComponent<SoftCellMeshRenderer2D>();
+                meshView.body = softBody;
+                meshView.membrane = membrane;
+                // Preserve physiology and membrane integrity; replace just
+                // the legacy sprite and its texture-based boundary rendering.
+                membraneVisual.enabled = false;
+                visual.enabled = false;
+            }
+
             if (!secretor)
             {
                 var exposure = go.AddComponent<CellExposureSystem>();
