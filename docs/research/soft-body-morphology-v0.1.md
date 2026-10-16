@@ -32,6 +32,18 @@ Unity EditMode parameterized tests now sample `(frequency, amplitude, structural
 
 Signed displacement is reported separately from path length because back-and-forth waving can generate visual motion but **zero net propulsion**. No assumption is made that faster beating necessarily increases *net* swimming speed; that must emerge from the model and be compared with a low-Re reference. Outputs are written to NUnit test logs only until licensed Unity runners become available. Passing the standalone .NET workflow does not execute this assay.
 
+## Reproducible local Unity experiment export
+
+Open this repository in Unity 6000.6.5f1 (or a compatible Unity 6 editor), wait for script compilation, and use **Cells → Experiments → Export flagellar propulsion CSV**. The Editor writes `Build/Experiments/flagellar-propulsion.csv` relative to the project root.
+
+Nine isolated conditions include five baseline/injury comparisons and four single-factor controls. All conditions use a fixed timestep of 0.02 simulation seconds, 500 steps, and 100 warm-up steps; no GUI rendering is necessary. Expected CSV columns: `frequency_hz, amplitude, integrity, net_x, net_y, net_distance, absolute_path, peak_speed, stroke_dissipation, motor_atp, steps, warmup`. Missing license activation in hosted CI does not stop this from running in an already activated local Unity Editor.
+
+Batch mode (only on a machine with a licensed Unity editor):
+```powershell
+& "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Unity.exe" -batchmode -nographics -projectPath "<repository-root>" -executeMethod Cells.Editor.FlagellarExperimentRunner.RunBatch -quit -logFile "Build/flagellar-assay.log"
+```
+Adjust the Unity.exe path for your installed version. The CSV results remain local until exported or uploaded; the current GitHub workflow does not produce experimental measurements.
+
 ## Science and fidelity boundary
 
 This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. The new optional hydrodynamics component computes a **coarse drag balance from node motions**, but is not a calibrated hydrodynamic force solver. Internal compartments now have independent positions, velocities, finite radii and collisions, but their interiors do not have deformable meshes, modeled reactions, or independent biochemical mass balances. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
