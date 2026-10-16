@@ -20,13 +20,19 @@ When an interior compartment violates a membrane edge clearance, the compartment
 
 The membrane records per-sector edge strain and a decaying, bounded memory of compartment contact reactions. `SoftCellMeshRenderer2D` maps this diagnostic stress to a high-contrast amber/red vertex gradient on the physical skin. `MaximumStress` and `StressAt(i)` are available for inspection. These are dimensionless surrogate indicators and **do not automatically inflict biological injury**; a validated stress-to-damage response must be developed separately.
 
+## Segment-derived propulsion prototype
+
+`FlagellarHydrodynamics2D` estimates local resistance from changes in each of the 18 flagellar nodes. Each segment contributes a tangent/perpendicular drag term; the solver balances summed segment resistance against an effective body drag, yielding a bounded force-free **local swimming velocity**. `CellMotility` now consumes that velocity on the two focal organisms; chemical gradients still steer orientation and flow advection is applied separately. The legacy scalar motor-thrust fallback remains for organisms without the hydro component. The original `CellFlagellarActuator` flow dipole is suppressed when the new component is present, avoiding duplicate fluid forcing. The hydro component deposits its own balanced front/rear dipole and reports stroke magnitude and effective dissipation.
+
+This is a **proxy resistive-force calculation**, not calibrated fluid mechanics. Axial/lateral body drag is diagonalized, no full mobility tensor or wall correction is solved, the tail's preferred waveform is still motor-prescribed, and the segment reaction to fluid is approximated by a single dipole. Further validation must compare direction, speed, beat-frequency scaling, energy, and grid refinement against low-Reynolds reference problems. A battery of Unity tests was added for zero-power motion, bounded outputs, and zero net queued fluid force.
+
 ## Science and fidelity boundary
 
-This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. Thrust remains approximated by the existing actuator and motility module, **not computed from reaction forces on individual tail segments**. Internal compartments now have independent positions, velocities, finite radii and collisions, but their interiors do not have deformable meshes, modeled reactions, or independent biochemical mass balances. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
+This is a coarse **position-based membrane proxy** with arbitrary effective parameters, not molecular mechanics, a finite-element membrane, or a calibrated Stokes solver. The motor still prescribes a **preferred** flagellar waveform, but the actual visible chain is constrained and dynamically relaxed. The new optional hydrodynamics component computes a **coarse drag balance from node motions**, but is not a calibrated hydrodynamic force solver. Internal compartments now have independent positions, velocities, finite radii and collisions, but their interiors do not have deformable meshes, modeled reactions, or independent biochemical mass balances. Fluid node sampling does not imply two-way momentum-conserving fluid–membrane coupling.
 
 ## Next physical milestones
 
-1. Calculate motility from flagellar segment drag/reaction forces (instead of the coarse dipole thrust proxy) and incorporate bending energy and reciprocal fluid coupling.
+1. Validate segment-derived propulsion against low-Re reference cases, add complete anisotropic resistance tensor, bending energy, and spatially distributed reciprocal fluid coupling.
 2. Local membrane permeability/leakage as a function of node-adjacent sector integrity and collision/contact.
 3. Expand internal compartments to deformable meshes, explicit biochemical budgets, and contact-aware membrane tension (current compartments are finite-radius particles).
 4. Deterministic test scene for mesh stability, collisions, mass/energy accounting, and recorded comparisons with analytical overdamped limits.
