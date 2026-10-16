@@ -318,7 +318,8 @@ internal sealed class MicroscopeWindow : Form
         g.DrawString("cells",titleFont,heading,24,14);
         g.DrawString("MICROSCOPE  /  EVOLVING MICROBIOME  •  v0.3",monoFont,muted,120,25);
         string stats=$"t = {world.Ticks*.04:0.0}s    alive {world.Cells.Count}    births {world.Births}    deaths {world.Deaths}    generations {world.MaximumGeneration}    pulses {world.Signals}    total ATP {world.TotalEnergy:0.0}";
-        g.DrawString(stats,uiFont,heading,26,56);\n        g.DrawString($"TRAITS  swimming {world.MeanSpeed:0.00}  /  toxin defense {world.MeanResistance:0.00}    •    Green nutrients  /  Magenta toxins  /  Gold signals", monoFont,muted,26,82);
+        g.DrawString(stats,uiFont,heading,26,56);
+        g.DrawString($"TRAITS  swimming {world.MeanSpeed:0.00}  /  toxin defense {world.MeanResistance:0.00}    •    Green nutrients  /  Magenta toxins  /  Gold signals", monoFont,muted,26,82);
         var rect=WorldRect();
         MicroscopeArt.DrawEnvironment(g,rect,world,showChemistry);
         foreach(var c in world.Cells)
