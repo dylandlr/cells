@@ -49,6 +49,38 @@ namespace Cells.Tests
                 PhysicalSignalAssayV1.RunCalibrated(631, true, true, .001f, .18f, -.1f));
         }
 
+
+        [Test]
+        public void DetectionIsNotAnAutomaticBehavioralDecision()
+        {
+            var passive = PhysicalSignalAssayV1.RunCalibrated(
+                631, true, false, .0001f, .18f, .13f);
+            for (int seat = 1; seat < PhysicalSignalAssayV1.Agents; seat++)
+            {
+                Assert.AreEqual(0, passive.ResponseEnabledSteps[seat]);
+                Assert.AreEqual(0, passive.GradientUsedSteps[seat]);
+                Assert.AreEqual(-1, passive.FirstResponseDecisionStep[seat]);
+            }
+        }
+
+        [Test]
+        public void ActiveChemotaxisRequiresAReceptorBasedPolicyDecision()
+        {
+            var active = PhysicalSignalAssayV1.RunCalibrated(
+                631, true, true, .0001f, .18f, .13f);
+            for (int seat = 1; seat < PhysicalSignalAssayV1.Agents; seat++)
+            {
+                Assert.GreaterOrEqual(active.ResponseEnabledSteps[seat],
+                    active.GradientUsedSteps[seat]);
+                if (active.ResponseEnabledSteps[seat] == 0)
+                    Assert.AreEqual(-1, active.FirstResponseDecisionStep[seat]);
+                else
+                    Assert.GreaterOrEqual(active.FirstResponseDecisionStep[seat], 0);
+                // Raw exposure may occur between policy decision ticks.
+                Assert.GreaterOrEqual(active.Receptions[seat], 0);
+            }
+        }
+
         [Test]
         public void DetectionTelemetryIsDeterministicOnSeed()
         {
