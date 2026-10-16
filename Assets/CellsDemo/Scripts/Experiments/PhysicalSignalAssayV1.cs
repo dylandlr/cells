@@ -33,6 +33,9 @@ namespace Cells.Experiments
             public float NutrientMassInitial;
             public float NutrientMassRemaining;
             public int[] FirstDetectionStep;
+            public int[] FirstResponseDecisionStep;
+            public int[] ResponseEnabledSteps;
+            public int[] GradientUsedSteps;
             public float[] PeakReceiverConcentration;
             public float[] FinalSourceDistance;
         }
@@ -97,8 +100,11 @@ namespace Cells.Experiments
                 var consumed = new float[Agents];
                 var receptions = new int[Agents];
                 var firstDetection = new int[Agents];
+                var firstDecision = new int[Agents];
+                var responseSteps = new int[Agents];
+                var steeringSteps = new int[Agents];
                 var peakConcentration = new float[Agents];
-                for (int i = 0; i < Agents; i++) firstDetection[i] = -1;
+                for (int i = 0; i < Agents; i++) { firstDetection[i] = -1; firstDecision[i] = -1; }
                 for (int i = 0; i < Agents; i++)
                 {
                     agents[i] = new GameObject("assay-cell-" + i);
@@ -121,7 +127,7 @@ namespace Cells.Experiments
                     policy[i].role = i == 0
                         ? (enableSignaling ? LocalSignalPolicyV1.Role.SignalWhenFed :
                             LocalSignalPolicyV1.Role.Silent)
-                        : LocalSignalPolicyV1.Role.FollowSignal;
+                        : (enableResponse ? LocalSignalPolicyV1.Role.FollowSignal : LocalSignalPolicyV1.Role.Silent);
                     policy[i].nutrientThreshold = .02f;
                     policy[i].signalPulseMass = .09f;
                     policy[i].minimumEnergy = .2f;
@@ -168,8 +174,19 @@ namespace Cells.Experiments
                             receptions[i]++;
                             if (firstDetection[i] < 0) firstDetection[i] = t;
                         }
-                        Vector2 gradient = foodGrad + (heard && enableResponse ? receptor[i].ReadGradient() * .5f
-                            : Vector2.zero);
+                        // The policy decides on a fixed cadence. Receptor detection
+                        // alone cannot automatically activate signal-guided movement.
+                        // Keep physical exposure metrics independent of decisions.
+                        bool policyFollowing = policy[i].FollowEnabled && enableResponse;
+                        if (policyFollowing)
+                        {
+                            responseSteps[i]++;
+                            if (firstDecision[i] < 0) firstDecision[i] = t;
+                        }
+                        Vector2 signalSteering = policyFollowing
+                            ? receptor[i].ReadGradient() * .5f : Vector2.zero;
+                        if (signalSteering.sqrMagnitude > 1e-9f) steeringSteps[i]++;
+                        Vector2 gradient = foodGrad + signalSteering;
                         if (gradient.sqrMagnitude > 1e-9f)
                         {
                             Vector2 shift = gradient.normalized * .025f;
@@ -213,6 +230,9 @@ namespace Cells.Experiments
                     NutrientMassInitial = nutrientInitial,
                     NutrientMassRemaining = field.Total("nutrient-A"),
                     FirstDetectionStep = firstDetection,
+                    FirstResponseDecisionStep = firstDecision,
+                    ResponseEnabledSteps = responseSteps,
+                    GradientUsedSteps = steeringSteps,
                     PeakReceiverConcentration = peakConcentration,
                     FinalSourceDistance = finalDistances
                 };
