@@ -25,7 +25,7 @@ namespace Cells.EditorTools
                 Application.dataPath, "..", "ExperimentRuns", "physical-factorial-v1"));
             Directory.CreateDirectory(folder);
             var agents = new StringBuilder(
-                "seed,produce,response,seat,net_energy,nutrient_mass,physical_detection_steps,policy_response_steps,gradient_used_steps,emitted_mass,emission_energy,remaining_signal,decayed_signal\n");
+                "seed,produce,response,seat,net_energy,nutrient_mass,physical_detection_steps,policy_response_steps,gradient_used_steps,signal_influenced_moves,movement_distance,emitted_mass,emission_energy,remaining_signal,decayed_signal\n");
             var pairs = new StringBuilder(
                 "seed,receiver_00,receiver_01,receiver_10,receiver_11,response_when_silent,response_when_produced,interaction,source_production_cost\n");
             var interaction = new List<PairedAssayAnalysisV1.Record>();
@@ -57,6 +57,8 @@ namespace Cells.EditorTools
                             .Append(run.Receptions[seat]).Append(',')
                             .Append(run.ResponseEnabledSteps[seat]).Append(',')
                             .Append(run.GradientUsedSteps[seat]).Append(',')
+                            .Append(run.SignalInfluencedMoves[seat]).Append(',')
+                            .Append(F(run.CumulativeMovementDistance[seat])).Append(',')
                             .Append(F(run.SignalMassEmitted)).Append(',')
                             .Append(F(run.SignalEnergySpent)).Append(',')
                             .Append(F(run.SignalMassRemaining)).Append(',')
