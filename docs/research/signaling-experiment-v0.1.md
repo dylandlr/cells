@@ -234,3 +234,13 @@ The physics-coupled `PhysicalSignalAssayV1` now captures additional mechanistic 
 **New checks:** `PhysicalSignalCalibrationTestsV1` checks that non-production results in no detected molecules, verifies both nutrient and emitted-signal mass ledgers, checks threshold/diffusivity parameter validation, and tests deterministic detection telemetry. These tests are committed, not executed; Unity licensing remains a prerequisite.
 
 **Interpretation:** A detected molecule is not necessarily informative to a cell; positive or negative gradient steering gains must be separated from raw exposure. This sweep identifies if thresholds and transport scales prevent detection, not whether signaling improves evolution or cooperation. All coefficients remain arbitrary simulation units.
+
+## Receptor-to-behavior causal gate (decision cadence revision)
+
+A model-review pass identified an important **implementation confound** in `PhysicalSignalAssayV1`: the movement loop previously activated signal chemotaxis directly whenever `ReadLocal()` crossed a threshold, ignoring the periodic decisions recorded in `LocalSignalPolicyV1`. This would incorrectly interpret immediate receptor activation as evidence of a policy response.
+
+The assay now gates signal-guided steering on `LocalSignalPolicyV1.FollowEnabled`, which is updated only on its specified decision ticks. When behavioral response is disabled, the receiver is assigned a silent role but still measures physical exposure for scientific diagnostics. Every receiver now records (1) first raw detection tick, (2) first policy-activated following tick, (3) ticks spent in a following state, (4) ticks with an above-epsilon signal-gradient contribution, (5) peak sensed local concentration, and (6) final distance to source. Both the factorial and sensitivity CSVs distinguish raw physical detection from selected behavior.
+
+**Critical interpretation warning:** A positive number of receptor detections with zero response-policy ticks indicates a timescale/decision-cadence mismatch, not successful information use. Zero gradient-steering ticks despite activated following can reflect uniform local concentration. Only a verified, executed assay can establish whether these occur. Two new EditMode tests assert that passive detection cannot activate following and that gradient use requires a policy activation.
+
+The local-response controller is still a scripted and discretized motility rule, not a learned strategy or complete biological membrane transduction model. All simulator time constants and coefficients remain uncalibrated.
