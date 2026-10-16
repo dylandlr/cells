@@ -80,6 +80,63 @@ namespace Cells.Tests
             Assert.Less(fluid.QueuedForceSum().magnitude,1e-4f);
         }
 
+        // Controlled parameter sweep: produces physically interpretable diagnostics
+        // without asserting an unvalidated monotonic speed law.
+        [TestCase(1.1f,.12f,1f)]
+        [TestCase(2.2f,.24f,1f)]
+        [TestCase(3.3f,.36f,1f)]
+        [TestCase(2.2f,.24f,.35f)]
+        [TestCase(2.2f,.24f,0f)]
+        public void ParameterSweepReportsSignedTravelAndEnergetics(
+            float frequency,float amplitude,float integrity)
+        {
+            const float dt=.02f;
+            motor.beatFrequencyHz=frequency;
+            motor.waveAmplitude=amplitude;
+            motor.structuralIntegrity=integrity;
+            motor.motorActivation=1f;
+            motor.metabolism=organism.GetComponent<CellMetabolism>();
+            motor.metabolism.energy=80f;
+            hydro.fluidReactionGain=0f; // Avoid time-varying field back-reaction in this isolate.
+            tail.Initialize();
+            hydro.ResetHistory();
+            hydro.Tick(dt);
+
+            float travelX=0f,travelY=0f,absoluteTravel=0f;
+            float dissipated=0f;
+            float initialEnergy=motor.metabolism.energy;
+            int samples=0;
+            for(int i=0;i<500;i++)
+            {
+                motor.Tick(dt);
+                tail.Tick(dt);
+                hydro.Tick(dt);
+                if(i<100)continue; // warm-up removes startup transients
+                Vector2 velocity=hydro.LocalSwimmingVelocity;
+                Assert.IsTrue(float.IsFinite(velocity.x)&&float.IsFinite(velocity.y));
+                Assert.IsTrue(float.IsFinite(hydro.SegmentDissipation));
+                Assert.LessOrEqual(velocity.magnitude,hydro.maximumSwimSpeed+1e-4f);
+                travelX+=velocity.x*dt; travelY+=velocity.y*dt;
+                absoluteTravel+=velocity.magnitude*dt;
+                dissipated+=hydro.SegmentDissipation;
+                samples++;
+            }
+            Assert.AreEqual(400,samples);
+            Assert.GreaterOrEqual(absoluteTravel,0f);
+            Assert.GreaterOrEqual(dissipated,0f);
+            Assert.LessOrEqual(motor.metabolism.energy,initialEnergy);
+            if(integrity==0f)
+            {
+                Assert.Less(absoluteTravel,1e-6f);
+                Assert.Less(dissipated,1e-6f);
+            }
+            TestContext.Out.WriteLine(
+                $"frequency_hz={frequency:R},amplitude={amplitude:R},"+
+                $"integrity={integrity:R},signed_x={travelX:R},signed_y={travelY:R},"+
+                $"absolute_path={absoluteTravel:R},stroke_dissipation={dissipated:R},"+
+                $"atp_used={initialEnergy-motor.metabolism.energy:R}");
+        }
+
         [Test]
         public void DisabledMotorStopsVelocityEvenWithExistingTailHistory()
         {
