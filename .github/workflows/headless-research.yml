@@ -1,0 +1,33 @@
+name: Headless research checks
+on:
+  push:
+    branches:
+      - feat/substance-ontology
+    paths:
+      - 'Assets/CellsDemo/Scripts/Experiments/**'
+      - 'Tests/Headless/**'
+      - '.github/workflows/headless-research.yml'
+  pull_request:
+    paths:
+      - 'Assets/CellsDemo/Scripts/Experiments/**'
+      - 'Tests/Headless/**'
+      - '.github/workflows/headless-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  experiments:
+    name: Compile and exercise research algorithms
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build plain C# experiments
+        run: dotnet build Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release
+      - name: Run deterministic research invariants
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build
