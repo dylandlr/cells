@@ -35,6 +35,9 @@ namespace Cells.Physiology
         [Range(0f,1f)] public float exploratoryBias = .12f;
 
         public Vector2 Velocity { get; private set; }
+        public Vector2 LastActiveVelocity { get; private set; }
+        public Vector2 LastFluidVelocity { get; private set; }
+        public Vector2 LastDisplacementVelocity { get; private set; }
         public Vector2 DesiredDirection { get; private set; } = Vector2.right;
         public float LastAttractantGradient { get; private set; }
         public float LastRepellentGradient { get; private set; }
@@ -57,7 +60,10 @@ namespace Cells.Physiology
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
             if (!metabolism || !metabolism.alive)
             {
-                Velocity = Vector2.MoveTowards(Velocity, Vector2.zero, drag * dt);
+                Velocity = Vector2.zero;
+                LastActiveVelocity = Vector2.zero;
+                LastFluidVelocity = Vector2.zero;
+                LastDisplacementVelocity = Vector2.zero;
                 return;
             }
 
@@ -118,7 +124,8 @@ namespace Cells.Physiology
             float paid = metabolism.Spend(requestedCost);
             float fraction = requestedCost <= 1e-8f ? 1f : Mathf.Clamp01(paid / requestedCost);
             Vector2 ambientFlow = fluid ? fluid.Sample(p) * flowEntrainment : Vector2.zero;
-            Vector2 displacement = (Velocity * fraction + ambientFlow) * dt;
+            Vector2 activeVelocity = Velocity * fraction;
+            Vector2 displacement = (activeVelocity + ambientFlow) * dt;
 
             Vector2 next = p + displacement;
             if (field)
@@ -130,6 +137,9 @@ namespace Cells.Physiology
                 local.y = Mathf.Clamp(local.y, -halfHeight, halfHeight);
                 next = field.transform.TransformPoint(local);
             }
+            LastActiveVelocity = activeVelocity;
+            LastFluidVelocity = ambientFlow;
+            LastDisplacementVelocity = (next - p) / dt;
             transform.position = new Vector3(next.x, next.y, transform.position.z);
         }
 
