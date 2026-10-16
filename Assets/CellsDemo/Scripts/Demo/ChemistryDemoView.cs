@@ -137,6 +137,15 @@ namespace Cells.Demo
                         GUILayout.Label("Motor integrity: " + motor.structuralIntegrity.ToString("P0"));
                     }
                 }
+                var policy = Selected.GetComponent<LocalSignalPolicyV1>();
+                if (policy)
+                {
+                    GUILayout.Label("Agent policy: " + policy.role);
+                    GUILayout.Label("Decisions: " + policy.Decisions);
+                    GUILayout.Label("Local nutrient cue: " + policy.LastNutrientConcentration.ToString("F4"));
+                    GUILayout.Label("Successful signals: " + policy.SuccessfulSignals);
+                    GUILayout.Label("Follow signal: " + (policy.FollowEnabled ? "active" : "inactive"));
+                }
                 var signaling = Selected.GetComponent<CellChemicalSignaling>();
                 if (signaling)
                 {
