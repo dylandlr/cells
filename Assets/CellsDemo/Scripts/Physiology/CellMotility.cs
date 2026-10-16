@@ -19,6 +19,9 @@ namespace Cells.Physiology
         [Range(0f,1f)] public float flowEntrainment = .8f;
         public string attractantId = "nutrient-A";
         public string repellentId = "toxin-B";
+        // Optional policy-controlled signal chemotaxis; disabled unless a policy activates it.
+        public CellChemicalSignaling signaling;
+        [Min(0f)] public float signalAttractantGain;
 
         [Min(.01f)] public float sensorOffset = .65f;
         [Min(0f)] public float maxSpeed = .55f;
@@ -73,11 +76,14 @@ namespace Cells.Physiology
             Vector2 repellentGradient = forward * (rFront - rBack) + side * (rLeft - rRight);
             LastAttractantGradient = attractantGradient.magnitude;
             LastRepellentGradient = repellentGradient.magnitude;
+            Vector2 signalGradient = signaling && signaling.ReadLocal() >= signaling.detectionThreshold
+                ? signaling.ReadGradient() * (2f * sensorOffset) : Vector2.zero;
 
             phase += dt * .73f;
             Vector2 wander = new Vector2(Mathf.Cos(phase), Mathf.Sin(phase));
             Vector2 steering = attractantGradient * attractantGain
                              - repellentGradient * repellentGain
+                             + signalGradient * signalAttractantGain
                              + wander * exploratoryBias;
 
             if (steering.sqrMagnitude > 1e-8f)
@@ -90,7 +96,8 @@ namespace Cells.Physiology
 
             Vector2 thrustDirection = transform.right;
             float stimulus = Mathf.Clamp01(.18f + attractantGradient.magnitude * attractantGain
-                                                + repellentGradient.magnitude * repellentGain);
+                                                + repellentGradient.magnitude * repellentGain
+                                                + signalGradient.magnitude * signalAttractantGain);
             // No hidden propulsion: swimming requires actuator output when equipped.
             float motorThrust = flagellum ? flagellum.EffectiveThrust : 1f;
             Vector2 targetVelocity = thrustDirection * (maxSpeed * stimulus * motorThrust);
