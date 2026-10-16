@@ -191,3 +191,9 @@ dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration 
 GitHub Actions `.github/workflows/headless-research.yml` executes both commands on pull requests and changes to the headless research layer. This is independent of `.github/workflows/unity-tests.yml`, which requires an actual Unity installation and functioning license setup.
 
 The presence of the workflow does **not** establish a passing status. The exact check-run status and logs must be inspected before claims of successful compilation. Even passing headless checks would **not** prove correct fluid projection, biological calibration, spatial transport, Unity importer behavior, or empirical cooperation.
+
+### First CI verification evidence
+
+The GitHub Actions run [38847159419](https://github.com/dylandlr/cells/actions/runs/38847159419) completed **successfully**: both `Build plain C# experiments` and `Run deterministic research invariants` steps passed. This confirms the headless research code compiles under .NET 8 and the executable checks ran. It does not constitute Unity PlayMode or EditMode coverage.
+
+By contrast, Unity workflow run [38847163264](https://github.com/dylandlr/cells/actions/runs/38847163264) failed at `Verify Unity activation configuration exists`; the `Unity test suite` step was skipped in both EditMode and PlayMode. A supported GameCI Unity license or licensed runner must be configured before Unity C# compilation and biological model tests can be validated. No scientific results should be reported yet.
