@@ -58,6 +58,7 @@ namespace Cells.Physiology
                 for (int i=0; i<previous.Length; i++) previous[i]=tail.Node(i);
                 hasHistory=true;
                 LocalSwimmingVelocity=Vector2.zero;
+                LocalAngularVelocityDegrees=0f;
                 return;
             }
 
@@ -66,6 +67,7 @@ namespace Cells.Physiology
             Vector2 dragWeightedStroke=Vector2.zero;
             float strokeTorque=0f;
             float dragX=bodyDrag, dragY=bodyDrag, dragXY=0f;
+            float dragXOmega=0f, dragYOmega=0f, dragOmega=rotationalBodyDrag;
             SegmentDissipation=0f;
             StrokeMagnitude=0f;
             float segmentLength = motor ? motor.length/(SoftFlagellum2D.NodeCount-1) : .06f;
@@ -85,6 +87,17 @@ namespace Cells.Physiology
                     perpendicularDrag*across*normal)*segmentLength;
                 dragWeightedStroke+=resistance;
                 Vector2 midpoint=.5f*(tail.Node(i)+tail.Node(i-1));
+                Vector2 rotated=new Vector2(-midpoint.y,midpoint.x);
+                float dxx=(parallelDrag*tangent.x*tangent.x+
+                    perpendicularDrag*normal.x*normal.x)*segmentLength;
+                float dxy=(parallelDrag*tangent.x*tangent.y+
+                    perpendicularDrag*normal.x*normal.y)*segmentLength;
+                float dyy=(parallelDrag*tangent.y*tangent.y+
+                    perpendicularDrag*normal.y*normal.y)*segmentLength;
+                dragXOmega+=dxx*rotated.x+dxy*rotated.y;
+                dragYOmega+=dxy*rotated.x+dyy*rotated.y;
+                dragOmega+=rotated.x*(dxx*rotated.x+dxy*rotated.y)
+                    +rotated.y*(dxy*rotated.x+dyy*rotated.y);
                 strokeTorque+=midpoint.x*resistance.y-midpoint.y*resistance.x;
                 dragX+=(parallelDrag*tangent.x*tangent.x+
                     perpendicularDrag*normal.x*normal.x)*segmentLength;
@@ -107,21 +120,19 @@ namespace Cells.Physiology
                 SegmentDissipation=StrokeMagnitude=0f;
                 return;
             }
-            // Inclined segments couple X and Y drag; diagonal division is not
-            // rotation invariant. Solve the complete symmetric 2x2 tensor.
-            PlanarDragBalance.Solve(dragX,dragXY,dragY,
-                dragWeightedStroke.x,dragWeightedStroke.y,out double ux,out double uy);
+            // Integrate force and torque simultaneously; appendage geometry creates
+            // off-diagonal translation/rotation couplings in the 3x3 resistance.
+            PlanarMobilityBalance.Solve(
+                dragX,dragXY,dragXOmega,dragY,dragYOmega,dragOmega,
+                dragWeightedStroke.x,dragWeightedStroke.y,strokeTorque,
+                out double ux,out double uy,out double omega);
             Vector2 predicted=new Vector2((float)ux,(float)uy)*couplingGain;
             LocalSwimmingVelocity=Vector2.ClampMagnitude(predicted,maximumSwimSpeed);
             if (!float.IsFinite(LocalSwimmingVelocity.x) || !float.IsFinite(LocalSwimmingVelocity.y))
                 LocalSwimmingVelocity=Vector2.zero;
-            // Coarse reaction yaw from the distributed flagellar resistance. A full
-            // 3x3 translation/rotation mobility solve is future work, so this is
-            // intentionally bounded and exposed as a diagnostic rather than hidden torque.
-            float omegaRadians = strokeTorque / Mathf.Max(.01f, rotationalBodyDrag);
             LocalAngularVelocityDegrees = Mathf.Clamp(
-                omegaRadians * Mathf.Rad2Deg * couplingGain,
-                -maximumAngularSpeedDegrees, maximumAngularSpeedDegrees);
+                (float)(omega*Mathf.Rad2Deg)*couplingGain,
+                -maximumAngularSpeedDegrees,maximumAngularSpeedDegrees);
             if (!float.IsFinite(LocalAngularVelocityDegrees))
                 LocalAngularVelocityDegrees=0f;
             // Effective equal/opposite flow forcing; never insert a net fluid
