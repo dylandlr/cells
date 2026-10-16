@@ -37,6 +37,8 @@ namespace Cells.Experiments
             public string FinalPolicyCsv;
             public string ManifestJson;
             public int Episodes;
+            // Defensive snapshot: probabilities are frozen after training.
+            public double[][] FrozenSeatProbabilities;
         }
 
         public static Output Run(int firstSeed = 631, int episodes = 300,
@@ -87,10 +89,12 @@ namespace Cells.Experiments
                 }
             }
 
+            var frozen = new double[selectors.Length][];
             var final = new StringBuilder("schema,seat,strategy,selection_probability,updates\n");
             for (int seat = 0; seat < selectors.Length; seat++)
             {
                 double[] probabilities = selectors[seat].Probabilities();
+                frozen[seat] = (double[])probabilities.Clone();
                 for (int strategy = 0; strategy < probabilities.Length; strategy++)
                 {
                     final.Append(Schema).Append(',').Append(seat).Append(',')
@@ -102,6 +106,7 @@ namespace Cells.Experiments
             return new Output
             {
                 Episodes = episodes,
+                FrozenSeatProbabilities = frozen,
                 EpisodesCsv = log.ToString(),
                 FinalPolicyCsv = final.ToString(),
                 ManifestJson = "{\n"
