@@ -57,9 +57,9 @@ namespace Cells.Rendering
         {
             if (!swimmer) return;
             Vector2 p = transform.position;
-            Vector2 v = swimmer.Velocity;
+            Vector2 v = swimmer.LastActiveVelocity;
             SetVector(swimmingLine,p,v,velocityScale,showVelocity);
-            Vector2 ambient = fluid ? fluid.Sample(p) * swimmer.flowEntrainment : Vector2.zero;
+            Vector2 ambient = swimmer.LastFluidVelocity;
             SetVector(fluidLine,p,ambient,fluidScale,showFluid);
             float omega = hydro ? hydro.LocalAngularVelocityDegrees : 0f;
             bool valid = float.IsFinite(omega) && Mathf.Abs(omega)>1e-4f;
