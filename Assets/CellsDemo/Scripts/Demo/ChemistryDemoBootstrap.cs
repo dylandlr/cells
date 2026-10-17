@@ -258,6 +258,7 @@ namespace Cells.Demo
                 motility.field = field;
                 motility.metabolism = metabolism;
                 motility.useTemporalChemotaxis = true;
+                motility.tumbleSeed = seed + id * 1009;
                 policy.motility = motility;
                 var telemetry = go.AddComponent<SwimmerTelemetryOverlay>();
                 telemetry.swimmer = motility;
