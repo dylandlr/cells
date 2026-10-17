@@ -18,7 +18,7 @@ namespace Cells.Physiology
             turnRadians=0;
             if (!double.IsFinite(receptorResponse) || !double.IsFinite(dt) || dt<=0) return false;
             LastHazard=Math.Max(0,baselineRate)+Math.Max(0,unfavorableRateGain)*Math.Max(0,-receptorResponse);
-            double p=-Math.Expm1(-LastHazard*dt);
+            double p=1.0-Math.Exp(-LastHazard*dt);
             if (rng.NextDouble()>=p) return false;
             turnRadians=(rng.NextDouble()*2-1)*Math.Max(0,tumbleAngleRadians);
             TumbleCount++;
