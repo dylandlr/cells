@@ -61,6 +61,19 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Motor ATP / thrust integration regression coverage
+
+`FlagellarMotorGatingTests` exercises the real actuator and energy reserve:
+normal running versus throttled tumble expenditure, return to running
+thrust, completely disabled motor behavior, and exhaustion-induced shutdown.
+These are authored Unity Editor tests, **not yet executed** in Unity 6.6.
+
+Before using experimental results, run Edit Mode tests and observe the
+chemistry microscope in Play Mode, checking for frame-order effects between
+motility motor commands, flagellar actuation, appendage geometry, and flow.
+Motor energy decreases on a tumble command applied by the next actuator tick;
+there is currently no validated wall-clock biological calibration.
+
 ## Timed tumble motor gating (experimental)
 
 A tumble now starts a timed motor-state interval (default 0.22 s) that
