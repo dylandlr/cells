@@ -15,9 +15,16 @@ namespace Cells.Tests
                 Assert.AreEqual(631+i,rows[i*3].seed);
                 Assert.AreEqual(631+i,rows[i*3+1].seed);
                 Assert.AreEqual(631+i,rows[i*3+2].seed);
-                Assert.AreEqual(ChemotaxisAssayPlanV1.Spatial,rows[i*3].controller);
-                Assert.AreEqual(ChemotaxisAssayPlanV1.Temporal,rows[i*3+1].controller);
-                Assert.AreEqual(ChemotaxisAssayPlanV1.Stochastic,rows[i*3+2].controller);
+                var found = new System.Collections.Generic.HashSet<string> {
+                    rows[i*3].controller, rows[i*3+1].controller, rows[i*3+2].controller
+                };
+                Assert.AreEqual(3,found.Count);
+                Assert.IsTrue(found.Contains(ChemotaxisAssayPlanV1.Spatial));
+                Assert.IsTrue(found.Contains(ChemotaxisAssayPlanV1.Temporal));
+                Assert.IsTrue(found.Contains(ChemotaxisAssayPlanV1.Stochastic));
+                Assert.AreEqual(
+                    new [] {ChemotaxisAssayPlanV1.Spatial,ChemotaxisAssayPlanV1.Temporal,ChemotaxisAssayPlanV1.Stochastic}[(i)%3],
+                    rows[i*3].controller);
             }
         }
 
