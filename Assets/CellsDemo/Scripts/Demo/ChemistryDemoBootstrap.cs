@@ -15,6 +15,9 @@ namespace Cells.Demo
         public float initialFood = 4f;
         public bool autoBuild = true;
         public bool cultureView;
+        public bool assayMode;
+        public CellMotility AssaySwimmer { get; private set; }
+        public ChemotaxisTrialRecorder AssayRecorder { get; private set; }
         MultiChemicalField2D field;
         ChemicalEventLog eventLog;
         readonly System.Collections.Generic.List<UnityEngine.Object> ownedAssets = new System.Collections.Generic.List<UnityEngine.Object>();
@@ -102,11 +105,15 @@ namespace Cells.Demo
             for (int x = -4; x <= 4; x++)
             for (int y = -4; y <= 4; y++)
                 field.Deposit("toxin-B", new Vector2(1f + x * field.cellSize, y * field.cellSize), initialToxin / 81f);
-            CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f, true);
-            CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f, true);
-            if (cultureView) CreateCulture();
-            CreateParticleDemo();
-            CreateCamera();
+            if (assayMode)
+                CreateCell("Assay swimmer", 1, new Vector2(-1.5f, 0f), false, .65f, true);
+            else
+            {
+                CreateCell("Secretor", 1, new Vector2(-1.5f, 0f), true, 0.65f, true);
+                CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f, true);
+            }
+            if (cultureView && !assayMode) CreateCulture();
+            if (!assayMode) { CreateParticleDemo(); CreateCamera(); }
             AddChemicalOverlay("Nutrients", "nutrient-A", MaterialForm.Dissolved, food.visualization.baseColor, -22);
             AddChemicalOverlay("Toxins", "toxin-B", MaterialForm.Dissolved, new Color(.72f,.31f,.94f), -21);
             AddChemicalOverlay("Neutralizer", "neutralizer-C", MaterialForm.Dissolved, neutralizer.visualization.baseColor, -20);
@@ -259,11 +266,13 @@ namespace Cells.Demo
                 motility.metabolism = metabolism;
                 motility.useTemporalChemotaxis = true;
                 motility.tumbleSeed = seed + id * 1009;
+                if (assayMode) AssaySwimmer = motility;
                 var trial = go.AddComponent<ChemotaxisTrialRecorder>();
                 trial.motility = motility;
                 trial.metabolism = metabolism;
                 trial.motor = actuator;
                 trial.field = field;
+                if (assayMode) { AssayRecorder = trial; trial.samplePeriod = 100000f; }
                 trial.controllerLabel = motility.useTemporalChemotaxis
                     ? (motility.stochasticTumbles ? "temporal-stochastic" : "temporal-deterministic")
                     : "spatial-steering";
