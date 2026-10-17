@@ -61,6 +61,24 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Chemotaxis trial telemetry (experimental)
+
+`ChemotaxisTrialRecorder` is attached to both focal chemistry-demo swimmers.
+It records actual post-clamp path length, time-integrated local nutrient
+concentration (exposure only, **not uptake**), total cellular energy change,
+authoritative cumulative flagellar motor ATP spend, tumble count, and life
+status. Log lines start with `CELL_TRIAL ` followed by a JSON snapshot,
+and are emitted every 0.2 simulated seconds by default.
+
+These logs are **not yet a controlled multi-controller experiment**:
+the two default swimmers have different phenotypes and start positions,
+and the present camera scene is not a matched-seed comparison protocol.
+A proper experiment needs matched environments and repeated randomized
+replicates with environment resets between treatments, including a baseline.
+
+The recorder tests are authored but have not been executed in Unity. CPU
+and log-volume impact need Play Mode profiling before scaling populations.
+
 ## Motor ATP / thrust integration regression coverage
 
 `FlagellarMotorGatingTests` exercises the real actuator and energy reserve:
