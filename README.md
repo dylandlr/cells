@@ -61,6 +61,21 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Nutrient mass accounting for chemotaxis trials
+
+The cell chemical-exchange system now records cumulative mass withdrawn from
+the nutrient field and cumulative mass digested into the represented waste
+field. The trial recorder subtracts start-of-trial baselines and emits
+`nutrientAbsorbed` and `nutrientDigested` alongside nutrient exposure,
+path length, and energy use. Absorption and digestion are distinct quantities;
+neither should be inferred from local concentration readings.
+
+The current chemistry microscope logs two different organisms in a shared
+environment, so those logs are observational only—not a matched-control,
+multi-seed causal comparison. Nutrient mass-accounting tests have been
+authored but not executed in Unity. A separate experiment runner with
+environment resets and equal initial conditions remains necessary.
+
 ## Chemotaxis trial telemetry (experimental)
 
 `ChemotaxisTrialRecorder` is attached to both focal chemistry-demo swimmers.
