@@ -35,7 +35,13 @@ namespace Cells.Experiments
             int n=0;
             for (int i=0;i<replicates;i++)
                 for (int j=0;j<Policies.Length;j++)
-                    rows[n]=new Trial { seed=firstSeed+i,controller=Policies[j],ordinal=n++ };
+                    // Rotate treatment execution order across successive
+                    // seed blocks without changing treatment identity.
+                    rows[n]=new Trial {
+                        seed=firstSeed+i,
+                        controller=Policies[(i+j)%Policies.Length],
+                        ordinal=n++
+                    };
             return rows;
         }
 
