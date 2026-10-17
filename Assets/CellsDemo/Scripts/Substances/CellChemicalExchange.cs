@@ -26,6 +26,8 @@ namespace Cells.Substances
         [Min(0)] public float secretionEnergyCost = .04f;
         public bool secretionEnabled = true;
         public bool feedingEnabled = true;
+        public float CumulativeNutrientAbsorbed { get; private set; }
+        public float CumulativeNutrientDigested { get; private set; }
 
         void Awake() { if (!metabolism) metabolism = GetComponent<CellMetabolism>(); }
 
@@ -58,6 +60,7 @@ namespace Cells.Substances
                 Vector2 p = feedingPore ? (Vector2)feedingPore.position : (Vector2)transform.position;
                 float consumed = field.Withdraw(nutrientId, p, feedingRate * dt);
                 nutrientReserve += consumed;
+                CumulativeNutrientAbsorbed += consumed;
                 if (consumed > 0f && events) events.Record(Time.fixedTime, organismId, nutrientId,
                     ChemicalEventKind.Absorbed, consumed, p, "membrane.feeding_site");
             }
@@ -66,6 +69,7 @@ namespace Cells.Substances
             float requestedDigestion = Mathf.Min(nutrientReserve, Mathf.Max(0f, digestionRate) * dt);
             float digested = digestionProductId == nutrientId ? 0f : field.Deposit(digestionProductId, outlet, requestedDigestion);
             nutrientReserve -= digested;
+            CumulativeNutrientDigested += digested;
             metabolism.Feed(digested * Mathf.Max(0f, usableEnergyPerMass));
             if (digested > 0f && events)
             {
