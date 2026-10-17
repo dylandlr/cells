@@ -2,6 +2,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Cells.Physiology;
 using Cells.Demo;
+using Cells.Substances;
 
 namespace Cells.Tests
 {
@@ -48,6 +49,46 @@ namespace Cells.Tests
             Assert.AreEqual(motor.CumulativeMotorEnergySpent,recorder.MotorEnergySpent,1e-6f);
             Assert.AreEqual(metabolism.energy-before,recorder.LastEnergy-recorder.InitialEnergy,1e-5f);
             Assert.IsTrue(recorder.Alive);
+        }
+
+        [Test]
+        public void UptakeAndDigestionAreSeparateCounters()
+        {
+            var fieldGo = new GameObject("nutrient field");
+            fieldGo.transform.SetParent(cell.transform);
+            var field = fieldGo.AddComponent<MultiChemicalField2D>();
+            var food = ScriptableObject.CreateInstance<SubstanceDefinition>();
+            food.stableId = "nutrient-A";
+            var waste = ScriptableObject.CreateInstance<SubstanceDefinition>();
+            waste.stableId = "metabolic-waste-E";
+            try
+            {
+                field.species = new[] { food, waste };
+                field.Initialize();
+                field.Deposit("nutrient-A", cell.transform.position, 2f);
+                var exchange = cell.AddComponent<CellChemicalExchange>();
+                exchange.metabolism = metabolism;
+                exchange.field = field;
+                exchange.secretionEnabled = false;
+                exchange.feedingEnabled = true;
+                exchange.feedingRate = 1f;
+                exchange.digestionRate = .5f;
+                recorder.exchange = exchange;
+                recorder.field = field;
+                recorder.BeginTrial();
+                exchange.Tick(.2f);
+                Assert.Greater(recorder.NutrientAbsorbed,0f);
+                Assert.GreaterOrEqual(recorder.NutrientDigested,0f);
+                Assert.LessOrEqual(recorder.NutrientDigested,recorder.NutrientAbsorbed+1e-6f);
+                recorder.BeginTrial();
+                Assert.AreEqual(0f,recorder.NutrientAbsorbed,1e-6f);
+                Assert.AreEqual(0f,recorder.NutrientDigested,1e-6f);
+            }
+            finally
+            {
+                Object.DestroyImmediate(food);
+                Object.DestroyImmediate(waste);
+            }
         }
 
         [Test]
