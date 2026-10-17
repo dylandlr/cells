@@ -15,6 +15,7 @@ namespace Cells.Demo
         public CellMotility motility;
         public CellMetabolism metabolism;
         public CellFlagellarActuator motor;
+        public CellChemicalExchange exchange;
         public MultiChemicalField2D field;
         public string controllerLabel = "unconfigured";
         public string nutrientId = "nutrient-A";
@@ -26,9 +27,13 @@ namespace Cells.Demo
         public float InitialEnergy { get; private set; }
         public float LastEnergy { get; private set; }
         public float MotorEnergySpent => motor ? motor.CumulativeMotorEnergySpent - initialMotorEnergy : 0f;
+        public float NutrientAbsorbed => exchange ? exchange.CumulativeNutrientAbsorbed - initialAbsorbed : 0f;
+        public float NutrientDigested => exchange ? exchange.CumulativeNutrientDigested - initialDigested : 0f;
         public int TumbleCount => motility ? motility.TumbleCount : 0;
         public bool Alive => metabolism && metabolism.alive;
         float initialMotorEnergy;
+        float initialAbsorbed;
+        float initialDigested;
         float nextReport;
         bool started;
 
@@ -37,6 +42,7 @@ namespace Cells.Demo
             if (!motility) motility = GetComponent<CellMotility>();
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
             if (!motor) motor = GetComponent<CellFlagellarActuator>();
+            if (!exchange) exchange = GetComponent<CellChemicalExchange>();
             if (!field && motility) field = motility.field;
         }
 
@@ -50,6 +56,8 @@ namespace Cells.Demo
             InitialEnergy = metabolism ? metabolism.energy : 0f;
             LastEnergy = InitialEnergy;
             initialMotorEnergy = motor ? motor.CumulativeMotorEnergySpent : 0f;
+            initialAbsorbed = exchange ? exchange.CumulativeNutrientAbsorbed : 0f;
+            initialDigested = exchange ? exchange.CumulativeNutrientDigested : 0f;
             nextReport = Mathf.Max(.01f,samplePeriod);
             started = true;
         }
@@ -76,6 +84,8 @@ namespace Cells.Demo
                     nutrientExposure = CumulativeNutrientExposure,
                     totalEnergyChange = LastEnergy-InitialEnergy,
                     motorEnergySpent = MotorEnergySpent,
+                    nutrientAbsorbed = NutrientAbsorbed,
+                    nutrientDigested = NutrientDigested,
                     tumbles = TumbleCount,
                     alive = Alive
                 }));
@@ -92,6 +102,8 @@ namespace Cells.Demo
             public float nutrientExposure;
             public float totalEnergyChange;
             public float motorEnergySpent;
+            public float nutrientAbsorbed;
+            public float nutrientDigested;
             public int tumbles;
             public bool alive;
         }
