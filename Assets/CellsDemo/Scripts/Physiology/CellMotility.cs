@@ -20,6 +20,9 @@ namespace Cells.Physiology
         [Range(0f,1f)] public float flowEntrainment = .8f;
         public string attractantId = "nutrient-A";
         public string repellentId = "toxin-B";
+        public bool useTemporalChemotaxis;
+        public TemporalChemotaxisSensor temporalSensor = new TemporalChemotaxisSensor();
+        public float TemporalResponse => temporalSensor.Response;
         // Optional policy-controlled signal chemotaxis; disabled unless a policy activates it.
         public CellChemicalSignaling signaling;
         [Min(0f)] public float signalAttractantGain;
@@ -94,7 +97,19 @@ namespace Cells.Physiology
                              + signalGradient * signalAttractantGain
                              + wander * exploratoryBias;
 
-            if (steering.sqrMagnitude > 1e-8f)
+            if (useTemporalChemotaxis)
+            {
+                // Only receptor samples at the organism's present location
+                // influence this mode: no spatial gradient vector is read.
+                float receptor = Sample(attractantId,p)*attractantGain
+                    - Sample(repellentId,p)*repellentGain;
+                if (signaling && signaling.ReadLocal() >= signaling.detectionThreshold)
+                    receptor += signaling.ReadLocal()*signalAttractantGain;
+                temporalSensor.Tick(receptor,dt);
+                phase += dt * temporalSensor.TurnRateDegrees * Mathf.Deg2Rad;
+                DesiredDirection = new Vector2(Mathf.Cos(phase),Mathf.Sin(phase));
+            }
+            else if (steering.sqrMagnitude > 1e-8f)
                 DesiredDirection = steering.normalized;
 
             float currentAngle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
@@ -107,9 +122,9 @@ namespace Cells.Physiology
             transform.rotation = Quaternion.Euler(0f, 0f, nextAngle);
 
             Vector2 thrustDirection = transform.right;
-            float stimulus = Mathf.Clamp01(.18f + attractantGradient.magnitude * attractantGain
-                                                + repellentGradient.magnitude * repellentGain
-                                                + signalGradient.magnitude * signalAttractantGain);
+            float stimulus = Mathf.Clamp01(.18f + (useTemporalChemotaxis ? Mathf.Max(0f,temporalSensor.Response) : attractantGradient.magnitude * attractantGain)
+                                                + (useTemporalChemotaxis ? 0f : repellentGradient.magnitude * repellentGain)
+                                                + (useTemporalChemotaxis ? 0f : signalGradient.magnitude * signalAttractantGain));
             // No hidden propulsion: swimming requires actuator output when equipped.
             float motorThrust = flagellum ? flagellum.EffectiveThrust : 1f;
             Vector2 targetVelocity = hydrodynamics
