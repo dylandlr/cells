@@ -70,10 +70,9 @@ namespace Cells.Tests
         {
             metabolism.energy=.001f;
             motor.Tick(.02f);
-            Assert.Greater(motor.ActualActivation,0f);
-            Assert.Less(motor.ActualActivation,1f);
-            Assert.LessOrEqual(motor.EffectiveThrust,motor.ActualActivation+1e-5f);
             Assert.IsFalse(metabolism.alive);
+            Assert.AreEqual(0f,motor.ActualActivation,1e-6f);
+            Assert.AreEqual(0f,motor.EffectiveThrust,1e-6f);
         }
     }
 }
