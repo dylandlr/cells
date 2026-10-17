@@ -259,6 +259,14 @@ namespace Cells.Demo
                 motility.metabolism = metabolism;
                 motility.useTemporalChemotaxis = true;
                 motility.tumbleSeed = seed + id * 1009;
+                var trial = go.AddComponent<ChemotaxisTrialRecorder>();
+                trial.motility = motility;
+                trial.metabolism = metabolism;
+                trial.motor = actuator;
+                trial.field = field;
+                trial.controllerLabel = motility.useTemporalChemotaxis
+                    ? (motility.stochasticTumbles ? "temporal-stochastic" : "temporal-deterministic")
+                    : "spatial-steering";
                 policy.motility = motility;
                 var telemetry = go.AddComponent<SwimmerTelemetryOverlay>();
                 telemetry.swimmer = motility;
