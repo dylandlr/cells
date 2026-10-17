@@ -61,6 +61,26 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Timed tumble motor gating (experimental)
+
+A tumble now starts a timed motor-state interval (default 0.22 s) that
+reduces behavioral motor activation (default multiplier 0.12), attenuates
+the requested swimming target, and consequently reduces actuator ATP
+consumption while the state is active. Each swimmer retains independently
+seeded stochastic tumble decisions; the state prevents additional tumble
+starts until the previous one completes.
+
+This is an intentionally simplified coupling: the controller chooses a new
+heading and the motor state throttles the flagellar beat; the simulation
+does **not** resolve bacterial flagellar bundle switching or a hydrodynamic
+tumble torque. Physics execution ordering means motor commands set during
+motility are applied on the following fixed step, while requested velocity
+attenuation begins immediately. The current controller also applies its
+existing heading turn law during the timed tumble.
+
+New editor tests cover timer/recovery semantics but are not verified in
+the Unity runtime yet. Benchmarks and calibration are still required.
+
 ## Stochastic chemotaxis experiment (unvalidated)
 
 The two focal swimmers now default to a seeded run-and-tumble heading controller.
