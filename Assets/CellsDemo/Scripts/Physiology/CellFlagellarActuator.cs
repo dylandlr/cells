@@ -24,6 +24,7 @@ namespace Cells.Physiology
         public float PhaseRadians { get; private set; }
         public float EffectiveThrust { get; private set; }
         public float ActualActivation { get; private set; }
+        [Range(0f,1f)] public float behavioralMotorMultiplier = 1f;
 
         void Awake() { if (!metabolism) metabolism = GetComponent<CellMetabolism>(); }
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
@@ -39,9 +40,10 @@ namespace Cells.Physiology
                 return;
             }
 
-            float requested = motorCostPerSecond * motorActivation * dt;
+            float commanded = Mathf.Clamp01(motorActivation) * Mathf.Clamp01(behavioralMotorMultiplier);
+            float requested = motorCostPerSecond * commanded * dt;
             float paid = metabolism.Spend(requested);
-            ActualActivation = requested > 0f ? motorActivation * Mathf.Clamp01(paid / requested) : motorActivation;
+            ActualActivation = requested > 0f ? commanded * Mathf.Clamp01(paid / requested) : commanded;
             if (!metabolism.alive) ActualActivation = 0f;
 
             // Force magnitude is a bounded proxy for geometry/beat efficiency, not an
