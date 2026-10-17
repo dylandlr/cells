@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="PlanarDragChecks.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs" Link="PlanarDragBalance.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingGameV1.cs" Link="SignalingGameV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingExperimentRunnerV1.cs" Link="SignalingExperimentRunnerV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Exp3EpisodeSelectorV1.cs" Link="Exp3EpisodeSelectorV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Exp3StrategyTrainingV1.cs" Link="Exp3StrategyTrainingV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Exp3HeldOutEvaluationV1.cs" Link="Exp3HeldOutEvaluationV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/PairedAssayAnalysisV1.cs" Link="PairedAssayAnalysisV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/RestrictedDeviationStudyV1.cs" Link="RestrictedDeviationStudyV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/EmpiricalPayoffTensorV1.cs" Link="EmpiricalPayoffTensorV1.cs" />
+  </ItemGroup>
+</Project>

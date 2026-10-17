@@ -1,0 +1,83 @@
+using System.Collections;
+using System.Globalization;
+using System.IO;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
+using Cells.Demo;
+using Cells.Physiology;
+using Cells.Substances;
+
+namespace Cells.Tests
+{
+    public sealed class VideoCaptureTests
+    {
+        [UnityTest, Timeout(600000)]
+        public IEnumerator RecordLiveSimulation()
+        {
+            var scene = SceneManager.CreateScene("Video capture");
+            SceneManager.SetActiveScene(scene);
+            var root = new GameObject("Recorded chemistry demo");
+            var demo = root.AddComponent<ChemistryDemoBootstrap>();
+            demo.initialToxin = 0f;
+            demo.cultureView = true;
+            demo.Build();
+            var view = root.GetComponent<ChemistryDemoView>();
+            view.enabled = false;
+            var cell = root.transform.Find("Grazer");
+            var membrane = cell.GetComponent<MembraneIntegrity>();
+            var metabolism = cell.GetComponent<CellMetabolism>();
+            var leak = cell.GetComponent<MembraneLeakageSystem>();
+            view.Select(metabolism);
+            view.SetPipetteSector(0);
+            var camera = Camera.main;
+            var target = new RenderTexture(1920, 1080, 24);
+            var image = new Texture2D(1920, 1080, TextureFormat.RGB24, false);
+            var oldActive = RenderTexture.active;
+            int oldRate = Time.captureFramerate;
+            Time.captureFramerate = 30;
+            Directory.CreateDirectory("Artifacts/deforming-frames");
+            try
+            {
+                using (var metrics = new StreamWriter("Artifacts/deforming-metrics.csv"))
+                {
+                    metrics.WriteLine("frame,time,particles,weakest,leaked,reacted,alive");
+                    camera.rect = new Rect(0, 0, 1, 1);
+                    camera.targetTexture = target;
+                    for (int frame = 0; frame < 600; frame++)
+                    {
+                        float t = frame / 30f;
+                        if (frame == 120) view.Dose("toxin-B", 2f);
+                        if (frame == 300) view.Dose("neutralizer-C", 3f);
+                        yield return null;
+                        camera.orthographicSize = 3.7f;
+                        camera.transform.position = new Vector3(-.25f, 0, -10);
+                        camera.Render();
+                        RenderTexture.active = target;
+                        image.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
+                        image.Apply();
+                        File.WriteAllBytes("Artifacts/deforming-frames/frame-" + frame.ToString("D4") + ".png", image.EncodeToPNG());
+                        metrics.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0},{1:F4},{2},{3:F5},{4:F5},{5:F5},{6}", frame, t,
+                            demo.Particles.Particles.Count, membrane.WeakestIntegrity, leak.TotalLeaked, demo.Reaction.ReactedMass, metabolism.alive));
+                    }
+                }
+                Assert.IsTrue(membrane.ruptured, "Recorded toxin challenge must cause actual rupture.");
+                Assert.Greater(leak.TotalLeaked, 0f);
+                Assert.Greater(membrane.GeometryRevision, 0);
+                Assert.Greater(demo.Reaction.ReactedMass, 0f);
+                File.WriteAllText("Artifacts/deforming-provenance.txt", "Unity " + Application.unityVersion + " PlayMode Camera.Render sequence. 600 frames at 30 fps, 1920x1080; seed 631.\nSource: deformable phase-contrast culture revision based on 8807c08; capture harness in tools/capture. All simulation systems active; initial toxin set to zero.\nScripted pipette: 2 mass toxin at 4 s; 3 mass reagent at 10 s at Grazer sector 0.\nCamera fixed; deformable grayscale culture with chemical overlays hidden; no beating; microscope IMGUI excluded. Stats are sampled from live state. Scene imagery rendered by Unity; captions added after capture. This is simulated microscopy, not biological footage.\n");
+            }
+            finally
+            {
+                camera.targetTexture = null;
+                RenderTexture.active = oldActive;
+                Time.captureFramerate = oldRate;
+                target.Release();
+                Object.Destroy(target); Object.Destroy(image); Object.Destroy(root);
+            }
+            yield return null;
+            LogAssert.NoUnexpectedReceived();
+        }
+    }
+}
