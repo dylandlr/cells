@@ -3,6 +3,7 @@ using Cells.Substances;
 using Cells.Physiology;
 using Cells.Rendering;
 using Cells.Fluid;
+using Cells.Experiments;
 using System;
 
 namespace Cells.Demo
@@ -98,9 +99,19 @@ namespace Cells.Demo
             // This is an intentionally staged demo stimulus, not spontaneous
             // cooperative discovery or an additional resource source.
             float availableFood = Mathf.Max(0f, initialFood);
-            float secretorPatch = availableFood * .15f;
-            field.Deposit("nutrient-A", new Vector2(-1.5f, 0f), secretorPatch);
-            field.Deposit("nutrient-A", new Vector2(0f, 0f), availableFood - secretorPatch);
+            if (assayMode)
+            {
+                // Same total nutrient mass for every seed and treatment.
+                // Position jitter differs only by environment seed.
+                foreach (Vector2 patch in SeededNutrientPatches.Positions(seed))
+                    field.Deposit("nutrient-A", patch, availableFood / SeededNutrientPatches.Count);
+            }
+            else
+            {
+                float secretorPatch = availableFood * .15f;
+                field.Deposit("nutrient-A", new Vector2(-1.5f, 0f), secretorPatch);
+                field.Deposit("nutrient-A", new Vector2(0f, 0f), availableFood - secretorPatch);
+            }
             // Spread the challenge dose over several voxels rather than an instantaneous point overdose.
             for (int x = -4; x <= 4; x++)
             for (int y = -4; y <= 4; y++)
