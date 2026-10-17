@@ -21,6 +21,8 @@ namespace Cells.Physiology
         public string attractantId = "nutrient-A";
         public string repellentId = "toxin-B";
         public bool useTemporalChemotaxis;
+        public bool stochasticTumbles = true;
+        public int tumbleSeed = 631;
         public TemporalChemotaxisSensor temporalSensor = new TemporalChemotaxisSensor();
         public float TemporalResponse => temporalSensor.Response;
         // Optional policy-controlled signal chemotaxis; disabled unless a policy activates it.
@@ -46,6 +48,8 @@ namespace Cells.Physiology
         public float LastRepellentGradient { get; private set; }
 
         float phase;
+        StochasticRunTumble tumble;
+        public int TumbleCount => tumble != null ? tumble.TumbleCount : 0;
 
         void Start()
         {
@@ -53,6 +57,7 @@ namespace Cells.Physiology
             if (!flagellum) flagellum = GetComponent<CellFlagellarActuator>();
             if (!hydrodynamics) hydrodynamics = GetComponent<FlagellarHydrodynamics2D>();
             phase = Mathf.Repeat(transform.position.x * 2.137f + transform.position.y * 5.173f, Mathf.PI * 2f);
+            tumble = new StochasticRunTumble(tumbleSeed);
         }
 
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
@@ -106,12 +111,27 @@ namespace Cells.Physiology
                 if (signaling && signaling.ReadLocal() >= signaling.detectionThreshold)
                     receptor += signaling.ReadLocal()*signalAttractantGain;
                 temporalSensor.Tick(receptor,dt);
-                phase += dt * temporalSensor.TurnRateDegrees * Mathf.Deg2Rad;
-                DesiredDirection = new Vector2(Mathf.Cos(phase),Mathf.Sin(phase));
+                if (stochasticTumbles)
+                {
+                    if (tumble == null) tumble = new StochasticRunTumble(tumbleSeed);
+                    if (tumble.Step(temporalSensor.Response,dt,out double radians))
+                    {
+                        float heading = Mathf.Atan2(forward.y,forward.x) + (float)radians;
+                        DesiredDirection = new Vector2(Mathf.Cos(heading),Mathf.Sin(heading));
+                    }
+                    // Between tumble decisions maintain the previous heading.
+                }
+                else
+                {
+                    phase += dt * temporalSensor.TurnRateDegrees * Mathf.Deg2Rad;
+                    DesiredDirection = new Vector2(Mathf.Cos(phase),Mathf.Sin(phase));
+                }
             }
             else if (steering.sqrMagnitude > 1e-8f)
                 DesiredDirection = steering.normalized;
 
+            if (useTemporalChemotaxis && stochasticTumbles && tumble != null && tumble.TumbleCount == 0)
+                DesiredDirection = forward;
             float currentAngle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
             float desiredAngle = Mathf.Atan2(DesiredDirection.y, DesiredDirection.x) * Mathf.Rad2Deg;
             float nextAngle = Mathf.MoveTowardsAngle(currentAngle, desiredAngle, angularSpeedDegrees * dt);
