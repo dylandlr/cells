@@ -61,6 +61,26 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Seed-paired assay improvements (experimental)
+
+In assay mode, nutrient locations now derive from the environment seed using
+five fixed-mass patches inside a bounded assay region. Trials with the same
+seed and different controllers see the same patch positions and total
+requested deposited nutrient mass; different seeds change the positions.
+The seed does not currently randomize toxin locations, physical coefficients,
+or initial organism phenotype.
+
+The planned controller execution order rotates `spatial -> temporal ->
+stochastic` by seed-block index; each controller still occurs exactly
+once per seed. This reduces simple order bias but does not substitute
+for rigorous randomized blocking. Nutrient deposits may be quantized by
+field discretization, so actual world mass should be audited before
+assuming exact mass equality.
+
+New Edit Mode tests inspect the patch generator and revised schedule.
+They are committed, **not yet run in Unity**. Batch-runner Play Mode
+execution and CSV inspection remain required.
+
 ## Executable chemistry assay batch (Unity Play Mode; unverified)
 
 Create an empty Unity scene with one GameObject containing
