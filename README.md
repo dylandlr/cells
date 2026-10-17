@@ -61,6 +61,22 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Matched chemotaxis assay protocol v1
+
+`ChemotaxisAssayPlanV1.Build(firstSeed,replicates)` deterministically emits
+three treatments per seed: `spatial`, `temporal`, `stochastic`.
+The protocol CSV explicitly marks **fresh world reset required** on every
+trial. The separate outcome CSV schema captures elapsed time, path length,
+absorbed/digested nutrient mass, motor ATP, final energy, tumble count,
+and survival. Unexecuted plans produce **no fabricated outcome rows**.
+
+This is planning/export infrastructure, not an operational batch runner:
+Unity scene resets, identical genotype and location, treatments applied to
+one experimental focal organism, fixed observation horizon, treatment-order
+counterbalancing, per-run telemetry capture, and actual file writes are
+still to be integrated. Editor tests have been authored but not executed.
+No population claims or empirical win rates should be inferred.
+
 ## Nutrient mass accounting for chemotaxis trials
 
 The cell chemical-exchange system now records cumulative mass withdrawn from
