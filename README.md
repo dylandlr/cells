@@ -61,6 +61,23 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Stochastic chemotaxis experiment (unvalidated)
+
+The two focal swimmers now default to a seeded run-and-tumble heading controller.
+It samples concentration only at the cell's current location, compares it against
+an exponentially adapting receptor baseline, and increases the instantaneous
+tumble hazard after unfavorable changes. Each decision uses
+`P(tumble)=1-exp(-hazard*dt)` and a seeded pseudorandom turn angle.
+Separate organism IDs derive distinct, reproducible seeds.
+
+The heading controller is not a mechanistic motor-switching model:
+tumble events do not yet modulate flagellar power, explicitly pause forward
+swimming, or instantiate a measured biological reorientation duration.
+Also, reproducibility is conditional on the same step sequence; cross-timestep
+trajectory invariance has not been demonstrated. Rate constants are exploratory
+and not calibrated to a named bacterial species. Unity Test Runner and actual
+Play Mode inspection remain pending.
+
 ## Coupled flagellar mobility (experimental)
 
 Free-swimming organisms use a symmetric planar 3-DOF resistance matrix,
