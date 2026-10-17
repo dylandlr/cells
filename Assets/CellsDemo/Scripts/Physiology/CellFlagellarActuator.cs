@@ -24,6 +24,7 @@ namespace Cells.Physiology
         public float PhaseRadians { get; private set; }
         public float EffectiveThrust { get; private set; }
         public float ActualActivation { get; private set; }
+        public float CumulativeMotorEnergySpent { get; private set; }
         [Range(0f,1f)] public float behavioralMotorMultiplier = 1f;
 
         void Awake() { if (!metabolism) metabolism = GetComponent<CellMetabolism>(); }
@@ -43,6 +44,7 @@ namespace Cells.Physiology
             float commanded = Mathf.Clamp01(motorActivation) * Mathf.Clamp01(behavioralMotorMultiplier);
             float requested = motorCostPerSecond * commanded * dt;
             float paid = metabolism.Spend(requested);
+            CumulativeMotorEnergySpent += paid;
             ActualActivation = requested > 0f ? commanded * Mathf.Clamp01(paid / requested) : commanded;
             if (!metabolism.alive) ActualActivation = 0f;
 
