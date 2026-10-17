@@ -61,6 +61,31 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Executable chemistry assay batch (Unity Play Mode; unverified)
+
+Create an empty Unity scene with one GameObject containing
+`ChemotaxisBatchRunner`. Leave `runOnStart=true` and configure
+`firstSeed`, `replicates`, and `horizonSeconds`. Play Mode
+constructs one fresh `ChemistryDemoBootstrap` per planned trial with
+`assayMode=true` and one focal swimmer. Each trial is run for a fixed
+number of physics steps, then its root is destroyed and a new world is
+built. When all trials complete, the runner writes
+`chemotaxis-outcomes-v1.csv` (or the requested basename) to
+`Application.persistentDataPath`. Look for `CELL_ASSAY_COMPLETE` in
+the Unity Console for the file location. Avoid placing a separate
+auto-building chemistry demo in the same scene.
+
+**Experimental limitations:** only stochastic tumble streams vary by
+seed at present; chemical deposition and starting position remain fixed.
+The three modes use the same prototype phenotype, but their turning and
+propulsion rules differ by design. Treatment order is fixed, not
+counterbalanced. This runner is meant to collect initial descriptive
+data; seed pairing does **not yet** imply diverse matched environmental
+replicates or calibrated causal estimates. The scene and tests have not
+been executed in Unity. Compare output only after validating that
+reset isolation, physics order, and mass/energy accounting hold in
+Play Mode.
+
 ## Matched chemotaxis assay protocol v1
 
 `ChemotaxisAssayPlanV1.Build(firstSeed,replicates)` deterministically emits
