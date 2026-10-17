@@ -23,6 +23,8 @@ namespace Cells.Physiology
         public bool useTemporalChemotaxis;
         public bool stochasticTumbles = true;
         public int tumbleSeed = 631;
+        public TumbleMotorState tumbleMotor = new TumbleMotorState();
+        public bool IsTumbling => useTemporalChemotaxis && stochasticTumbles && tumbleMotor.IsTumbling;
         public TemporalChemotaxisSensor temporalSensor = new TemporalChemotaxisSensor();
         public float TemporalResponse => temporalSensor.Response;
         // Optional policy-controlled signal chemotaxis; disabled unless a policy activates it.
@@ -68,6 +70,8 @@ namespace Cells.Physiology
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
             if (!metabolism || !metabolism.alive)
             {
+                if (flagellum) flagellum.behavioralMotorMultiplier = 0f;
+                tumbleMotor.Reset();
                 Velocity = Vector2.zero;
                 LastActiveVelocity = Vector2.zero;
                 LastFluidVelocity = Vector2.zero;
@@ -75,6 +79,7 @@ namespace Cells.Physiology
                 return;
             }
 
+            tumbleMotor.Advance(dt);
             Vector2 forward = transform.right;
             Vector2 side = new Vector2(-forward.y, forward.x);
             Vector2 p = transform.position;
@@ -114,8 +119,9 @@ namespace Cells.Physiology
                 if (stochasticTumbles)
                 {
                     if (tumble == null) tumble = new StochasticRunTumble(tumbleSeed);
-                    if (tumble.Step(temporalSensor.Response,dt,out double radians))
+                    if (!tumbleMotor.IsTumbling && tumble.Step(temporalSensor.Response,dt,out double radians))
                     {
+                        tumbleMotor.Begin();
                         float heading = Mathf.Atan2(forward.y,forward.x) + (float)radians;
                         DesiredDirection = new Vector2(Mathf.Cos(heading),Mathf.Sin(heading));
                     }
@@ -132,6 +138,8 @@ namespace Cells.Physiology
 
             if (useTemporalChemotaxis && stochasticTumbles && tumble != null && tumble.TumbleCount == 0)
                 DesiredDirection = forward;
+            if (flagellum)
+                flagellum.behavioralMotorMultiplier = IsTumbling ? tumbleMotor.MotorMultiplier : 1f;
             float currentAngle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
             float desiredAngle = Mathf.Atan2(DesiredDirection.y, DesiredDirection.x) * Mathf.Rad2Deg;
             float nextAngle = Mathf.MoveTowardsAngle(currentAngle, desiredAngle, angularSpeedDegrees * dt);
@@ -151,6 +159,7 @@ namespace Cells.Physiology
                 ? (Vector2)transform.TransformDirection(hydrodynamics.LocalSwimmingVelocity) * stimulus
                 : thrustDirection * (maxSpeed * stimulus * motorThrust);
 
+            if (IsTumbling) targetVelocity *= tumbleMotor.MotorMultiplier;
             Velocity = Vector2.MoveTowards(Velocity, targetVelocity, acceleration * dt);
             Velocity *= Mathf.Exp(-drag * dt * .12f);
 
