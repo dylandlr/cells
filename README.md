@@ -61,6 +61,16 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Assay nutrient deposition audit (validation in progress)
+
+The isolated assay bootstrap now accumulates the **actual** nutrient
+mass returned by each `MultiChemicalField2D.Deposit` call into
+`AssayNutrientDeposited`. Its Edit Mode test asserts positive
+deposition that does not exceed the requested total budget.
+This detects basic failed/oversized deposits, but does not yet establish
+cross-seed equality or mass conservation after diffusion and uptake.
+The field-level comparisons and Play Mode execution remain pending.
+
 ## Seed-paired assay improvements (experimental)
 
 In assay mode, nutrient locations now derive from the environment seed using
