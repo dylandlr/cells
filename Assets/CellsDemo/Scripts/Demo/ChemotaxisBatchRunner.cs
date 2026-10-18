@@ -21,6 +21,7 @@ namespace Cells.Demo
         [Min(.1f)] public float horizonSeconds = 30f;
         public string outputFile = "chemotaxis-outcomes-v1.csv";
         public bool finished;
+        public bool running;
         public string LastOutputPath { get; private set; }
         readonly List<ChemotaxisAssayPlanV1.Outcome> completed =
             new List<ChemotaxisAssayPlanV1.Outcome>();
@@ -32,7 +33,9 @@ namespace Cells.Demo
 
         public IEnumerator Run()
         {
-            if (finished) yield break;
+            if (finished || running) yield break;
+            running=true;
+            completed.Clear();
             var schedule = ChemotaxisAssayPlanV1.Build(firstSeed,replicates);
             for (int index=0;index<schedule.Length;index++)
             {
@@ -55,8 +58,12 @@ namespace Cells.Demo
                 recorder.controllerLabel=trial.controller;
                 recorder.BeginTrial();
                 int steps=Mathf.CeilToInt(horizonSeconds/Time.fixedDeltaTime);
-                for(int step=0;step<steps;step++)
+                // Wait for actually recorded FixedUpdate samples, not an assumed
+                // number of coroutine resumptions. Recorders run at execution order 150.
+                while (recorder && recorder.RecordedSteps < steps)
                     yield return new WaitForFixedUpdate();
+                if (!recorder || recorder.RecordedSteps != steps)
+                    throw new InvalidOperationException("Assay recorder lost fixed-step synchronization");
                 completed.Add(new ChemotaxisAssayPlanV1.Outcome {
                     trial=trial,
                     elapsedSeconds=recorder.ElapsedSeconds,
@@ -68,6 +75,7 @@ namespace Cells.Demo
                     tumbles=recorder.TumbleCount,
                     alive=recorder.Alive
                 });
+                root.SetActive(false); // Stop all fixed-step updates before deferred destruction.
                 Destroy(root);
                 // Destroy is deferred; wait until the next frame before rebuilding
                 // to prevent transient overlap between independent assay worlds.
@@ -78,6 +86,7 @@ namespace Cells.Demo
             LastOutputPath=Path.Combine(Application.persistentDataPath,safeName);
             File.WriteAllText(LastOutputPath,ChemotaxisAssayPlanV1.OutcomeCsv(completed));
             finished=true;
+            running=false;
             Debug.Log("CELL_ASSAY_COMPLETE "+LastOutputPath+" trials="+completed.Count);
         }
     }
