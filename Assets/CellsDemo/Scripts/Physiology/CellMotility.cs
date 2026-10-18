@@ -21,10 +21,12 @@ namespace Cells.Physiology
         public string attractantId = "nutrient-A";
         public string repellentId = "toxin-B";
         public bool useTemporalChemotaxis;
+        // Policy mode supplies motor activation only; no scripted heading or speed gain.
+        public bool externalMotorControl;
         public bool stochasticTumbles = true;
         public int tumbleSeed = 631;
         public TumbleMotorState tumbleMotor = new TumbleMotorState();
-        public bool IsTumbling => useTemporalChemotaxis && stochasticTumbles && tumbleMotor.IsTumbling;
+        public bool IsTumbling => !externalMotorControl && useTemporalChemotaxis && stochasticTumbles && tumbleMotor.IsTumbling;
         public TemporalChemotaxisSensor temporalSensor = new TemporalChemotaxisSensor();
         public float TemporalResponse => temporalSensor.Response;
         // Optional policy-controlled signal chemotaxis; disabled unless a policy activates it.
@@ -107,7 +109,7 @@ namespace Cells.Physiology
                              + signalGradient * signalAttractantGain
                              + wander * exploratoryBias;
 
-            if (useTemporalChemotaxis)
+            if (!externalMotorControl && useTemporalChemotaxis)
             {
                 // Only receptor samples at the organism's present location
                 // influence this mode: no spatial gradient vector is read.
@@ -133,7 +135,7 @@ namespace Cells.Physiology
                     DesiredDirection = new Vector2(Mathf.Cos(phase),Mathf.Sin(phase));
                 }
             }
-            else if (steering.sqrMagnitude > 1e-8f)
+            else if (!externalMotorControl && steering.sqrMagnitude > 1e-8f)
                 DesiredDirection = steering.normalized;
 
             if (useTemporalChemotaxis && stochasticTumbles && tumble != null && tumble.TumbleCount == 0)
@@ -142,7 +144,8 @@ namespace Cells.Physiology
                 flagellum.behavioralMotorMultiplier = IsTumbling ? tumbleMotor.MotorMultiplier : 1f;
             float currentAngle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
             float desiredAngle = Mathf.Atan2(DesiredDirection.y, DesiredDirection.x) * Mathf.Rad2Deg;
-            float nextAngle = Mathf.MoveTowardsAngle(currentAngle, desiredAngle, angularSpeedDegrees * dt);
+            float nextAngle = externalMotorControl ? currentAngle
+                : Mathf.MoveTowardsAngle(currentAngle, desiredAngle, angularSpeedDegrees * dt);
             // Flagellar deformation can also create a bounded reaction yaw. Keep the
             // chemotactic controller and the physical appendage contribution explicit.
             if (hydrodynamics)
@@ -153,6 +156,7 @@ namespace Cells.Physiology
             float stimulus = Mathf.Clamp01(.18f + (useTemporalChemotaxis ? Mathf.Max(0f,temporalSensor.Response) : attractantGradient.magnitude * attractantGain)
                                                 + (useTemporalChemotaxis ? 0f : repellentGradient.magnitude * repellentGain)
                                                 + (useTemporalChemotaxis ? 0f : signalGradient.magnitude * signalAttractantGain));
+            if (externalMotorControl) stimulus = 1f;
             // No hidden propulsion: swimming requires actuator output when equipped.
             float motorThrust = flagellum ? flagellum.EffectiveThrust : 1f;
             Vector2 targetVelocity = hydrodynamics
@@ -160,8 +164,17 @@ namespace Cells.Physiology
                 : thrustDirection * (maxSpeed * stimulus * motorThrust);
 
             if (IsTumbling) targetVelocity *= tumbleMotor.MotorMultiplier;
-            Velocity = Vector2.MoveTowards(Velocity, targetVelocity, acceleration * dt);
-            Velocity *= Mathf.Exp(-drag * dt * .12f);
+            if (externalMotorControl)
+            {
+                // Require both physical components; never use the fallback free motor.
+                Velocity = flagellum && hydrodynamics && flagellum.ActualActivation > 0f
+                    ? targetVelocity : Vector2.zero;
+            }
+            else
+            {
+                Velocity = Vector2.MoveTowards(Velocity, targetVelocity, acceleration * dt);
+                Velocity *= Mathf.Exp(-drag * dt * .12f);
+            }
 
             float requestedDistance = Velocity.magnitude * dt;
             float requestedCost = requestedDistance * movementCostPerUnit;
