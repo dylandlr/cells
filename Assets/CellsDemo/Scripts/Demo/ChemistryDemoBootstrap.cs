@@ -28,6 +28,7 @@ namespace Cells.Demo
         public TrackedParticleWorld Particles { get; private set; }
         public ChemicalReaction2D Reaction { get; private set; }
         public FluidGrid2D Fluid { get; private set; }
+        public float AssayNutrientDeposited { get; private set; }
 
         GameObject Child(string label)
         {
@@ -104,7 +105,7 @@ namespace Cells.Demo
                 // Same total nutrient mass for every seed and treatment.
                 // Position jitter differs only by environment seed.
                 foreach (Vector2 patch in SeededNutrientPatches.Positions(seed))
-                    field.Deposit("nutrient-A", patch, availableFood / SeededNutrientPatches.Count);
+                    AssayNutrientDeposited += field.Deposit("nutrient-A", patch, availableFood / SeededNutrientPatches.Count);
             }
             else
             {
