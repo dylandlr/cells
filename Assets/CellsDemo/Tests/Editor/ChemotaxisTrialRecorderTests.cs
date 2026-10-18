@@ -45,6 +45,7 @@ namespace Cells.Tests
             motility.Tick(dt);
             recorder.RecordStep(dt);
             Assert.AreEqual(dt,recorder.ElapsedSeconds,1e-6f);
+            Assert.AreEqual(1,recorder.RecordedSteps);
             Assert.AreEqual(motility.LastDisplacementVelocity.magnitude*dt,recorder.PathLength,1e-5f);
             Assert.AreEqual(motor.CumulativeMotorEnergySpent,recorder.MotorEnergySpent,1e-6f);
             Assert.AreEqual(metabolism.energy-before,recorder.LastEnergy-recorder.InitialEnergy,1e-5f);
@@ -96,6 +97,7 @@ namespace Cells.Tests
         {
             motor.Tick(.02f);
             recorder.BeginTrial();
+            Assert.AreEqual(0,recorder.RecordedSteps);
             Assert.AreEqual(0f,recorder.MotorEnergySpent,1e-7f);
             motor.Tick(.02f);
             Assert.Greater(recorder.MotorEnergySpent,0f);
