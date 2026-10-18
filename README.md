@@ -61,6 +61,19 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Fixed-step assay synchronization hardening
+
+The trial recorder now increments an authoritative `RecordedSteps` counter in
+`FixedUpdate` and resets it at `BeginTrial`. The batch runner waits until the
+requested number of **recorded** steps, verifies an exact count at capture,
+and deactivates the completed root before deferred destruction so no
+additional physics ticks can leak into the next treatment.
+
+This addresses identified scheduling risks, but does not establish a passing
+Play Mode run. The batch runner still requires Unity execution to confirm
+coroutine ordering and evaluate scene lifecycle. The runner deliberately
+produces no empirical outcomes in this documentation.
+
 ## Assay nutrient deposition audit (validation in progress)
 
 The isolated assay bootstrap now accumulates the **actual** nutrient
