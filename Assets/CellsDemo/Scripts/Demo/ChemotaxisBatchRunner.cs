@@ -31,63 +31,105 @@ namespace Cells.Demo
             if (runOnStart) yield return Run();
         }
 
+        GameObject activeTrialRoot;
+        public int CompletedTrials => completed.Count;
+
+        void OnDisable()
+        {
+            // Unity can stop an iterator when this component is disabled.
+            // Preserve only completed trials; never write a successful batch marker.
+            if (activeTrialRoot)
+            {
+                activeTrialRoot.SetActive(false);
+                Destroy(activeTrialRoot);
+                activeTrialRoot = null;
+            }
+            if (running && completed.Count > 0)
+                SaveCompleted("partial");
+            running = false;
+        }
+
+        void SaveCompleted(string suffix)
+        {
+            string safeName = Path.GetFileName(outputFile);
+            if (string.IsNullOrEmpty(safeName)) safeName = "chemotaxis-outcomes-v1.csv";
+            if (suffix != null)
+                safeName = Path.GetFileNameWithoutExtension(safeName) + "-" + suffix + ".csv";
+            string outputPath = Path.Combine(Application.persistentDataPath,safeName);
+            File.WriteAllText(outputPath,ChemotaxisAssayPlanV1.OutcomeCsv(completed));
+            LastOutputPath = outputPath;
+        }
+
         public IEnumerator Run()
         {
             if (finished || running) yield break;
-            running=true;
+            running = true;
             completed.Clear();
-            var schedule = ChemotaxisAssayPlanV1.Build(firstSeed,replicates);
-            for (int index=0;index<schedule.Length;index++)
+            try
             {
-                var trial=schedule[index];
-                var root=new GameObject("Assay " + trial.ordinal + " " + trial.controller);
-                var demo=root.AddComponent<ChemistryDemoBootstrap>();
-                demo.autoBuild=false;
-                demo.assayMode=true;
-                demo.seed=trial.seed;
-                demo.Build();
-                var swimmer=demo.AssaySwimmer;
-                var recorder=demo.AssayRecorder;
-                if (!swimmer || !recorder)
+                var schedule = ChemotaxisAssayPlanV1.Build(firstSeed,replicates);
+                for (int index = 0; index < schedule.Length; index++)
                 {
-                    Destroy(root);
-                    throw new InvalidOperationException("Assay bootstrap did not produce focal swimmer and recorder");
+                    var trial = schedule[index];
+                    activeTrialRoot = new GameObject("Assay " + trial.ordinal + " " + trial.controller);
+                    var demo = activeTrialRoot.AddComponent<ChemistryDemoBootstrap>();
+                    demo.autoBuild = false;
+                    demo.assayMode = true;
+                    demo.seed = trial.seed;
+                    demo.Build();
+                    var swimmer = demo.AssaySwimmer;
+                    var recorder = demo.AssayRecorder;
+                    if (!swimmer || !recorder)
+                        throw new InvalidOperationException("Assay bootstrap missing focal swimmer or recorder");
+                    swimmer.useTemporalChemotaxis = trial.controller != ChemotaxisAssayPlanV1.Spatial;
+                    swimmer.stochasticTumbles = trial.controller == ChemotaxisAssayPlanV1.Stochastic;
+                    recorder.controllerLabel = trial.controller;
+                    recorder.BeginTrial();
+
+                    float stepTime = Time.fixedDeltaTime;
+                    if (!(stepTime > 0f) || !float.IsFinite(stepTime))
+                        throw new InvalidOperationException("Invalid physics fixedDeltaTime");
+                    int steps = Mathf.CeilToInt(horizonSeconds / stepTime);
+                    while (recorder && recorder.RecordedSteps < steps)
+                        yield return new WaitForFixedUpdate();
+                    if (!recorder || recorder.RecordedSteps != steps)
+                        throw new InvalidOperationException("Assay fixed-step synchronization failed");
+
+                    completed.Add(new ChemotaxisAssayPlanV1.Outcome {
+                        trial = trial,
+                        elapsedSeconds = recorder.ElapsedSeconds,
+                        pathLength = recorder.PathLength,
+                        nutrientAbsorbed = recorder.NutrientAbsorbed,
+                        nutrientDigested = recorder.NutrientDigested,
+                        motorEnergySpent = recorder.MotorEnergySpent,
+                        finalEnergy = recorder.LastEnergy,
+                        tumbles = recorder.TumbleCount,
+                        alive = recorder.Alive
+                    });
+                    activeTrialRoot.SetActive(false);
+                    Destroy(activeTrialRoot);
+                    activeTrialRoot = null;
+                    yield return null; // Wait for deferred destruction before next world.
                 }
-                swimmer.useTemporalChemotaxis=trial.controller != ChemotaxisAssayPlanV1.Spatial;
-                swimmer.stochasticTumbles=trial.controller == ChemotaxisAssayPlanV1.Stochastic;
-                recorder.controllerLabel=trial.controller;
-                recorder.BeginTrial();
-                int steps=Mathf.CeilToInt(horizonSeconds/Time.fixedDeltaTime);
-                // Wait for actually recorded FixedUpdate samples, not an assumed
-                // number of coroutine resumptions. Recorders run at execution order 150.
-                while (recorder && recorder.RecordedSteps < steps)
-                    yield return new WaitForFixedUpdate();
-                if (!recorder || recorder.RecordedSteps != steps)
-                    throw new InvalidOperationException("Assay recorder lost fixed-step synchronization");
-                completed.Add(new ChemotaxisAssayPlanV1.Outcome {
-                    trial=trial,
-                    elapsedSeconds=recorder.ElapsedSeconds,
-                    pathLength=recorder.PathLength,
-                    nutrientAbsorbed=recorder.NutrientAbsorbed,
-                    nutrientDigested=recorder.NutrientDigested,
-                    motorEnergySpent=recorder.MotorEnergySpent,
-                    finalEnergy=recorder.LastEnergy,
-                    tumbles=recorder.TumbleCount,
-                    alive=recorder.Alive
-                });
-                root.SetActive(false); // Stop all fixed-step updates before deferred destruction.
-                Destroy(root);
-                // Destroy is deferred; wait until the next frame before rebuilding
-                // to prevent transient overlap between independent assay worlds.
-                yield return null;
+                SaveCompleted(null);
+                finished = true;
+                Debug.Log("CELL_ASSAY_COMPLETE " + LastOutputPath + " trials=" + completed.Count);
             }
-            string safeName=Path.GetFileName(outputFile);
-            if (string.IsNullOrEmpty(safeName)) safeName="chemotaxis-outcomes-v1.csv";
-            LastOutputPath=Path.Combine(Application.persistentDataPath,safeName);
-            File.WriteAllText(LastOutputPath,ChemotaxisAssayPlanV1.OutcomeCsv(completed));
-            finished=true;
-            running=false;
-            Debug.Log("CELL_ASSAY_COMPLETE "+LastOutputPath+" trials="+completed.Count);
+            finally
+            {
+                if (activeTrialRoot)
+                {
+                    activeTrialRoot.SetActive(false);
+                    Destroy(activeTrialRoot);
+                    activeTrialRoot = null;
+                }
+                if (!finished && completed.Count > 0)
+                {
+                    try { SaveCompleted("partial"); }
+                    catch (Exception e) { Debug.LogError("CELL_ASSAY_PARTIAL_WRITE_FAILED " + e); }
+                }
+                running = false;
+            }
         }
     }
 }
