@@ -61,6 +61,23 @@ Visual appearance and performance have not yet been verified in Unity
 Play Mode; run the local scene and Unity tests before using any footage
 as research evidence.
 
+## Interrupted-assay cleanup (unverified)
+
+The Play Mode batch runner now uses iterator-finally cleanup and a
+component-disable safeguard to deactivate and destroy an in-progress
+world. If there are completed treatments but the batch is interrupted,
+it saves only those completed outcomes to a separate
+`chemotaxis-outcomes-v1-partial.csv` (or corresponding configured
+basename). Only a fully completed schedule produces the normal output
+CSV and `CELL_ASSAY_COMPLETE` log marker. Errors writing partial
+results are surfaced in the Unity Console; disabled-runner cleanup may
+still be subject to platform file I/O errors.
+
+No Unity Editor executable was available in the development container,
+so these lifecycle paths are not yet Play Mode tested. Test interruption
+after several completed trials, confirm no active prior-world objects
+remain, and verify partial rows are not mistaken for a complete batch.
+
 ## Fixed-step assay synchronization hardening
 
 The trial recorder now increments an authoritative `RecordedSteps` counter in
