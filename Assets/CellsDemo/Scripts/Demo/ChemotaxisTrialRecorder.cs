@@ -21,6 +21,7 @@ namespace Cells.Demo
         public string nutrientId = "nutrient-A";
         public float samplePeriod = .2f;
 
+        public int RecordedSteps { get; private set; }
         public float ElapsedSeconds { get; private set; }
         public float PathLength { get; private set; }
         public float CumulativeNutrientExposure { get; private set; }
@@ -51,7 +52,9 @@ namespace Cells.Demo
             if (!motility) motility = GetComponent<CellMotility>();
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
             if (!motor) motor = GetComponent<CellFlagellarActuator>();
+            if (!exchange) exchange = GetComponent<CellChemicalExchange>();
             if (!field && motility) field = motility.field;
+            RecordedSteps = 0;
             ElapsedSeconds = PathLength = CumulativeNutrientExposure = 0f;
             InitialEnergy = metabolism ? metabolism.energy : 0f;
             LastEnergy = InitialEnergy;
@@ -69,6 +72,7 @@ namespace Cells.Demo
         {
             if (!started) BeginTrial();
             if (!motility || dt <= 0f || !float.IsFinite(dt)) return;
+            RecordedSteps++;
             ElapsedSeconds += dt;
             PathLength += motility.LastDisplacementVelocity.magnitude * dt;
             if (field)
