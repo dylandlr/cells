@@ -1,0 +1,99 @@
+using UnityEngine;
+using Unity.MLAgents;
+using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Sensors;
+using Cells.Demo;
+using Cells.Physiology;
+
+namespace Cells.Learning
+{
+    // Academy runs before the simulation. Score the completed physics step afterward.
+    [DefaultExecutionOrder(200)]
+    public sealed class CellForagingAgent : Agent
+    {
+        public int firstSeed = 631;
+        public float horizonSeconds = 30f;
+        public float motorPenalty = .1f;
+        GameObject world;
+        CellMotorPolicyPort port;
+        ChemotaxisTrialRecorder recorder;
+        readonly float[] observations = new float[CellMotorPolicyPort.ObservationCount];
+        float previousDigestion, previousMotorEnergy;
+        int episode;
+
+        public override void Initialize()
+        {
+            MaxStep = 0; // Horizon is measured in completed simulation steps below.
+        }
+
+        public override void OnEpisodeBegin()
+        {
+            CleanupWorld();
+            world = new GameObject("ML assay episode " + episode);
+            world.transform.SetParent(transform, false);
+            var demo = world.AddComponent<ChemistryDemoBootstrap>();
+            demo.autoBuild = false;
+            demo.assayMode = true;
+            demo.seed = unchecked(firstSeed + episode++);
+            demo.Build();
+            port = demo.AssaySwimmer.gameObject.AddComponent<CellMotorPolicyPort>();
+            recorder = demo.AssayRecorder;
+            recorder.controllerLabel = "mlagents-motor-v1";
+            recorder.BeginTrial();
+            previousDigestion = previousMotorEnergy = 0f;
+        }
+
+        public override void CollectObservations(VectorSensor sensor)
+        {
+            if (port) port.ReadObservations(observations);
+            else System.Array.Clear(observations, 0, observations.Length);
+            foreach (float value in observations) sensor.AddObservation(value);
+        }
+
+        public override void OnActionReceived(ActionBuffers actions)
+        {
+            // ML-Agents continuous actions [-1,1] map to motor activation [0,1].
+            if (port) port.ApplyMotorAction((actions.ContinuousActions[0] + 1f) * .5f);
+        }
+
+        public override void Heuristic(in ActionBuffers actionsOut)
+        {
+            var actions = actionsOut.ContinuousActions;
+            actions[0] = .5f; // Constant 75% motor baseline, not a learned policy.
+        }
+
+        void FixedUpdate()
+        {
+            if (!recorder) return;
+            float digestion = recorder.NutrientDigested;
+            float motorEnergy = recorder.MotorEnergySpent;
+            AddReward(Mathf.Max(0f, digestion - previousDigestion)
+                - Mathf.Max(0f, motorPenalty) * Mathf.Max(0f, motorEnergy - previousMotorEnergy));
+            previousDigestion = digestion;
+            previousMotorEnergy = motorEnergy;
+            if (!recorder.Alive)
+            {
+                AddReward(-1f);
+                EndEpisode();
+            }
+            else if (recorder.ElapsedSeconds >= Mathf.Max(Time.fixedDeltaTime, horizonSeconds))
+                EpisodeInterrupted(); // Time-limit truncation, not biological death.
+        }
+
+        void CleanupWorld()
+        {
+            port = null;
+            recorder = null;
+            if (!world) return;
+            world.SetActive(false);
+            Destroy(world);
+            world = null;
+        }
+
+        protected override void OnDisable()
+        {
+            CleanupWorld();
+            base.OnDisable();
+        }
+    }
+}
