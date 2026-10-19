@@ -11,6 +11,7 @@ namespace Cells.Substances
         public MultiChemicalField2D field;
         public ChemicalEventLog events;
         public CellMetabolism metabolism;
+        public CellBiomassGrowth biomassGrowth;
         public string toxinId = "toxin-B";
         public string nutrientId = "nutrient-A";
         public string digestionProductId = "metabolic-waste-E";
@@ -29,7 +30,7 @@ namespace Cells.Substances
         public float CumulativeNutrientAbsorbed { get; private set; }
         public float CumulativeNutrientDigested { get; private set; }
 
-        void Awake() { if (!metabolism) metabolism = GetComponent<CellMetabolism>(); }
+        void Awake() { if (!metabolism) metabolism = GetComponent<CellMetabolism>(); if (!biomassGrowth) biomassGrowth = GetComponent<CellBiomassGrowth>(); }
 
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
 
@@ -64,6 +65,10 @@ namespace Cells.Substances
                 if (consumed > 0f && events) events.Record(Time.fixedTime, organismId, nutrientId,
                     ChemicalEventKind.Absorbed, consumed, p, "membrane.feeding_site");
             }
+            // Growth consumes measured material from the intracellular nutrient reserve.
+            // A diverted unit enters structural biomass and cannot also be digested.
+            if (biomassGrowth && biomassGrowth.enabled)
+                biomassGrowth.AssimilateFrom(ref nutrientReserve, dt);
             // Material is converted only when the byproduct can enter the represented world.
             Vector2 outlet = metabolicOutlet ? (Vector2)metabolicOutlet.position : (Vector2)transform.position;
             float requestedDigestion = Mathf.Min(nutrientReserve, Mathf.Max(0f, digestionRate) * dt);
