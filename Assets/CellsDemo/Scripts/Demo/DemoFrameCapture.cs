@@ -47,6 +47,9 @@ namespace Cells.Demo
                 Time.captureFramerate = previousCaptureRate;
                 Debug.Log("cells gameplay frame capture finished: " + FramesCaptured +
                     " frames in " + OutputFolder);
+                if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(),
+                    "--cells-capture") >= 0)
+                    Application.Quit(FramesCaptured == count ? 0 : 1);
             }
         }
     }
