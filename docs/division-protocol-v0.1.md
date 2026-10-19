@@ -77,3 +77,40 @@ interface is not wired to live Play Mode births yet.
 
 This amendment adds NUnit coverage for a rejected prepared birth and retry
 with identical inherited genes; the tests have not run in Unity.
+
+## Opt-in Unity daughter-spawn assay (2026-10-19)
+
+`ChemistryDemoBootstrap.enableExperimentalDivision` defaults to false.
+When explicitly enabled before Build, `ExperimentalDivisionDemo` watches
+the named Grazer for sufficient structural biomass and energy, then attempts
+exactly **one** reproduction. It uses the existing cell constructor to
+instantiate a daughter, applies copied quantitative genes and previewed
+regulatory genes, initializes the daughter with the daughter-side energy,
+nutrient and structural biomass shares, and assigns the remaining shares
+to the parent. Ancestor registration and mutation commitment happen
+after the prepared factory returns success. A distinct chemical-event
+organism ID is used rather than reusing the lineage record ID.
+
+A Play Mode regression test is authored to force a resource-eligible
+parent, invoke the opt-in path, confirm a daughter object exists and
+assert the combined intracellular biomass, nutrient reserve and energy
+are unchanged at birth. **Test execution has not been verified.**
+
+Limitations are material: this is a prototype **daughter spawning**
+mechanic, not simulated cytokinesis. It creates the daughter using the
+existing component builder, not a progressive pinching/splitting membrane;
+the parent and daughter do not go through a replicated DNA/material
+segregation animation; collision-free placement is only a heuristic;
+toxin/secretory reserves are not partitioned, and creating a
+secretor-class daughter would provision its default toxin inventory
+without accounting for the parent's reserve. The assay currently
+uses the nonsecretory Grazer only. Internal organelle inventory is not
+conserved. A failure during/after activation needs full explicit
+resource rollback and object cleanup, which this simple factory does
+not yet guarantee. A sustained population/evolution assay is **not**
+enabled: only one birth is permitted. A production version needs a
+proper serializable transaction object and shared authoritative module
+inventory before reproduction becomes general gameplay.
+
+Substrate: Emergence's supplied documents and build artifacts remain
+visual/gameplay references, not a source-code basis for this factory.
