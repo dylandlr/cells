@@ -1,3 +1,4 @@
+using Cells.Rendering;
 using UnityEngine;
 using Cells.Physiology;
 using Cells.Substances;
@@ -50,8 +51,16 @@ namespace Cells.Demo
             var metabolism = parent.GetComponent<CellMetabolism>();
             var exchange = parent.GetComponent<CellChemicalExchange>();
             var regulation = parent.GetComponent<GeneticRegulationController>();
-            if (!growth || !metabolism || !exchange || !regulation || !metabolism.alive ||
-                metabolism.energy < requiredEnergy) return false;
+            if (!growth || !metabolism || !exchange || !regulation || !metabolism.alive) return false;
+            var preview = parent.GetComponent<CellDivisionPreview2D>();
+            if (preview)
+            {
+                float threshold = 2f * minimumDaughterBiomass;
+                preview.progress = Mathf.Clamp01(
+                    (growth.structuralBiomass-threshold*.65f)/Mathf.Max(.001f,threshold*.35f));
+                preview.visible = preview.progress > .01f && !completed;
+            }
+            if (metabolism.energy < requiredEnergy) return false;
             // An actual growth-dependent biomass gate, not a timer-only reproduction.
             if (growth.structuralBiomass < 2f * minimumDaughterBiomass) return false;
             nextAttempt = Time.fixedTime + cooldownSeconds;
