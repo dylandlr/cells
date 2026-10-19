@@ -35,6 +35,14 @@ jobs:
           restore-keys: |
             Unity-Library-Linux64-
 
+      - name: Verify Unity license configuration
+        shell: bash
+        run: |
+          if [ -z "$UNITY_LICENSE" ] && { [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; }; then
+            echo "::error::Unity activation is not configured. Add GameCI-compatible Unity license credentials to GitHub Actions secrets or use a licensed self-hosted runner."
+            exit 1
+          fi
+
       - name: Build Linux player with Unity
         uses: game-ci/unity-builder@v4
         with:
@@ -67,7 +75,7 @@ jobs:
             cat ci-demo/player.log || true
             exit 1
           fi
-          mapfile -t frames < <(find "$HOME/.config/unity3d" -type f -path '*/cells-unity-demo/frame_*.png' 2>/dev/null | sort)
+          mapfile -t frames < <(find "$HOME/.config/unity3d" "$HOME/.local/share" -type f -path '*/cells-unity-demo/frame_*.png' 2>/dev/null | sort)
           echo "Captured ${#frames[@]} frames"
           if [ "${#frames[@]}" -lt 600 ]; then
             echo "Expected 600 actual gameplay frames; capture is incomplete."
