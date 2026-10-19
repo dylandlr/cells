@@ -16,6 +16,9 @@ namespace Cells.Physiology
         public SoftFlagellum2D tail;
         public CellFlagellarActuator motor;
         public FluidGrid2D fluid;
+        public CellBiomassGrowth growth;
+        public float EffectiveBodyDrag => bodyDrag * (growth ? growth.VisualRadiusScale : 1f);
+        public float EffectiveRotationalBodyDrag => rotationalBodyDrag * Mathf.Pow(growth ? growth.VisualRadiusScale : 1f, 3f);
         [Min(.01f)] public float parallelDrag = .48f;
         [Min(.01f)] public float perpendicularDrag = .95f;
         [Min(.01f)] public float bodyDrag = 3.5f;
@@ -36,6 +39,7 @@ namespace Cells.Physiology
         {
             if (!tail) tail = GetComponent<SoftFlagellum2D>();
             if (!motor) motor = GetComponent<CellFlagellarActuator>();
+            if (!growth) growth = GetComponent<CellBiomassGrowth>();
         }
 
         public void ResetHistory()
@@ -66,8 +70,8 @@ namespace Cells.Physiology
                 && motor.structuralIntegrity > 0f && motor.EffectiveThrust > 0f;
             Vector2 dragWeightedStroke=Vector2.zero;
             float strokeTorque=0f;
-            float dragX=bodyDrag, dragY=bodyDrag, dragXY=0f;
-            float dragXOmega=0f, dragYOmega=0f, dragOmega=rotationalBodyDrag;
+            float dragX=EffectiveBodyDrag, dragY=EffectiveBodyDrag, dragXY=0f;
+            float dragXOmega=0f, dragYOmega=0f, dragOmega=EffectiveRotationalBodyDrag;
             SegmentDissipation=0f;
             StrokeMagnitude=0f;
             float segmentLength = motor ? motor.length/(SoftFlagellum2D.NodeCount-1) : .06f;
