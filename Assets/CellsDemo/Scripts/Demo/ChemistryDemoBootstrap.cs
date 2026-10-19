@@ -207,6 +207,10 @@ namespace Cells.Demo
             growth.metabolism = metabolism;
             growth.structuralBiomass = 1f;
             growth.referenceBiomass = 1f;
+            // Founder phenotype: inherited parameters are expressed into actual physiology.
+            var phenotype = go.AddComponent<OrganismPhenotype>();
+            phenotype.genome = new OrganismGenome();
+            phenotype.Express();
             var membrane = go.AddComponent<MembraneIntegrity>();
             membrane.chemicalResistance = resistance;
             membrane.contourAmplitude = .12f + .075f * Mathf.Abs(Mathf.Sin(id * 2.7f));
