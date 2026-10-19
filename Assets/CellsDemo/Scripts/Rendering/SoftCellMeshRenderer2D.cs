@@ -25,9 +25,13 @@ namespace Cells.Rendering
         readonly Color[] colors = new Color[SoftCellBody2D.Nodes+1];
         readonly int[] triangles = new int[SoftCellBody2D.Nodes*3];
         LineRenderer rim;
+        LineRenderer halo;
         readonly Transform[] organelleNodes = new Transform[InternalCompartments2D.Count];
         Sprite organelleSprite;
         Texture2D organelleTexture;
+        readonly Transform[] granules = new Transform[12];
+        readonly float[] granuleAngles = new float[12];
+        readonly float[] granuleRadii = new float[12];
 
         void Awake()
         {
@@ -59,6 +63,18 @@ namespace Cells.Rendering
             rim.sortingOrder=14;
             rim.startColor=rim.endColor=edgeColor;
             if(material)rim.sharedMaterial=material;
+
+            var haloObject=new GameObject("Phase contrast halo");
+            haloObject.transform.SetParent(transform,false);
+            halo=haloObject.AddComponent<LineRenderer>();
+            halo.useWorldSpace=false;
+            halo.loop=true;
+            halo.positionCount=SoftCellBody2D.Nodes;
+            halo.startWidth=halo.endWidth=.095f;
+            halo.sortingOrder=11;
+            halo.startColor=halo.endColor=new Color(.08f,.12f,.11f,.24f);
+            if(material)halo.sharedMaterial=material;
+
             organelleSprite=MakeOrganelleSprite();
             organelleTexture=organelleSprite.texture;
             string[] names={"Nucleoid mass", "Storage vacuole", "Signal vesicle"};
@@ -74,6 +90,23 @@ namespace Cells.Rendering
                 visual.color=tints[i];
                 visual.sortingOrder=13;
             }
+
+            var random=new System.Random(Mathf.Abs(name.GetHashCode())+631);
+            for(int i=0;i<granules.Length;i++)
+            {
+                granuleAngles[i]=(float)(random.NextDouble()*Mathf.PI*2f);
+                granuleRadii[i]=.24f+(float)random.NextDouble()*.48f;
+                var grain=new GameObject("Cytoplasm granule "+(i+1));
+                grain.transform.SetParent(transform,false);
+                granules[i]=grain.transform;
+                var visual=grain.AddComponent<SpriteRenderer>();
+                visual.sprite=organelleSprite;
+                float v=.66f+(float)random.NextDouble()*.20f;
+                visual.color=new Color(v*.72f,v*.94f,v*.84f,.24f);
+                visual.sortingOrder=13;
+                float size=.025f+(float)random.NextDouble()*.030f;
+                grain.transform.localScale=new Vector3(size,size,1f);
+            }
             UpdateGeometry();
         }
 
@@ -81,7 +114,7 @@ namespace Cells.Rendering
         {
             const int side=32;
             var tex=new Texture2D(side,side,TextureFormat.RGBA32,false);
-            tex.filterMode=FilterMode.Bilinear;
+            tex.filterMode=FilterMode.Point;
             var pixels=new Color[side*side];
             for(int y=0;y<side;y++)
             for(int x=0;x<side;x++)
@@ -113,6 +146,7 @@ namespace Cells.Rendering
                 triangles[i*3+1]=i+1;
                 triangles[i*3+2]=(i+1)%SoftCellBody2D.Nodes+1;
                 if(rim)rim.SetPosition(i,new Vector3(p.x,p.y,-.015f));
+                if(halo)halo.SetPosition(i,new Vector3(p.x,p.y,.01f));
             }
             mesh.Clear();
             mesh.vertices=vertices;
@@ -127,6 +161,15 @@ namespace Cells.Rendering
                 float radius=compartments ? compartments.Radius(i) : .16f;
                 organelleNodes[i].localPosition=new Vector3(p.x,p.y,-.02f);
                 organelleNodes[i].localScale=new Vector3(radius*2,radius*2,1f);
+            }
+            for(int i=0;i<granules.Length;i++)
+            {
+                if(!granules[i])continue;
+                float normalized=granuleAngles[i]/(Mathf.PI*2f);
+                int segment=Mathf.RoundToInt(normalized*SoftCellBody2D.Nodes)%SoftCellBody2D.Nodes;
+                Vector2 edge=body.Node(segment);
+                Vector2 p=Vector2.Lerp(body.Core,edge,granuleRadii[i]);
+                granules[i].localPosition=new Vector3(p.x,p.y,-.012f);
             }
         }
         void OnDestroy()
