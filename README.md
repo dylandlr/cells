@@ -113,6 +113,27 @@ Reference provenance: the provided Substrate: Emergence alpha readme reports
 nutrient storage, metabolic consumption, and mitosis. We independently
 implement those ideas; its original Unity source code has not been supplied.
 
+## Membrane-anchored exchange sites v1 (Unity validation pending)
+
+Nutrient uptake, toxin secretion, metabolic waste, and particulate feeding
+now use `MembraneAnchoredSite2D`: site transforms follow the actual
+`SoftCellBody2D` membrane sector when available, and use the legacy
+`MembraneIntegrity.SurfacePoint` otherwise. This removes fixed, floating
+ports as growing cells deform. The site's `FixedUpdate` order runs after
+the soft-body solver and before the chemical-exchange components; `LateUpdate`
+also resynchronizes presentation.
+
+Tests for an expanding cell and a legacy-cell fallback have been authored,
+but **are not yet executed in Unity**. The site currently follows a single
+sector without finite pore-width or regional transport geometry.
+Capture radius, feeding rates, effective organism drag, and cell-cell
+collision response do not yet scale with biomass, so the interaction
+model is not fully mechanically coupled.
+
+Provenance: Substrate: Emergence's supplied README documents membrane
+transport proteins, nutrient collection, energy conversion, and replication.
+That documentation is a design reference, not access to its original source.
+
 ## What is simulated
 
 Independent dissolved species diffuse with no-flux boundaries. Field storage is mass per
