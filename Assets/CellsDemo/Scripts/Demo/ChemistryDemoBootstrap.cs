@@ -342,6 +342,15 @@ namespace Cells.Demo
                 meshView.body = softBody;
                 meshView.membrane = membrane;
                 meshView.compartments = compartments;
+                if (enableExperimentalDivision)
+                {
+                    var mechanics = go.AddComponent<CellMechanicsOverlay2D>();
+                    mechanics.body = softBody;
+                    var divisionPreview = go.AddComponent<CellDivisionPreview2D>();
+                    divisionPreview.body = softBody;
+                    divisionPreview.compartments = compartments;
+                    divisionPreview.visible = false;
+                }
                 // Preserve physiology and membrane integrity; replace just
                 // the legacy sprite and its texture-based boundary rendering.
                 membraneVisual.enabled = false;
