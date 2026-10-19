@@ -36,6 +36,40 @@ namespace Cells.Tests
         }
 
         [UnityTest]
+        public IEnumerator OptInDivisionCreatesAnInheritedResourceBalancedDaughter()
+        {
+            var parent = demo.transform.Find("Grazer").gameObject;
+            var parentGrowth = parent.GetComponent<CellBiomassGrowth>();
+            var parentMetabolism = parent.GetComponent<CellMetabolism>();
+            var parentExchange = parent.GetComponent<CellChemicalExchange>();
+            var parentGenome = parent.GetComponent<OrganismPhenotype>().genome;
+            demo.enableExperimentalDivision = true;
+            var assay = demo.gameObject.AddComponent<ExperimentalDivisionDemo>();
+            assay.bootstrap = demo;
+            assay.Initialize(721);
+            parentGrowth.structuralBiomass = 2.4f;
+            parentMetabolism.energy = 6f;
+            parentExchange.nutrientReserve = .8f;
+            float initialBiomass = parentGrowth.structuralBiomass;
+            float initialEnergy = parentMetabolism.energy;
+            float initialNutrients = parentExchange.nutrientReserve;
+            Assert.IsTrue(assay.TryDivide());
+            Assert.IsTrue(assay.completed);
+            var child = demo.transform.Find("Descendant " + assay.daughterIndividualId);
+            Assert.IsNotNull(child);
+            Assert.AreEqual(2,assay.committedBirths+1);
+            Assert.AreEqual(initialBiomass,parentGrowth.structuralBiomass+
+                child.GetComponent<CellBiomassGrowth>().structuralBiomass,1e-5f);
+            Assert.AreEqual(initialNutrients,parentExchange.nutrientReserve+
+                child.GetComponent<CellChemicalExchange>().nutrientReserve,1e-5f);
+            Assert.AreEqual(initialEnergy,parentMetabolism.energy+
+                child.GetComponent<CellMetabolism>().energy,1e-5f);
+            Assert.AreEqual(parentGenome.feedingRate,
+                child.GetComponent<OrganismPhenotype>().genome.feedingRate,1e-5f);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator SavedSceneBuildsAndSimulatesMaterialTransfers()
         {
             Assert.That(demo.GetComponentsInChildren<CellMetabolism>().Length, Is.EqualTo(2));
