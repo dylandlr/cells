@@ -394,7 +394,7 @@ namespace Cells.Demo
             GameObject daughter = null;
             try
             {
-                daughter = CreateCell("Descendant " + preparedId, preparedId,
+                daughter = CreateCell("Descendant " + preparedId, NextExperimentalOrganismId++,
                     position, secretor, originalMembrane.chemicalResistance, originalMotor != null);
                 daughter.SetActive(false);
                 var phenotype = daughter.GetComponent<OrganismPhenotype>();
