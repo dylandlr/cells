@@ -12,6 +12,7 @@ namespace Cells.Substances
         public ChemicalEventLog events;
         public CellMetabolism metabolism;
         public MembraneIntegrity membrane;
+        public SoftCellBody2D softBody;
         public int organismId;
         public string substanceId = "toxin-B";
         [Min(0)] public float uptakeRate = .1f;
@@ -28,10 +29,13 @@ namespace Cells.Substances
         {
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
             if (!membrane) membrane = GetComponent<MembraneIntegrity>();
+            if (!softBody) softBody = GetComponent<SoftCellBody2D>();
         }
 
-        public Vector2 SurfacePosition(int segment) => transform.TransformPoint(membrane
-            ? membrane.SurfacePoint(segment, membraneRadius) : MembraneIntegrity.DirectionOf(segment) * membraneRadius);
+        public Vector2 SurfacePosition(int segment) => transform.TransformPoint(
+            softBody && softBody.Initialized ? softBody.SurfacePoint(segment) :
+            (membrane ? membrane.SurfacePoint(segment, membraneRadius)
+              : MembraneIntegrity.DirectionOf(segment) * membraneRadius));
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
 
         public void Tick(float dt)
