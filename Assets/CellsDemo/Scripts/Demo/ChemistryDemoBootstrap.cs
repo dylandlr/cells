@@ -146,6 +146,16 @@ namespace Cells.Demo
             view.SetZoom(cultureView ? 3.7f : 2.5f);
             view.SetChemicalOverlay(!cultureView);
             view.SetPlaybackRate(assayMode ? 1f : .25f);
+            // CI/player opt-in. No special recording behavior in ordinary play.
+            if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(),
+                "--cells-capture") >= 0)
+            {
+                var recorder = gameObject.AddComponent<DemoFrameCapture>();
+                recorder.captureOnStart = true;
+                recorder.framesPerSecond = 30;
+                recorder.durationSeconds = 20;
+                recorder.folderName = "cells-unity-demo";
+            }
         }
 
         void CreateCulture()
