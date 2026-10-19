@@ -144,7 +144,8 @@ namespace Cells.Rendering
         public void UpdateGeometry()
         {
             if(!body || !body.Initialized || !mesh)return;
-            float size=growth ? growth.VisualRadiusScale : 1f;
+            // The soft-body solver now owns biomass-dependent geometric expansion.
+            const float size=1f;
             vertices[0]=new Vector3(body.Core.x*size,body.Core.y*size,-.005f);
             Color liveCytoplasm=ObservedCytoplasmColor;
             colors[0]=liveCytoplasm;
