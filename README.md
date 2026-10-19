@@ -74,8 +74,8 @@ The microscope mesh scales approximately with the square root of relative
 biomass as an **illustrative visual proxy**.
 
 **Important limitation:** collision, feeding pores, soft-body dynamics, and membrane
-exposure still use the original geometry. The visual scale does not yet change
-authoritative physical radius or mechanical/capture cross-section. Do not use
+exposure still use the original geometry. The visual scale now drives the soft-body's rest geometry, but feeding/capture
+and hydrodynamic parameter coupling remain unfinished. Do not use
 this prototype to claim experimentally calibrated growth or mass/geometry
 coupling. Biomass turnover, growth material released upon death, and division
 remain unimplemented. A subsequent version must couple the mass budget to the
@@ -87,6 +87,31 @@ Those are documented design notes, **not access to its original source code**.
 The biomass assimilation algorithm here is our independent implementation.
 
 Unity Editor tests have been written but **not run in Unity Play Mode/Edit Mode**.
+
+## Mechanical biomass coupling v1 (Unity validation pending)
+
+The soft-body's **rest contour and rest area** now derive from
+`CellBiomassGrowth.VisualRadiusScale`. The dynamic membrane solver relaxes
+toward the biomass-dependent contour over subsequent fixed physics steps.
+`SoftCellMeshRenderer2D` uses these authoritative solver vertices directly
+and no longer applies a second independent growth scale. Where a
+`SoftCellBody2D` is present, `CellExposureSystem.SurfacePosition`
+samples its actual deforming nodes rather than the old static sector radius.
+
+A regression test checks nutrient mass transfer, membrane expansion and
+correspondence between the actual mechanical node and mesh vertex. It
+has **not been run in Unity**.
+
+This is still a partial coupling: feeding/secretion pores retain fixed local
+positions, hydrodynamic drag/capture parameters are not recalculated from
+the growing contour, and adjacent-cell collision avoidance has not been
+validated. The 2D square-root-of-biomass length relationship is a convenient
+areal-density assumption, **not a calibrated biological growth law**.
+These gaps must be resolved before division/evolution experiments.
+
+Reference provenance: the provided Substrate: Emergence alpha readme reports
+nutrient storage, metabolic consumption, and mitosis. We independently
+implement those ideas; its original Unity source code has not been supplied.
 
 ## What is simulated
 
