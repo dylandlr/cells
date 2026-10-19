@@ -350,6 +350,11 @@ namespace Cells.Demo
                     divisionPreview.body = softBody;
                     divisionPreview.compartments = compartments;
                     divisionPreview.visible = false;
+                    var cycle = go.AddComponent<ExperimentalConstrictionCycle2D>();
+                    cycle.body = softBody;
+                    cycle.growth = growth;
+                    cycle.metabolism = metabolism;
+                    cycle.preview = divisionPreview;
                 }
                 // Preserve physiology and membrane integrity; replace just
                 // the legacy sprite and its texture-based boundary rendering.
