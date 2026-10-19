@@ -17,6 +17,8 @@ namespace Cells.Demo
         public bool autoBuild = true;
         public bool cultureView;
         public bool assayMode;
+        public bool enableExperimentalDivision; // Off in ordinary gameplay and assays.
+        public int NextExperimentalOrganismId = 10000;
         public CellMotility AssaySwimmer { get; private set; }
         public ChemotaxisTrialRecorder AssayRecorder { get; private set; }
         MultiChemicalField2D field;
@@ -125,6 +127,12 @@ namespace Cells.Demo
                 CreateCell("Grazer", 2, new Vector2(1f, 0f), false, 0.1f, true);
             }
             if (cultureView && !assayMode) CreateCulture();
+            if (enableExperimentalDivision && !assayMode)
+            {
+                var division = gameObject.AddComponent<ExperimentalDivisionDemo>();
+                division.bootstrap = this;
+                division.Initialize(seed);
+            }
             if (!assayMode) { CreateParticleDemo(); CreateCamera(); }
             AddChemicalOverlay("Nutrients", "nutrient-A", MaterialForm.Dissolved, food.visualization.baseColor, -22);
             AddChemicalOverlay("Toxins", "toxin-B", MaterialForm.Dissolved, new Color(.72f,.31f,.94f), -21);
@@ -197,7 +205,7 @@ namespace Cells.Demo
             }
         }
 
-        void CreateCell(string label, int id, Vector2 position, bool secretor, float resistance, bool motile)
+        GameObject CreateCell(string label, int id, Vector2 position, bool secretor, float resistance, bool motile)
         {
             var go = Child(label);
             go.transform.position = position;
@@ -364,6 +372,55 @@ namespace Cells.Demo
             geneticController.referenceFeedingRate = phenotype.genome.feedingRate;
             geneticController.inheritedMotorCapacity = Mathf.Clamp01(phenotype.genome.motorInvestment);
             geneticController.referenceEnergy = 10f;
+                    return go;
+        }
+
+        /// <summary>Opt-in reproduction experiment only. Do not use as a generic prefab factory.</summary>
+        public GameObject PrepareExperimentalDaughter(GameObject parent,
+            OrganismGenome inheritedTraits, RegulatoryGenome inheritedRegulation,
+            CellDivisionBudget.Partition split, int preparedId)
+        {
+            if (!enableExperimentalDivision || !parent || inheritedTraits == null || inheritedRegulation == null)
+                return null;
+            var originalExchange = parent.GetComponent<CellChemicalExchange>();
+            var originalGrowth = parent.GetComponent<CellBiomassGrowth>();
+            var originalMotor = parent.GetComponent<CellMotility>();
+            var originalMembrane = parent.GetComponent<MembraneIntegrity>();
+            if (!originalExchange || !originalGrowth || !originalMembrane) return null;
+            bool secretor = originalExchange.secretionEnabled;
+            Vector2 direction = parent.transform.up;
+            float separation = originalGrowth.VisualRadiusScale * 2.2f;
+            Vector2 position = (Vector2)parent.transform.position + direction * separation;
+            GameObject daughter = null;
+            try
+            {
+                daughter = CreateCell("Descendant " + preparedId, preparedId,
+                    position, secretor, originalMembrane.chemicalResistance, originalMotor != null);
+                daughter.SetActive(false);
+                var phenotype = daughter.GetComponent<OrganismPhenotype>();
+                var regulation = daughter.GetComponent<GeneticRegulationController>();
+                var growth = daughter.GetComponent<CellBiomassGrowth>();
+                var metabolism = daughter.GetComponent<CellMetabolism>();
+                var exchange = daughter.GetComponent<CellChemicalExchange>();
+                phenotype.genome = inheritedTraits.Copy();
+                phenotype.Express();
+                regulation.inherited = inheritedRegulation.Copy();
+                regulation.referenceFeedingRate = phenotype.genome.feedingRate;
+                regulation.inheritedMotorCapacity = Mathf.Clamp01(phenotype.genome.motorInvestment);
+                growth.structuralBiomass = split.daughterBiomass;
+                metabolism.energy = split.daughterEnergy;
+                metabolism.alive = true;
+                exchange.nutrientReserve = split.daughterNutrient;
+                // All component references were assigned by CreateCell. No physics
+                // ticks run while this inactive staged daughter is configured.
+                return daughter;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                if (daughter) Destroy(daughter);
+                return null;
+            }
         }
 
         void AddChemicalOverlay(string label, string id, MaterialForm form, Color color, int order)
