@@ -19,6 +19,7 @@ namespace Cells.Physiology
         public MembraneIntegrity membrane;
         public FluidGrid2D fluid;
         public CellFlagellarActuator flagellum;
+        public CellBiomassGrowth growth;
         [Min(.1f)] public float restRadius = .9f;
         [Range(.01f, 1f)] public float edgeCompliance = .16f;
         [Range(.01f, 1f)] public float areaCompliance = .12f;
@@ -44,6 +45,8 @@ namespace Cells.Physiology
         public Vector2 Core => core;
         public Vector2 Node(int i) => positions[(i % Nodes + Nodes) % Nodes];
         public Vector2 NodeVelocity(int i) => velocities[(i % Nodes + Nodes) % Nodes];
+        public float CurrentRadius => restRadius * (growth ? growth.VisualRadiusScale : 1f);
+        public Vector2 SurfacePoint(int i) => Node(i);
 
         /// <summary>Queues a bounded local membrane correction. This is coarse
         /// position-level contact coupling, not a momentum-conserving impulse.</summary>
@@ -63,6 +66,7 @@ namespace Cells.Physiology
         {
             if (!membrane) membrane = GetComponent<MembraneIntegrity>();
             if (!flagellum) flagellum = GetComponent<CellFlagellarActuator>();
+            if (!growth) growth = GetComponent<CellBiomassGrowth>();
             if (fluid == null) fluid = GetComponentInParent<FluidGrid2D>();
             for (int i=0;i<Nodes;i++)
             {
@@ -93,11 +97,26 @@ namespace Cells.Physiology
             if(!(dt>0f) || float.IsNaN(dt) || float.IsInfinity(dt))return;
             int count=Mathf.CeilToInt(Mathf.Min(dt,.25f)/maxSubstep);
             float h=Mathf.Min(dt,.25f)/count;
+            UpdateGrowthRestShape();
             LastContactMagnitude=0f;
             for(int i=0;i<Nodes;i++) LastContactMagnitude+=pendingContact[i].magnitude;
             for(int sub=0;sub<count;sub++) Step(h, sub==0);
             for(int i=0;i<Nodes;i++) pendingContact[i]=Vector2.zero;
             MeasureStress();
+        }
+
+        // Biomass changes the *authoritative* rest geometry instead of scaling the render.
+        // This is a 2D area proxy and does not establish physical volume or material density.
+        void UpdateGrowthRestShape()
+        {
+            float scale=growth ? growth.VisualRadiusScale : 1f;
+            for(int i=0;i<Nodes;i++)
+                rest[i]=(membrane ? membrane.SurfacePoint(i,restRadius)
+                    : MembraneIntegrity.DirectionOf(i)*restRadius)*scale;
+            float area=0f;
+            for(int i=0;i<Nodes;i++)
+                area+=Vector3.Cross(rest[i],rest[(i+1)%Nodes]).z;
+            restArea=Mathf.Abs(area)*.5f;
         }
 
         // Strain is an observable diagnostic derived from actual deformed edges.
@@ -184,7 +203,7 @@ namespace Cells.Physiology
                 velocities[i]=(positions[i]-previous[i])/dt;
                 // Prevent a degenerate mesh if injured nodes collapse.
                 if(!float.IsFinite(positions[i].x)||!float.IsFinite(positions[i].y)
-                    ||positions[i].sqrMagnitude>restRadius*restRadius*16f)
+                    ||positions[i].sqrMagnitude>CurrentRadius*CurrentRadius*16f)
                 {
                     positions[i]=rest[i];
                     velocities[i]=Vector2.zero;
