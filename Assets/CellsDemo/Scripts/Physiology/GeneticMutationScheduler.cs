@@ -19,12 +19,49 @@ namespace Cells.Physiology
     /// No mutation occurs in FixedUpdate. Seeded and independent of rendering rate.</summary>
     public sealed class GeneticMutationScheduler
     {
-        readonly System.Random random;
+        System.Random random;
+        readonly int seed;
+        int committedReplicationCount;
         public readonly List<GeneticMutationEvent> events = new List<GeneticMutationEvent>();
         public double eventProbability = .03;
         public float maximumWeightStep = .35f;
 
-        public GeneticMutationScheduler(int seed) { random = new System.Random(seed); }
+        public GeneticMutationScheduler(int seed)
+        {
+            this.seed = seed;
+            random = new System.Random(seed);
+        }
+
+        // Preparation is repeatable and side-effect-free. Rejected births do not
+        // consume randomness or add mutation events.
+        public RegulatoryGenome Preview(RegulatoryGenome parent, int parentId,
+            int descendantId, int generation, out GeneticMutationEvent proposed)
+        {
+            var replay = new GeneticMutationScheduler(seed) {
+                eventProbability = eventProbability,
+                maximumWeightStep = maximumWeightStep
+            };
+            // Advance only over completed replication attempts.
+            for (int i = 0; i < committedReplicationCount; i++)
+                replay.Replicate(new RegulatoryGenome(), 0, 0, 0);
+            var child = replay.Replicate(parent, parentId, descendantId, generation);
+            proposed = replay.events.Count > events.Count ? replay.events[replay.events.Count-1] : null;
+            return child;
+        }
+
+        public void CommitPreview(GeneticMutationEvent proposed)
+        {
+            // Consume exactly one draw sequence by replaying the next attempt.
+            // This method is used only after a prepared birth has succeeded.
+            Replicate(new RegulatoryGenome(), 0, 0, 0);
+            if (proposed != null)
+            {
+                // Remove internal placeholder event and record real provenance.
+                if (events.Count > 0 && events[events.Count-1].parentId == 0)
+                    events.RemoveAt(events.Count-1);
+                events.Add(proposed);
+            }
+        }
 
         public RegulatoryGenome Replicate(RegulatoryGenome parent, int parentId,
             int descendantId, int generation)
@@ -33,6 +70,7 @@ namespace Cells.Physiology
             if (!double.IsFinite(eventProbability) || eventProbability < 0 || eventProbability > 1)
                 throw new ArgumentOutOfRangeException(nameof(eventProbability));
             var result = parent.Copy();
+            committedReplicationCount++;
             if (random.NextDouble() >= eventProbability || maximumWeightStep <= 0f)
                 return result;
             int locus = random.Next(6);
