@@ -43,30 +43,9 @@ namespace Cells.Physiology
             double u1 = Math.Max(1e-12, random.NextDouble());
             double u2 = random.NextDouble();
             double gaussian = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
-            double shifted = value * Math.Exp(Math.Clamp(gaussian * sigma, -12.0, 12.0));
+            double shifted = value * Math.Exp(Math.Max(-12.0, Math.Min(12.0, gaussian * sigma)));
             return Mathf.Clamp((float)shifted, lower, upper);
         }
     }
 
-    /// <summary>Applies inherited parameters to living physiology, not to the world state.</summary>
-    public sealed class OrganismPhenotype : MonoBehaviour
-    {
-        public OrganismGenome genome = new OrganismGenome();
-
-        public void Express()
-        {
-            if (genome == null) return;
-            var growth = GetComponent<CellBiomassGrowth>();
-            if (growth)
-            {
-                growth.assimilationRate = genome.assimilationRate;
-                growth.growthEnergyPerMass = genome.growthEnergyPerMass;
-                growth.maximumBiomass = genome.maximumBiomass;
-            }
-            var movement = GetComponent<CellMotility>();
-            if (movement) movement.attractantGain = genome.sensorGain;
-            var motor = GetComponent<CellFlagellarActuator>();
-            if (motor) motor.motorActivation = Mathf.Clamp01(genome.motorInvestment);
-        }
-    }
 }
