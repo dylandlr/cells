@@ -210,7 +210,8 @@ namespace Cells.Demo
             // Founder phenotype: inherited parameters are expressed into actual physiology.
             var phenotype = go.AddComponent<OrganismPhenotype>();
             phenotype.genome = new OrganismGenome();
-            phenotype.Express();
+            phenotype.genome.sensorGain = secretor ? .65f : 1.15f;
+            phenotype.genome.motorInvestment = secretor ? .8f : .92f;
             var membrane = go.AddComponent<MembraneIntegrity>();
             membrane.chemicalResistance = resistance;
             membrane.contourAmplitude = .12f + .075f * Mathf.Abs(Mathf.Sin(id * 2.7f));
@@ -351,6 +352,8 @@ namespace Cells.Demo
                 exposure.uptakeRate = .025f;
                 exposure.damagePerUnit = 3f;
             }
+            // Express last, after all target components have been created.
+            phenotype.Express();
         }
 
         void AddChemicalOverlay(string label, string id, MaterialForm form, Color color, int order)
