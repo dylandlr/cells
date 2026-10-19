@@ -103,6 +103,36 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void AssimilatedBiomassExpandsMechanicalMembraneAndRenderedMesh()
+        {
+            var metabolism=cell.AddComponent<CellMetabolism>();
+            metabolism.energy=10f;
+            var growth=cell.AddComponent<CellBiomassGrowth>();
+            growth.metabolism=metabolism;
+            growth.structuralBiomass=1f;
+            growth.assimilationRate=1f;
+            body.growth=growth;
+            body.Initialize();
+            float originalRadius=body.CurrentRadius;
+            float originalArea=Mathf.Abs(body.SignedArea());
+
+            float reserve=1f;
+            Assert.Greater(growth.AssimilateFrom(ref reserve,1f),0f);
+            for(int i=0;i<120;i++)body.Tick(.02f);
+            Assert.Greater(body.CurrentRadius,originalRadius);
+            Assert.Greater(Mathf.Abs(body.SignedArea()),originalArea);
+            Assert.AreEqual(0f,reserve,1e-5f);
+            Assert.IsTrue(float.IsFinite(body.SurfacePoint(0).x));
+
+            var renderer=cell.AddComponent<SoftCellMeshRenderer2D>();
+            renderer.body=body;
+            renderer.UpdateGeometry();
+            var filter=cell.GetComponentInChildren<MeshFilter>();
+            Assert.AreEqual(body.Node(0).x,filter.sharedMesh.vertices[1].x,1e-4f);
+            Assert.AreEqual(body.Node(0).y,filter.sharedMesh.vertices[1].y,1e-4f);
+        }
+
+        [Test]
         public void MeshRendererUsesLivePhysicsVertices()
         {
             var meshRenderer=cell.AddComponent<SoftCellMeshRenderer2D>();
