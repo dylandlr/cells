@@ -37,8 +37,16 @@ namespace Cells.Demo
                 for (int frame=0; frame<count; frame++)
                 {
                     yield return new WaitForEndOfFrame();
-                    ScreenCapture.CaptureScreenshot(Path.Combine(
-                        OutputFolder, "frame_" + frame.ToString("D6") + ".png"));
+                    var screenshot = ScreenCapture.CaptureScreenshotAsTexture();
+                    if (screenshot == null)
+                    {
+                        Debug.LogError("cells capture: frame readback returned null");
+                        break;
+                    }
+                    byte[] png = screenshot.EncodeToPNG();
+                    Destroy(screenshot);
+                    File.WriteAllBytes(Path.Combine(
+                        OutputFolder, "frame_" + frame.ToString("D6") + ".png"), png);
                     FramesCaptured = frame+1;
                 }
             }
