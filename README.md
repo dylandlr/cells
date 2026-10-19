@@ -24,6 +24,24 @@ The smaller two-organism experiment remains available in `ChemistryDemo.unity` a
 - Toggle **Show false-color chemical concentrations** to inspect the underlying field.
   It is hidden initially in the culture view; chemistry continues running.
 
+## Microscope presentation pass (unverified in Play Mode)
+
+The human-facing demo now starts at **0.25x wall-clock playback** so membrane deformation,
+flagellar motion, diffusion, injury, feeding, and signaling are easier to inspect instead of
+reading as a fast static blur. The microscope panel exposes 0.1x, 0.25x, 1x, and 4x playback
+buttons plus pause; these change presentation speed, not model units or assay definitions.
+Automated assay mode remains at 1x.
+
+The two free-swimming focal cells also have a stronger phase-contrast-inspired visual pass:
+a dark outer halo, point-filtered internal features, and deforming cytoplasmic granules that
+remain attached to the live soft-body geometry. These granules are explicitly visual texture,
+not new simulated organelles or material. This change is intended to move the look closer to
+the readable microscopic style of the project references while keeping physics-derived body
+motion authoritative.
+
+This pass is committed but still requires local Unity 6.6 Play Mode verification for appearance,
+frame pacing, and UI layout before recording footage.
+
 ## What is simulated
 
 Independent dissolved species diffuse with no-flux boundaries. Field storage is mass per
