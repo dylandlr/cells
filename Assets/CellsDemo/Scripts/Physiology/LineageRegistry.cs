@@ -22,6 +22,7 @@ namespace Cells.Physiology
         int nextIndividualId = 1;
         int nextLineageId = 1;
         public int Count => individuals.Count;
+        public int PeekNextIndividualId => nextIndividualId;
         public IEnumerable<Record> Records => individuals.Values;
 
         public Record Founder(OrganismGenome genome, string provisionalTaxon)
