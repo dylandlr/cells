@@ -137,6 +137,7 @@ namespace Cells.Demo
             view.demo = this;
             view.SetZoom(cultureView ? 3.7f : 2.5f);
             view.SetChemicalOverlay(!cultureView);
+            view.SetPlaybackRate(assayMode ? 1f : .25f);
         }
 
         void CreateCulture()
