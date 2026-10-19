@@ -42,6 +42,28 @@ motion authoritative.
 This pass is committed but still requires local Unity 6.6 Play Mode verification for appearance,
 frame pacing, and UI layout before recording footage.
 
+## Substrate reference audit — energy visibility
+
+Reference input: user-supplied `readme.txt`, identified as Substrate: Emergence
+v0.4.8-3 "Synthesis" alpha demo. Its **deprecated basics** describe nutrient
+capture, vacuole storage, ATP production, energy expenditure, starvation, and
+membrane area representing available cytoplasm. These are *documented design
+claims*, not extracted source code or proof that this exact behavior persists in
+the current Substrate executable. The supplied `Substrate-Emergence.exe`,
+`UnityPlayer.dll` and `globalgamemanagers` are compiled/build artifacts,
+not editable original game C# source.
+
+For cells, the existing `CellMetabolism.energy` reserve now changes the
+soft-body mesh cytoplasm shade: spending energy darkens the live microscope
+view and feeding restores its tone. The mesh reads the authoritative reserve,
+not a second animated energy variable. **This is a legibility visualization,
+not a claim that color, membrane area, biomass, or ATP are calibrated to real
+organisms.** The source reference influenced the observation goal, while
+the energy-to-color mapping is our own design.
+
+Editor regression tests were authored for spending, feeding, and death. No
+Unity Play Mode or Edit Mode run has been performed in this environment.
+
 ## What is simulated
 
 Independent dissolved species diffuse with no-flux boundaries. Field storage is mass per
