@@ -170,8 +170,16 @@ namespace Cells.Physiology
                 Velocity = flagellum && hydrodynamics && flagellum.ActualActivation > 0f
                     ? targetVelocity : Vector2.zero;
             }
+            else if (hydrodynamics)
+            {
+                // Overdamped swimmer: the fluid resistance solve already determines
+                // the instantaneous propulsion velocity. Do not add inertial
+                // acceleration or a second empirical drag term.
+                Velocity = targetVelocity;
+            }
             else
             {
+                // Legacy non-hydrodynamic sandbox controller (not calibrated biology).
                 Velocity = Vector2.MoveTowards(Velocity, targetVelocity, acceleration * dt);
                 Velocity *= Mathf.Exp(-drag * dt * .12f);
             }
