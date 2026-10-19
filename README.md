@@ -64,6 +64,30 @@ the energy-to-color mapping is our own design.
 Editor regression tests were authored for spending, feeding, and death. No
 Unity Play Mode or Edit Mode run has been performed in this environment.
 
+## Nutrient-backed growth prototype (unverified in Unity)
+
+Cells now have an explicit structural biomass pool. Existing nutrient mass can be
+transferred from the intracellular reserve into structural biomass, with an energy
+cost and a configurable upper bound. The same nutrient cannot both increase
+biomass and be digested because assimilation reduces the common reserve first.
+The microscope mesh scales approximately with the square root of relative
+biomass as an **illustrative visual proxy**.
+
+**Important limitation:** collision, feeding pores, soft-body dynamics, and membrane
+exposure still use the original geometry. The visual scale does not yet change
+authoritative physical radius or mechanical/capture cross-section. Do not use
+this prototype to claim experimentally calibrated growth or mass/geometry
+coupling. Biomass turnover, growth material released upon death, and division
+remain unimplemented. A subsequent version must couple the mass budget to the
+mechanical mesh and contact system before enabling evolution experiments.
+
+Source inspiration: the user-provided Substrate: Emergence alpha README
+describes nutrient capture, storage, energetic conversion, and division.
+Those are documented design notes, **not access to its original source code**.
+The biomass assimilation algorithm here is our independent implementation.
+
+Unity Editor tests have been written but **not run in Unity Play Mode/Edit Mode**.
+
 ## What is simulated
 
 Independent dissolved species diffuse with no-flux boundaries. Field storage is mass per
