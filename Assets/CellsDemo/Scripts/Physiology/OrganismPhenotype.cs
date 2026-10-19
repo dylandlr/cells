@@ -1,4 +1,5 @@
 using UnityEngine;
+using Cells.Substances;
 
 namespace Cells.Physiology
 {
@@ -17,6 +18,8 @@ namespace Cells.Physiology
                 growth.growthEnergyPerMass = genome.growthEnergyPerMass;
                 growth.maximumBiomass = genome.maximumBiomass;
             }
+            var exchange = GetComponent<CellChemicalExchange>();
+            if (exchange) exchange.feedingRate = genome.feedingRate;
             var movement = GetComponent<CellMotility>();
             if (movement) movement.attractantGain = genome.sensorGain;
             var motor = GetComponent<CellFlagellarActuator>();
