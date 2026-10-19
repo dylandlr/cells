@@ -21,6 +21,9 @@ namespace Cells.Physiology
         public CellFlagellarActuator flagellum;
         public CellBiomassGrowth growth;
         [Min(.1f)] public float restRadius = .9f;
+        [Range(0f,1f)] public float divisionConstriction; // Experimental effective equatorial constriction
+        [Range(.03f,.6f)] public float constrictionBand = .22f;
+        public float ConstrictionSpan => Vector2.Distance(Node(Nodes/4),Node(3*Nodes/4));
         [Range(.01f, 1f)] public float edgeCompliance = .16f;
         [Range(.01f, 1f)] public float areaCompliance = .12f;
         [Range(.01f, 1f)] public float radialCompliance = .18f;
@@ -155,6 +158,18 @@ namespace Cells.Physiology
                 velocities[i]=Vector2.Lerp(velocities[i],localFlow,1f-damp);
                 positions[i]+=velocities[i]*dt;
                 if(firstSubstep) positions[i]+=pendingContact[i];
+                // Apply an explicit, localized constriction displacement at the
+                // midplane (local y=0); this acts on membrane DOFs, not shaders.
+                if(divisionConstriction>0f)
+                {
+                    float radius=Mathf.Max(.1f,CurrentRadius);
+                    float band=Mathf.Max(.03f,constrictionBand)*radius;
+                    float weight=Mathf.Exp(-Mathf.Pow(positions[i].y/band,2f));
+                    // Actuation is rate-limited and resists restoration by
+                    // the shape and area constraints below.
+                    positions[i].x-=Mathf.Sign(positions[i].x)*Mathf.Min(
+                        Mathf.Abs(positions[i].x),divisionConstriction*weight*.25f*dt);
+                }
                 if(flagellum && i>=Nodes/2-2 && i<=Nodes/2+2)
                 {
                     // A localized moving posterior attachment deforms the shell;
