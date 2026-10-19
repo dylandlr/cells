@@ -36,6 +36,24 @@ namespace Cells.Tests
         }
 
         [UnityTest]
+        public IEnumerator MechanicsOverlayTracksLiveMembraneNodes()
+        {
+            var grazer = demo.transform.Find("Grazer").gameObject;
+            var body = grazer.GetComponent<SoftCellBody2D>();
+            Assert.IsNotNull(body);
+            var overlay = grazer.AddComponent<CellMechanicsOverlay2D>();
+            overlay.body = body;
+            yield return new WaitForFixedUpdate();
+            yield return null;
+            Assert.IsNotNull(grazer.transform.Find("Measured membrane motion 0"));
+            var line = grazer.transform.Find("Measured membrane motion 0")
+                .GetComponent<LineRenderer>();
+            Assert.IsNotNull(line);
+            Assert.AreEqual(2,line.positionCount);
+            Object.Destroy(overlay);
+        }
+
+        [UnityTest]
         public IEnumerator OptInDivisionCreatesAnInheritedResourceBalancedDaughter()
         {
             var parent = demo.transform.Find("Grazer").gameObject;
