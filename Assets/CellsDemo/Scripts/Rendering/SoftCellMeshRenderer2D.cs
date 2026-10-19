@@ -14,6 +14,7 @@ namespace Cells.Rendering
         public InternalCompartments2D compartments;
         public MembraneIntegrity membrane;
         public CellMetabolism metabolism;
+        public CellBiomassGrowth growth;
         [Min(.001f)] public float fullEnergyReference = 10f;
         [Range(0f,1f)] public float depletionDarkening = .65f;
         public float ObservedEnergyFraction => metabolism && metabolism.alive
@@ -48,6 +49,7 @@ namespace Cells.Rendering
             if(!body) body=GetComponent<SoftCellBody2D>();
             if(!membrane) membrane=GetComponent<MembraneIntegrity>();
             if(!metabolism) metabolism=GetComponent<CellMetabolism>();
+            if(!growth) growth=GetComponent<CellBiomassGrowth>();
             if(!compartments) compartments=GetComponent<InternalCompartments2D>();
             var skin=new GameObject("Live membrane mesh / driven by physics");
             skin.transform.SetParent(transform,false);
@@ -142,12 +144,13 @@ namespace Cells.Rendering
         public void UpdateGeometry()
         {
             if(!body || !body.Initialized || !mesh)return;
-            vertices[0]=new Vector3(body.Core.x,body.Core.y,-.005f);
+            float size=growth ? growth.VisualRadiusScale : 1f;
+            vertices[0]=new Vector3(body.Core.x*size,body.Core.y*size,-.005f);
             Color liveCytoplasm=ObservedCytoplasmColor;
             colors[0]=liveCytoplasm;
             for(int i=0;i<SoftCellBody2D.Nodes;i++)
             {
-                Vector2 p=body.Node(i);
+                Vector2 p=body.Node(i)*size;
                 vertices[i+1]=new Vector3(p.x,p.y,0f);
                 float integrity=membrane?membrane.GetIntegrity(i):1f;
                 Color healthy=Color.Lerp(liveCytoplasm,edgeColor,.60f);
@@ -172,8 +175,8 @@ namespace Cells.Rendering
                 Vector2 p=compartments && compartments.Initialized
                     ? compartments.Position(i) : body.Core;
                 float radius=compartments ? compartments.Radius(i) : .16f;
-                organelleNodes[i].localPosition=new Vector3(p.x,p.y,-.02f);
-                organelleNodes[i].localScale=new Vector3(radius*2,radius*2,1f);
+                organelleNodes[i].localPosition=new Vector3(p.x*size,p.y*size,-.02f);
+                organelleNodes[i].localScale=new Vector3(radius*2*size,radius*2*size,1f);
             }
             for(int i=0;i<granules.Length;i++)
             {
@@ -182,7 +185,7 @@ namespace Cells.Rendering
                 int segment=Mathf.RoundToInt(normalized*SoftCellBody2D.Nodes)%SoftCellBody2D.Nodes;
                 Vector2 edge=body.Node(segment);
                 Vector2 p=Vector2.Lerp(body.Core,edge,granuleRadii[i]);
-                granules[i].localPosition=new Vector3(p.x,p.y,-.012f);
+                granules[i].localPosition=new Vector3(p.x*size,p.y*size,-.012f);
             }
         }
         void OnDestroy()
