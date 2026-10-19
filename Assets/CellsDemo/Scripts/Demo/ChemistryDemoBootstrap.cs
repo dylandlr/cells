@@ -354,6 +354,16 @@ namespace Cells.Demo
             }
             // Express last, after all target components have been created.
             phenotype.Express();
+            // The slow regulatory circuit influences real transport and motor inputs;
+            // it never directly manipulates movement, forces, or nutrient inventory.
+            var geneticController = go.AddComponent<GeneticRegulationController>();
+            geneticController.metabolism = metabolism;
+            geneticController.exchange = exchange;
+            geneticController.field = field;
+            geneticController.motor = go.GetComponent<CellFlagellarActuator>();
+            geneticController.referenceFeedingRate = phenotype.genome.feedingRate;
+            geneticController.inheritedMotorCapacity = Mathf.Clamp01(phenotype.genome.motorInvestment);
+            geneticController.referenceEnergy = 10f;
         }
 
         void AddChemicalOverlay(string label, string id, MaterialForm form, Color color, int order)
