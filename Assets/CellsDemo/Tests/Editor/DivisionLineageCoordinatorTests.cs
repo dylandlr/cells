@@ -22,6 +22,41 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void PreparedFactoryReceivesGenomeBeforeAnyCommit()
+        {
+            var coordinator = new DivisionLineageCoordinator(127);
+            coordinator.mutations.eventProbability = 1;
+            var founder = coordinator.lineage.Founder(new OrganismGenome(),"Cellaria prima");
+            RegulatoryGenome prepared = null;
+            int countDuringPreparation = -1;
+            bool first = coordinator.TryPrepareAndRecordDivision(
+                founder.individualId,new RegulatoryGenome(),3f,1f,8f,.5f,
+                (budget, genes, regulation) => {
+                    prepared = regulation.Copy();
+                    countDuringPreparation = coordinator.lineage.Count;
+                    Assert.AreEqual(1.5f,budget.parentBiomass,1e-6f);
+                    Assert.AreEqual(founder.genome.feedingRate,genes.feedingRate);
+                    return false;
+                },out var failedChild,out var failedRegulation);
+            Assert.IsFalse(first);
+            Assert.AreEqual(1,countDuringPreparation);
+            Assert.IsNull(failedChild);
+            Assert.AreEqual(0,coordinator.mutations.events.Count);
+
+            bool second = coordinator.TryPrepareAndRecordDivision(
+                founder.individualId,new RegulatoryGenome(),3f,1f,8f,.5f,
+                (budget, genes, regulation) => {
+                    Assert.AreEqual(prepared.nutrientToMotor,regulation.nutrientToMotor);
+                    Assert.AreEqual(prepared.motorBias,regulation.motorBias);
+                    return true;
+                },out var child,out var childRegulation);
+            Assert.IsTrue(second);
+            Assert.AreEqual(2,coordinator.lineage.Count);
+            Assert.AreEqual(child.individualId,coordinator.mutations.events[0].descendantId);
+            Assert.AreEqual(childRegulation.motorBias,prepared.motorBias);
+        }
+
+        [Test]
         public void SuccessfulBirthRecordsOneDescendantAndMutationOpportunity()
         {
             var coordinator = new DivisionLineageCoordinator(99);
