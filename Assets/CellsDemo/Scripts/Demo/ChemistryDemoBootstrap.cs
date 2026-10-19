@@ -199,6 +199,10 @@ namespace Cells.Demo
             go.transform.position = position;
             var metabolism = go.AddComponent<CellMetabolism>();
             metabolism.energy = secretor ? 10f : 2f;
+            var growth = go.AddComponent<CellBiomassGrowth>();
+            growth.metabolism = metabolism;
+            growth.structuralBiomass = 1f;
+            growth.referenceBiomass = 1f;
             var membrane = go.AddComponent<MembraneIntegrity>();
             membrane.chemicalResistance = resistance;
             membrane.contourAmplitude = .12f + .075f * Mathf.Abs(Mathf.Sin(id * 2.7f));
@@ -219,6 +223,7 @@ namespace Cells.Demo
             exchange.field = field;
             exchange.events = eventLog;
             exchange.metabolism = metabolism;
+            exchange.biomassGrowth = growth;
             exchange.secretionEnabled = secretor;
             exchange.feedingEnabled = true;
             exchange.toxinReserve = secretor ? 2f : 0f;
