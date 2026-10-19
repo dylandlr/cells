@@ -51,3 +51,29 @@ Bacteria, https://pubmed.ncbi.nlm.nih.gov/25544609/
 The user-provided Substrate: Emergence README discusses nutrient use and
 mitosis; it is a gameplay and visual design reference, not source code
 for the implementation in this repository.
+
+## Amendment: prepared inheritance transaction (2026-10-19)
+
+New API `DivisionLineageCoordinator.TryPrepareAndRecordDivision`
+calculates a conservative split, computes the daughter's **copied**
+quantitative genome and proposed mutated regulatory genome, passes both to
+the daughter factory for initialization, then adds the descendant and
+commits the genetic mutation event *only after factory confirmation*.
+
+`GeneticMutationScheduler.Preview` uses a seed derived from committed birth
+count; rejected preparations don't consume future mutation opportunities.
+`LineageRegistry.PeekNextIndividualId` supports pre-spawn identity assignment.
+The prior `TryRecordDivision` is retained for compatibility but does not
+provide these stronger genotype-before-spawn semantics. Prefer the new API.
+
+**Still not a complete atomic transaction:** a Unity factory returning true
+must have fully initialized a daughter and committed the parent resource
+partition, while a factory returning false must roll back any partial
+GameObject/resource changes. The coordinator does not undo Unity side effects.
+A factory exception could also leave effects outside the registry. Real
+replication costs, independent daughter cellular assemblies, collision-free
+placement, and evidence from running tests remain outstanding. This new
+interface is not wired to live Play Mode births yet.
+
+This amendment adds NUnit coverage for a rejected prepared birth and retry
+with identical inherited genes; the tests have not run in Unity.
