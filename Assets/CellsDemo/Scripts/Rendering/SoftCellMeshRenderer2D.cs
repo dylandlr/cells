@@ -13,6 +13,16 @@ namespace Cells.Rendering
         public SoftCellBody2D body;
         public InternalCompartments2D compartments;
         public MembraneIntegrity membrane;
+        public CellMetabolism metabolism;
+        [Min(.001f)] public float fullEnergyReference = 10f;
+        [Range(0f,1f)] public float depletionDarkening = .65f;
+        public float ObservedEnergyFraction => metabolism && metabolism.alive
+            ? Mathf.Clamp01(metabolism.energy / Mathf.Max(.001f,fullEnergyReference)) : 0f;
+        public Color ObservedCytoplasmColor => Color.Lerp(
+            new Color(cytoplasm.r*(1f-depletionDarkening),
+                      cytoplasm.g*(1f-depletionDarkening),
+                      cytoplasm.b*(1f-depletionDarkening),cytoplasm.a),
+            cytoplasm,ObservedEnergyFraction);
         public Color cytoplasm = new Color(.16f,.68f,.59f,.79f);
         public Color edgeColor = new Color(.55f,.98f,.85f,.95f);
         public bool showStress = true;
@@ -37,6 +47,7 @@ namespace Cells.Rendering
         {
             if(!body) body=GetComponent<SoftCellBody2D>();
             if(!membrane) membrane=GetComponent<MembraneIntegrity>();
+            if(!metabolism) metabolism=GetComponent<CellMetabolism>();
             if(!compartments) compartments=GetComponent<InternalCompartments2D>();
             var skin=new GameObject("Live membrane mesh / driven by physics");
             skin.transform.SetParent(transform,false);
@@ -132,13 +143,15 @@ namespace Cells.Rendering
         {
             if(!body || !body.Initialized || !mesh)return;
             vertices[0]=new Vector3(body.Core.x,body.Core.y,-.005f);
-            colors[0]=cytoplasm;
+            Color liveCytoplasm=ObservedCytoplasmColor;
+            colors[0]=liveCytoplasm;
             for(int i=0;i<SoftCellBody2D.Nodes;i++)
             {
                 Vector2 p=body.Node(i);
                 vertices[i+1]=new Vector3(p.x,p.y,0f);
                 float integrity=membrane?membrane.GetIntegrity(i):1f;
-                Color healthy=Color.Lerp(cytoplasm,edgeColor,.60f);
+                Color healthy=Color.Lerp(liveCytoplasm,edgeColor,.60f);
+                healthy=Color.Lerp(liveCytoplasm,healthy,ObservedEnergyFraction);
                 Color injured=new Color(.95f,.22f,.12f,.82f);
                 Color baseColor=Color.Lerp(injured,healthy,integrity);
                 colors[i+1]=showStress ? Color.Lerp(baseColor,highStressColor,body.StressAt(i)) : baseColor;
