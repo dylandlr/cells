@@ -114,8 +114,17 @@ namespace Cells.Physiology
         {
             float scale=growth ? growth.VisualRadiusScale : 1f;
             for(int i=0;i<Nodes;i++)
-                rest[i]=(membrane ? membrane.SurfacePoint(i,restRadius)
+            {
+                Vector2 shape=(membrane ? membrane.SurfacePoint(i,restRadius)
                     : MembraneIntegrity.DirectionOf(i)*restRadius)*scale;
+                if(divisionConstriction>0f)
+                {
+                    float band=Mathf.Max(.03f,constrictionBand)*Mathf.Max(.1f,restRadius*scale);
+                    float equatorialWeight=Mathf.Exp(-Mathf.Pow(shape.y/band,2f));
+                    shape.x *= 1f - .65f*divisionConstriction*equatorialWeight;
+                }
+                rest[i]=shape;
+            }
             float area=0f;
             for(int i=0;i<Nodes;i++)
                 area+=Vector3.Cross(rest[i],rest[(i+1)%Nodes]).z;
