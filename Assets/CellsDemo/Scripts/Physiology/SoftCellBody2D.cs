@@ -23,7 +23,7 @@ namespace Cells.Physiology
         [Min(.1f)] public float restRadius = .9f;
         [Range(0f,1f)] public float divisionConstriction; // Experimental effective equatorial constriction
         [Range(.03f,.6f)] public float constrictionBand = .22f;
-        public float ConstrictionSpan => Vector2.Distance(Node(Nodes/4),Node(3*Nodes/4));
+        public float ConstrictionSpan => Vector2.Distance(Node(0),Node(Nodes/2));
         [Range(.01f, 1f)] public float edgeCompliance = .16f;
         [Range(.01f, 1f)] public float areaCompliance = .12f;
         [Range(.01f, 1f)] public float radialCompliance = .18f;
