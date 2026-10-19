@@ -28,6 +28,8 @@ namespace Cells.Demo
         Camera microscope;
         bool follow;
         bool chemicalOverlay = true;
+        bool paused;
+        float playbackRate = .25f;
         float zoom = 5f;
         readonly List<ChemicalEvent> history = new List<ChemicalEvent>();
         Rect Panel => new Rect(12, 12, Mathf.Min(330, Screen.width - 24), Mathf.Max(100, Screen.height - 24));
@@ -42,7 +44,18 @@ namespace Cells.Demo
             foreach (var overlay in demo.GetComponentsInChildren<ChemicalFieldRenderer>())
                 overlay.GetComponent<SpriteRenderer>().enabled = visible;
         }
-        public void SetPaused(bool paused) => Time.timeScale = paused ? 0f : 1f;
+        public float PlaybackRate => playbackRate;
+        public bool Paused => paused;
+        public void SetPlaybackRate(float rate)
+        {
+            playbackRate = Mathf.Clamp(rate, .05f, 8f);
+            if (!paused) Time.timeScale = playbackRate;
+        }
+        public void SetPaused(bool value)
+        {
+            paused = value;
+            Time.timeScale = paused ? 0f : playbackRate;
+        }
         public float Dose(string substance, float mass)
         {
             if (!demo || !demo.Field) return 0f;
@@ -65,7 +78,7 @@ namespace Cells.Demo
             if (!overPanel && Input.mouseScrollDelta.y != 0f)
                 zoom = Mathf.Clamp(zoom * Mathf.Pow(.86f, Input.mouseScrollDelta.y), 1f, 12f);
             microscope.orthographicSize = Mathf.Lerp(microscope.orthographicSize, zoom, Time.unscaledDeltaTime * 8f);
-            if (Input.GetKeyDown(KeyCode.Space)) SetPaused(Time.timeScale > 0f);
+            if (Input.GetKeyDown(KeyCode.Space)) SetPaused(!paused);
             if (Input.GetKeyDown(KeyCode.Escape)) { Select(null); follow = false; }
             if (Input.GetKeyDown(KeyCode.F)) follow = !follow;
             if (!overPanel && Input.GetMouseButtonDown(0) && demo)
@@ -106,8 +119,15 @@ namespace Cells.Demo
             GUILayout.Label("CELLS / CAUSAL MICROSCOPE");
             GUILayout.Label("Seed " + demo.seed + " | t = " + Time.fixedTime.ToString("F1") + " s");
             GUILayout.Label("Scroll: zoom | Click: inspect | F: follow | WASD: pan");
-            if (GUILayout.Button(Time.timeScale > 0f ? "Pause [Space]" : "Resume [Space]"))
-                SetPaused(Time.timeScale > 0f);
+            if (GUILayout.Button(!paused ? "Pause [Space]" : "Resume [Space]"))
+                SetPaused(!paused);
+            GUILayout.Label("Playback / wall-clock speed (simulation units unchanged): " + playbackRate.ToString("0.##") + "x");
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("0.1x")) SetPlaybackRate(.1f);
+            if (GUILayout.Button("0.25x")) SetPlaybackRate(.25f);
+            if (GUILayout.Button("1x")) SetPlaybackRate(1f);
+            if (GUILayout.Button("4x")) SetPlaybackRate(4f);
+            GUILayout.EndHorizontal();
             bool overlayVisible = GUILayout.Toggle(chemicalOverlay, "Show false-color chemical concentrations");
             if (overlayVisible != chemicalOverlay) SetChemicalOverlay(overlayVisible);
             GUILayout.Label("Click any cell to inspect / key organisms:");
