@@ -181,7 +181,11 @@ namespace Cells.Demo
             {
                 var mouth = new GameObject("Particulate intake");
                 mouth.transform.SetParent(grazer.transform);
-                mouth.transform.localPosition = Vector3.left * .45f;
+                var particleAnchor = mouth.AddComponent<MembraneAnchoredSite2D>();
+                particleAnchor.sector = 16;
+                particleAnchor.membrane = grazer.GetComponent<MembraneIntegrity>();
+                particleAnchor.body = grazer.GetComponent<SoftCellBody2D>();
+                particleAnchor.UpdatePosition();
                 var feeder = mouth.AddComponent<ParticleFeedingSite>();
                 feeder.organismId = 2;
                 feeder.world = particles;
@@ -230,9 +234,9 @@ namespace Cells.Demo
             exchange.toxinRate = .4f;
             exchange.nutrientReserve = .5f;
             exchange.digestionRate = .04f;
-            exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", membrane.SurfacePoint(16, .9f));
-            exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", membrane.SurfacePoint(0, .9f));
-            exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", membrane.SurfacePoint(24, .9f));
+            exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", membrane, 16);
+            exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", membrane, 0);
+            exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", membrane, 24);
             // Demo phenotype only: Secretor emits periodic real chemical pulses;
             // Grazer receives local concentration, without a behavioral policy yet.
             var signaling = go.AddComponent<CellChemicalSignaling>();
@@ -357,11 +361,15 @@ namespace Cells.Demo
             renderer.tint = color;
         }
 
-        static Transform CreatePore(Transform cell, string label, Vector2 position)
+        static Transform CreatePore(Transform cell, string label, MembraneIntegrity membrane, int sector)
         {
             var pore = new GameObject(label).transform;
             pore.SetParent(cell, false);
-            pore.localPosition = position;
+            var anchor = pore.gameObject.AddComponent<MembraneAnchoredSite2D>();
+            anchor.sector = sector;
+            anchor.membrane = membrane;
+            anchor.body = cell.GetComponent<SoftCellBody2D>();
+            anchor.UpdatePosition();
             return pore;
         }
 
