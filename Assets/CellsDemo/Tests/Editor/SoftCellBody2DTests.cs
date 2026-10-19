@@ -62,6 +62,47 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void MicroscopeEnergyShadeTracksActualMetabolicReserve()
+        {
+            var metabolism=cell.AddComponent<CellMetabolism>();
+            metabolism.energy=10f;
+            var renderer=cell.AddComponent<SoftCellMeshRenderer2D>();
+            renderer.metabolism=metabolism;
+            renderer.body=body;
+            renderer.fullEnergyReference=10f;
+            renderer.UpdateGeometry();
+            Color healthy=renderer.ObservedCytoplasmColor;
+            var filter=cell.GetComponentInChildren<MeshFilter>();
+            Color vertexHealthy=filter.sharedMesh.colors[0];
+
+            metabolism.Spend(8f);
+            renderer.UpdateGeometry();
+            Color depleted=renderer.ObservedCytoplasmColor;
+            Color vertexDepleted=filter.sharedMesh.colors[0];
+            Assert.Less(depleted.g,healthy.g);
+            Assert.Less(vertexDepleted.g,vertexHealthy.g);
+            Assert.AreEqual(.2f,renderer.ObservedEnergyFraction,1e-4f);
+
+            metabolism.Feed(8f);
+            renderer.UpdateGeometry();
+            Assert.AreEqual(healthy.g,renderer.ObservedCytoplasmColor.g,1e-5f);
+            Assert.AreEqual(vertexHealthy.g,filter.sharedMesh.colors[0].g,1e-5f);
+        }
+
+        [Test]
+        public void MicroscopeDeathDoesNotRequireInventedAnimation()
+        {
+            var metabolism=cell.AddComponent<CellMetabolism>();
+            metabolism.energy=1f;
+            var renderer=cell.AddComponent<SoftCellMeshRenderer2D>();
+            renderer.metabolism=metabolism;
+            metabolism.Spend(1f);
+            renderer.UpdateGeometry();
+            Assert.IsFalse(metabolism.alive);
+            Assert.AreEqual(0f,renderer.ObservedEnergyFraction);
+        }
+
+        [Test]
         public void MeshRendererUsesLivePhysicsVertices()
         {
             var meshRenderer=cell.AddComponent<SoftCellMeshRenderer2D>();
