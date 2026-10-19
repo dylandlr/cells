@@ -134,6 +134,24 @@ Provenance: Substrate: Emergence's supplied README documents membrane
 transport proteins, nutrient collection, energy conversion, and replication.
 That documentation is a design reference, not access to its original source.
 
+## Growth-dependent swimmer resistance (Unity validation pending)
+
+For the flagellar resistive-force balance, the body translation drag now scales
+linearly with the biomass-derived radius factor, and the body rotational drag
+scales with its cube. Larger cells thus resist the *same simulated appendage*
+more strongly. Both values enter the existing coupled 3-DOF mobility solver;
+ambient-flow entrainment is not modified.
+
+These scaling choices are effective-model assumptions reminiscent of 3D Stokes
+drag, **not calibrated to a 2D fluid solver or sourced from Substrate code**.
+The provided Substrate: Emergence README is used for its documented
+growth/metabolism behavior only. Real drag requires geometry, wall effects,
+viscosity, and experimental calibration. Tests for the parameter scaling were
+authored but not executed with the Unity Editor.
+
+Organism-organism collision handling and larger-body contact avoidance are
+still unresolved; do not treat this as a complete hydrodynamics model.
+
 ## What is simulated
 
 Independent dissolved species diffuse with no-flux boundaries. Field storage is mass per
