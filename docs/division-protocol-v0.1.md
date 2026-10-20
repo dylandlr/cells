@@ -441,3 +441,24 @@ for the 32-node membrane dynamics, a concave-polygon triangulator,
 or a topology-changing scission implementation. It does not
 partition material or spawn daughters. All Unity tests remain
 unverified until Unity CI can execute successfully.
+
+## Center-free concave membrane triangulation (2026-10-19)
+
+`BoundaryEarClip2D` adds ear-clipping triangulation of a valid
+`BoundaryLoop2D` closed polygon. The algorithm outputs indices
+into the original ordered vertices, with winding-aware convexity
+and interior-vertex rejection. It does not create a single center
+point, so concave two-lobed outlines can be filled without
+the original center-fan assumption.
+
+Authored Editor tests check that a deeply concave simple outline
+has N−2 nondegenerate triangles whose aggregate area matches
+the original polygon, including reversal of vertex order, and
+that self-intersecting contours are rejected. Unity execution is
+still unverified; potential degeneracies with nearly coincident
+or collinear edges require further robustness experiments.
+
+**Not integrated yet:** The active `SoftCellMeshRenderer2D` still
+uses its earlier mesh strategy. Boundary ear clipping is a
+geometry-only prerequisite, not actual topology splitting,
+mechanical scission, or membrane material conservation.
