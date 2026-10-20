@@ -63,6 +63,8 @@ internal static class Program
             "Experiment 001 deterministic paired seed outcomes");
         Check(e001.EpisodesCsv.TrimEnd().Split('\n').Length == 11,
             "Experiment 001 five seeds times two conditions");
+        Check(e001.AgentCsv.TrimEnd().Split('\n').Length == 41,
+            "Experiment 001 five seeds times two conditions times four agents");
         Check(e001.PairedCsv.TrimEnd().Split('\n').Length == 6,
             "Experiment 001 five paired outcomes");
         var samplePolicies = new SignalingGameV1.IPolicy[] {
