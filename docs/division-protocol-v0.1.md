@@ -612,3 +612,24 @@ times support direct observation of their responses, not a scientifically
 defensible claim that one solver is more accurate or efficient.
 The authored Editor test verifies that both systems begin with
 identical geometric measurements. Tests remain unverified in Unity.
+
+## Exported side-by-side solver traces (2026-10-19)
+
+The Unity Editor batch export now runs
+`MembraneSolverComparisonAssay2D.Run` and writes
+`artifacts/membrane-comparison.json` alongside the constriction
+and timestep convergence experiments. The membrane assay workflow
+validates this data with
+`tools/capture/analyze_membrane_comparison.py` and uploads
+`membrane-comparison.csv` and `membrane-comparison-summary.md`.
+The converter checks finite shared observables, sequential samples,
+initial geometry equality, valid status, and flags a completed report
+that contains invalid geometry.
+
+A standalone Python regression suite runs in license-free headless
+CI, testing a valid conversion, unequal starting geometry, and an
+incorrect completed status. This validation does not run or calibrate
+Unity's two actual physics solvers. Their actuators remain different,
+so the output is a diagnostic comparison, **not evidence that one is
+physically superior**. As of this change, Unity execution and the
+comparison artifact itself are not verified.
