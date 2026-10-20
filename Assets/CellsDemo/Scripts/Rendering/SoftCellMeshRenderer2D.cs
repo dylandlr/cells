@@ -32,6 +32,10 @@ namespace Cells.Rendering
         // The legacy center fan remains a defensive rendering fallback.
         public bool useBoundaryTriangulation = true;
         public bool LastBoundaryTriangulationSucceeded { get; private set; }
+        public int BoundaryTriangulationFailures { get; private set; }
+        public int BoundaryTriangulationSuccesses { get; private set; }
+        public bool LastContourWasValid { get; private set; }
+        public int RenderTriangleCount => mesh ? mesh.triangles.Length / 3 : 0;
         readonly Vector2[] boundaryPoints = new Vector2[SoftCellBody2D.Nodes];
         Mesh mesh;
         MeshFilter filter;
@@ -173,10 +177,17 @@ namespace Cells.Rendering
             }
             // The boundary remains owned by the physical solver. This only
             // changes how its cytoplasm is filled visually, not its forces.
+            var observedLoop = new BoundaryLoop2D(boundaryPoints);
+            LastContourWasValid = observedLoop.Valid;
             int[] boundaryTriangles = null;
             LastBoundaryTriangulationSucceeded = useBoundaryTriangulation &&
-                BoundaryEarClip2D.TryTriangulate(new BoundaryLoop2D(boundaryPoints),
+                BoundaryEarClip2D.TryTriangulate(observedLoop,
                     out boundaryTriangles);
+            if (useBoundaryTriangulation)
+            {
+                if (LastBoundaryTriangulationSucceeded) BoundaryTriangulationSuccesses++;
+                else BoundaryTriangulationFailures++;
+            }
             int[] fillTriangles=triangles;
             if (LastBoundaryTriangulationSucceeded)
             {
