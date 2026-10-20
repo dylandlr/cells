@@ -32,6 +32,13 @@ namespace Cells.EditorTools
                 var convergencePath=Path.Combine(Path.GetDirectoryName(absolute),
                     "membrane-convergence.json");
                 File.WriteAllText(convergencePath,JsonUtility.ToJson(convergence,true));
+                var comparison=MembraneSolverComparisonAssay2D.Run(100,.02f);
+                var comparisonPath=Path.Combine(Path.GetDirectoryName(absolute),
+                    "membrane-comparison.json");
+                File.WriteAllText(comparisonPath,JsonUtility.ToJson(comparison,true));
+                Debug.Log("cells membrane comparison: "+comparison.status+
+                    "; observations="+comparison.samples.Count+
+                    "; JSON="+comparisonPath);
                 Debug.Log("cells membrane convergence: valid="+convergence.allValid+
                     "; maximum ratio difference="+convergence.maximumFinalRatioDifference+
                     "; report="+convergencePath);
