@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           if [ -z "$UNITY_LICENSE" ] && { [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; }; then
-            echo "::error::Unity credentials required for membrane solver assay."
+            echo "::error::Unity activation is not configured; membrane physics was not executed. See docs/UNITY_CI_SETUP.md."
             exit 1
           fi
       - name: Run Unity Editor research assay
