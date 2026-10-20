@@ -94,6 +94,11 @@ jobs:
           assert all(int(r["received_signals"])==0 and int(r["signaled_patch"])==-1
                      for r in steps if r["delivery"]=="off")
           assert len(exposed)>0
+          changed=[r for r in on_followers if int(r["message_changed_action"])==1]
+          print("Counterfactual action changes:",len(changed),"of",len(on_followers))
+          print("Counterfactual action changes among exposed:",sum(int(r["message_changed_action"]) for r in exposed),"of",len(exposed))
+          assert all(int(r["message_changed_action"])==0 for r in unexposed)
+          assert all(int(r["message_changed_action"])==0 for r in steps if r["delivery"]=="off")
           print("Mean signaling actions per seed by condition:")
           for condition in ("on","off"):
               print(condition, sum(int(r["signals"]) for r in episodes if r["delivery"]==condition)/5)
