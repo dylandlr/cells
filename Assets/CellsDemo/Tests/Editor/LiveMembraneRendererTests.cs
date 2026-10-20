@@ -19,6 +19,7 @@ namespace Cells.Tests.Editor
                 var renderer=go.AddComponent<SoftCellMeshRenderer2D>();
                 renderer.UpdateGeometry();
                 Assert.IsTrue(renderer.LastContourWasValid);
+                Assert.IsTrue(renderer.ShellVisible);
                 Assert.IsTrue(renderer.LastBoundaryTriangulationSucceeded);
                 Assert.Greater(renderer.BoundaryTriangulationSuccesses,0);
                 Assert.AreEqual(SoftCellBody2D.Nodes-2,renderer.RenderTriangleCount);
@@ -26,6 +27,7 @@ namespace Cells.Tests.Editor
                 renderer.UpdateGeometry();
                 Assert.IsFalse(renderer.LastBoundaryTriangulationSucceeded);
                 Assert.AreEqual(SoftCellBody2D.Nodes,renderer.RenderTriangleCount);
+                Assert.IsTrue(renderer.ShellVisible);
             }
             finally { Object.DestroyImmediate(go); }
         }
