@@ -27,6 +27,38 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void TemplateSynthesisConsumesFinitePrecursorsAndEnergy()
+        {
+            var go=new UnityEngine.GameObject("synthesis budget");
+            try
+            {
+                var inventory=go.AddComponent<CellHeritableInventory>();
+                var metabolism=go.AddComponent<CellMetabolism>();
+                var exchange=go.AddComponent<Cells.Substances.CellChemicalExchange>();
+                var synth=go.AddComponent<GeneticTemplateSynthesis2D>();
+                synth.inventory=inventory;
+                synth.exchange=exchange;
+                synth.metabolism=metabolism;
+                inventory.geneticTemplateMass=.03f;
+                exchange.nutrientReserve=.025f;
+                metabolism.energy=1f;
+                synth.templatePerSecond=.1f;
+                synth.targetTemplateMass=.06f;
+                float beforeMass=inventory.geneticTemplateMass+exchange.nutrientReserve;
+                float beforeEnergy=metabolism.energy;
+                float made=synth.Tick(1f);
+                Assert.AreEqual(.025f,made,1e-5f);
+                Assert.AreEqual(beforeMass,inventory.geneticTemplateMass+
+                    exchange.nutrientReserve,1e-5f);
+                Assert.AreEqual(beforeEnergy-made*synth.energyPerTemplate,
+                    metabolism.energy,1e-5f);
+                Assert.IsFalse(synth.ReplicationReady);
+                Assert.AreEqual(0f,synth.Tick(1f),1e-6f);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void GeneticAndCompartmentInventoriesPartitionWithoutCreation()
         {
             var go = new UnityEngine.GameObject("inventory conservation");
