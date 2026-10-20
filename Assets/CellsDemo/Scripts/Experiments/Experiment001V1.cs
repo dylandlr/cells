@@ -23,7 +23,7 @@ namespace Cells.Experiments
             var rows=new StringBuilder("seed,delivery,collective_return,signals,invalid_actions\n");
             var pairs=new StringBuilder("seed,off_return,on_return,on_minus_off\n");
             var agents=new StringBuilder("seed,delivery,seat,policy,realized_return,final_patch\n");
-            var stepsCsv=new StringBuilder("seed,delivery,step,seat,own_patch,action,received_signals,reward,foragers_on_selected_patch\n");
+            var stepsCsv=new StringBuilder("seed,delivery,step,seat,own_patch,action,received_signals,reward,foragers_on_selected_patch,signaled_patch,signal_alignment,changed_patch\n");
             var differences=new List<PairedAssayAnalysisV1.Record>();
             for(int i=0;i<seeds;i++)
             {
@@ -50,6 +50,14 @@ namespace Cells.Experiments
                                 int received=0;
                                 foreach(int signal in observed[seat].ReceivedSignals)
                                     received+=signal;
+                                int signaledPatch=-1;
+                                int bestSignal=0;
+                                for(int patch=0;patch<SignalingGameV1.Patches;patch++)
+                                    if(observed[seat].ReceivedSignals[patch]>bestSignal)
+                                    {
+                                        bestSignal=observed[seat].ReceivedSignals[patch];
+                                        signaledPatch=patch;
+                                    }
                                 stepsCsv.Append(seed).Append(',')
                                     .Append(condition==1?"on":"off").Append(',')
                                     .Append(step).Append(',').Append(seat).Append(',')
@@ -57,7 +65,12 @@ namespace Cells.Experiments
                                     .Append(action).Append(',').Append(received).Append(',')
                                     .Append(F(rewards[seat])).Append(',')
                                     .Append(action>=0 && action<SignalingGameV1.Patches?
-                                        occupancy[action]:0).Append('\n');
+                                        occupancy[action]:0).Append(',')
+                                    .Append(signaledPatch).Append(',')
+                                    .Append(signaledPatch>=0 && action==signaledPatch?1:0)
+                                    .Append(',').Append(action>=0 &&
+                                        action<SignalingGameV1.Patches &&
+                                        action!=observed[seat].OwnPatch?1:0).Append('\n');
                             }
                         });
                     for(int seat=0;seat<result.Returns.Length;seat++)
