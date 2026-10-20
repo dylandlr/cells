@@ -71,11 +71,29 @@ namespace Cells.Demo
                     if (!staged) return false;
                     // Only commit parent resources after staged daughter is ready.
                     // This demo uses a single-threaded main-thread transaction.
-                    growth.structuralBiomass = split.parentBiomass;
-                    exchange.nutrientReserve = split.parentNutrient;
-                    metabolism.energy = split.parentEnergy;
-                    staged.SetActive(true);
-                    return true;
+                    float oldBiomass = growth.structuralBiomass;
+                    float oldNutrient = exchange.nutrientReserve;
+                    float oldEnergy = metabolism.energy;
+                    try
+                    {
+                        growth.structuralBiomass = split.parentBiomass;
+                        exchange.nutrientReserve = split.parentNutrient;
+                        metabolism.energy = split.parentEnergy;
+                        staged.SetActive(true);
+                        return true;
+                    }
+                    catch (System.Exception exception)
+                    {
+                        // Undo the parent's financial/resource side of a failed
+                        // activation. The coordinator will not register a birth.
+                        growth.structuralBiomass = oldBiomass;
+                        exchange.nutrientReserve = oldNutrient;
+                        metabolism.energy = oldEnergy;
+                        Debug.LogException(exception);
+                        if (staged) Destroy(staged);
+                        staged = null;
+                        return false;
+                    }
                 }, out var child, out var daughterRegulation);
             if (!ok)
             {
