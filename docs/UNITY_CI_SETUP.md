@@ -41,3 +41,12 @@ See `INTEGRATION_STATUS.md` for the actual results of this development pass.
 For a Windows development player: `unity run . --editor-version 6000.6.5f1 --timeout 600 -- -executeMethod Cells.Editor.DemoProjectSetup.BuildWindows -logFile Logs/build.log`. Output: `Build/Cells.exe`.
 
 Read-only static structure checks: `python tools/verify_project.py`.
+
+
+## TODO — Configure Unity license for gameplay recording (2026-10-19)
+
+- [ ] Confirm whether the development account uses Unity Personal or Unity Pro.
+- [ ] Follow current [GameCI activation guidance](https://game.ci/docs/github/activation/) and obtain valid Unity activation credentials or configure a licensed self-hosted runner.
+- [ ] Add the required Unity activation values as **GitHub Actions repository secrets**, not committed files. Never commit or share a license file, password, or serial number.
+- [ ] Re-run the **Unity Gameplay Demo** workflow on `feat/substance-ontology`.
+- [ ] Verify Edit Mode/Play Mode tests, video encoding, and the downloadable `cells-unity-gameplay` artifact; investigate any build/render failures.
