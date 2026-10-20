@@ -15,6 +15,7 @@
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingGameV1.cs" Link="SignalingGameV1.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Experiment001V1.cs" Link="Experiment001V1.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/AdaptiveExperiment001V2.cs" Link="AdaptiveExperiment001V2.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/AdaptiveHeldOut001V3.cs" Link="AdaptiveHeldOut001V3.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingExperimentRunnerV1.cs" Link="SignalingExperimentRunnerV1.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Exp3EpisodeSelectorV1.cs" Link="Exp3EpisodeSelectorV1.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Exp3StrategyTrainingV1.cs" Link="Exp3StrategyTrainingV1.cs" />
