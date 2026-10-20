@@ -37,6 +37,7 @@ internal static class Program
             var output=Experiment001V1.Run(seed,count);
             Directory.CreateDirectory(args[1]);
             File.WriteAllText(Path.Combine(args[1],"episodes.csv"),output.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"agents.csv"),output.AgentCsv);
             File.WriteAllText(Path.Combine(args[1],"paired.csv"),output.PairedCsv);
             File.WriteAllText(Path.Combine(args[1],"summary.csv"),output.SummaryCsv);
             File.WriteAllText(Path.Combine(args[1],"manifest.json"),output.ManifestJson);
