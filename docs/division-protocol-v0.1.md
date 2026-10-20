@@ -403,3 +403,23 @@ differences between these outer timesteps; fluid/chemical interaction is
 not included in the disposable geometry assay; no topological split is
 modeled. The Unity CI license and workflow build-method compatibility
 still require actual runner verification.
+
+## Matched membrane controls and remainder timesteps (2026-10-19)
+
+The physics constriction assay now supports a maximum actuation parameter,
+including a **zero-actuation negative control**. The final integration step
+uses only the remaining simulation time if the requested duration is not
+evenly divisible by the timestep; reported duration and integrated time
+therefore agree.
+
+`MembraneConvergenceSweep2D` now runs a fresh independent control body
+for each tested timestep. The report records control final area and
+neck ratio plus the difference from the actuation trial. This avoids
+mistaking ordinary geometry drift or solver relaxation for a division
+effect. Its JSON validator checks control validity and arithmetic
+consistency, and the summary compares control and actuated ratios.
+
+These studies still require Unity execution and show neither scission
+nor calibrated biological constriction. A positive actuation effect
+means numerical equatorial narrowing **relative to control**, not
+proof of physically viable cytokinesis.
