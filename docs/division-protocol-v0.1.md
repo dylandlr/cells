@@ -302,3 +302,18 @@ division to stall rather than invent membrane scission.
 **No topological scission implemented.** Even a successful narrow-neck
 measurement only indicates shape readiness for an eventual topology
 operation. Unity tests have not been executed.
+
+## Independent membrane-neck geometry fixtures (2026-10-19)
+
+The live-body diagnostic now delegates to
+`MembraneNeckDiagnostic2D.MeasureContour(Vector2[])`, allowing direct
+tests of the geometric classifier without a Unity physics timestep.
+Authored Edit Mode fixtures include a unit circular membrane (not
+constricted), a synthetic equatorially pinched simple contour
+(constricted), and invalid nonfinite node positions (rejected).
+
+The classifier's shoulder/equator metric is deliberately a 32-sector
+effective proxy. Its ability to identify a synthetic narrowed contour
+**does not demonstrate** that the existing physical soft-body will
+produce that contour. That is a separate calibration/solver validation
+gate. No GitHub Actions Unity test execution is verified.
