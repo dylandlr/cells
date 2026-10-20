@@ -265,6 +265,8 @@ namespace Cells.Demo
             replication.metabolism = metabolism;
             var copySegregation = go.AddComponent<GenomeCopySegregation2D>();
             copySegregation.synthesis = replication;
+            var copiesVisual = go.AddComponent<GenomeCopiesRenderer2D>();
+            copiesVisual.copies = copySegregation;
             exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", membrane, 16);
             exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", membrane, 0);
             exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", membrane, 24);
