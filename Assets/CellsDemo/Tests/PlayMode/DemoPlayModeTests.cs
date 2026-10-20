@@ -68,6 +68,16 @@ namespace Cells.Tests
             parentGrowth.structuralBiomass = 2.4f;
             parentMetabolism.energy = 6f;
             parentExchange.nutrientReserve = .8f;
+            var synthesis = parent.GetComponent<GeneticTemplateSynthesis2D>();
+            Assert.IsNotNull(synthesis);
+            Assert.IsFalse(synthesis.ReplicationReady,
+                "One founder genome-equivalent is insufficient for division.");
+            // Accelerate the test's explicit precursor-funded replication;
+            // not an unaccounted mutation or instant free second genome.
+            synthesis.templatePerSecond = .1f;
+            float synthesisQuantity = synthesis.Tick(1f);
+            Assert.AreEqual(.06f,synthesisQuantity,1e-5f);
+            Assert.IsTrue(synthesis.ReplicationReady);
             float initialBiomass = parentGrowth.structuralBiomass;
             float initialEnergy = parentMetabolism.energy;
             float initialNutrients = parentExchange.nutrientReserve;
