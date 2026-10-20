@@ -261,3 +261,20 @@ not detect intersections of irregular mesh edges, model
 adhesion, calculate local membrane collision impulses,
 partition actual membrane material or enact topological
 scission. Live Unity verification remains pending activation.
+
+## Explicit membrane-material budget (2026-10-19)
+
+`CellMembraneMaterial` now holds an effective finite material inventory
+separate from membrane geometry and membrane integrity. Experimental
+reproduction requires enough material for two viable shares, assigns
+one share to the staged daughter, subtracts it from the parent on the
+successful handoff path, and restores parent material if activation
+throws. A Play Mode test checks the conserved summed inventory.
+
+This is a **bookkeeping prerequisite**, not physical membrane scission:
+there is no tracked lipid/protein composition, local surface density,
+material transport to the furrow, area-to-mass calibration, or direct
+conversion of one closed membrane into two. The effective inventory is
+currently also separate from the authoritative structural biomass, so
+whole-cell material accounting remains incomplete. No Unity test
+execution has been verified due to CI licensing.
