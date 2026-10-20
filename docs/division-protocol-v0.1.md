@@ -114,3 +114,28 @@ inventory before reproduction becomes general gameplay.
 
 Substrate: Emergence's supplied documents and build artifacts remain
 visual/gameplay references, not a source-code basis for this factory.
+
+## Heritable material pool accounting (2026-10-19)
+
+`CellHeritableInventory` adds explicit nonnegative abstract material pools
+for pseudo-genetic templates, vesicle contents/material and structural
+functional modules. The opt-in demo assigns each newly built cell a baseline
+inventory. Division now computes a 50/50 allocation for all three pools,
+rejects insufficient inherited genetic material, transfers the parent's share
+only after a daughter has been prepared, and restores the original parent
+inventory on activation exceptions. NUnit conservation tests are authored.
+
+These material budgets are **separate from `CellBiomassGrowth.structuralBiomass`**.
+They are tracked as additional illustrative resources rather than proven
+subcomponents of a closed total mass budget; this risks double counting
+if combined naively. A subsequent systems migration must define one
+authoritative accounting hierarchy for cellular dry mass.
+
+A pseudo-genetic material share is **not** a duplicated chromosome. Actual
+replication must acquire precursor molecules, spend energy, and produce
+sufficient copies so both viable daughters inherit the genetic program.
+Compartments remain fixed-count physical visualization objects and are
+not physically segregated or generated from the new material pools.
+This step advances explicit conservation contracts; it does NOT complete
+the physical cell cycle. Unity tests and runtime visualization still await
+a licensed runner.
