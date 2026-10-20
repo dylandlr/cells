@@ -27,6 +27,32 @@ namespace Cells.Physiology
             targetArea=initial.SignedArea;
         }
 
+        /// <summary>Bounded experimental displacement field followed by
+        /// restorative constraints. All-or-nothing on failure, including the
+        /// externally applied displacement. Local y=0 is the neck plane.</summary>
+        public bool TryConstrict(float strength, float band, float maxDisplacement=.06f,
+            int iterations=12)
+        {
+            if(!float.IsFinite(strength) || strength<0f || strength>1f ||
+                !float.IsFinite(band) || band<=0f ||
+                !float.IsFinite(maxDisplacement) || maxDisplacement<=0f)
+                return false;
+            var original=(Vector2[])positions.Clone();
+            for(int i=0;i<positions.Length;i++)
+            {
+                var p=positions[i];
+                float weight=Mathf.Exp(-Mathf.Pow(p.y/band,2f));
+                float shift=Mathf.Min(Mathf.Abs(p.x)*strength*weight,maxDisplacement);
+                positions[i].x-=Mathf.Sign(p.x)*shift;
+            }
+            if(!Step(iterations,.55f,.22f))
+            {
+                Array.Copy(original,positions,positions.Length);
+                return false;
+            }
+            return true;
+        }
+
         public bool Step(int iterations=8,float edgeStiffness=.5f,float areaStiffness=.2f)
         {
             if(iterations<1 || iterations>100 || !float.IsFinite(edgeStiffness) ||
