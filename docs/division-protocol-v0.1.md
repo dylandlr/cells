@@ -423,3 +423,21 @@ These studies still require Unity execution and show neither scission
 nor calibrated biological constriction. A positive actuation effect
 means numerical equatorial narrowing **relative to control**, not
 proof of physically viable cytokinesis.
+
+## Center-free boundary representation prototype (2026-10-19)
+
+`BoundaryLoop2D` adds a separate ordered closed-polyline geometry
+representation. Unlike the current renderer's single-center triangle
+fan, it does not require the cell interior to be visible from one
+distinguished central point. It computes signed polygon area, boundary
+length, area-weighted centroid, finite-coordinate checks and
+nonadjacent segment intersections, with no dependency on the active
+physiology or soft-body solver.
+
+Authored Editor tests exercise a concave two-lobed loop, a
+self-intersecting bowtie loop and clockwise/counterclockwise
+orientation invariance. This module is **not yet a replacement**
+for the 32-node membrane dynamics, a concave-polygon triangulator,
+or a topology-changing scission implementation. It does not
+partition material or spawn daughters. All Unity tests remain
+unverified until Unity CI can execute successfully.
