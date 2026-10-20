@@ -16,6 +16,7 @@ namespace Cells.Demo
         [Min(.1f)] public float requiredEnergy = 1.1f;
         [Min(0f)] public float cooldownSeconds = 20f;
         public bool completed;
+        public bool requireCompletedConstriction = true;
         public int daughterIndividualId;
         public int committedBirths => coordinator == null ? 0 : coordinator.lineage.Count-1;
         DivisionLineageCoordinator coordinator;
@@ -52,14 +53,10 @@ namespace Cells.Demo
             var exchange = parent.GetComponent<CellChemicalExchange>();
             var regulation = parent.GetComponent<GeneticRegulationController>();
             if (!growth || !metabolism || !exchange || !regulation || !metabolism.alive) return false;
-            var preview = parent.GetComponent<CellDivisionPreview2D>();
-            if (preview)
-            {
-                float threshold = 2f * minimumDaughterBiomass;
-                preview.progress = Mathf.Clamp01(
-                    (growth.structuralBiomass-threshold*.65f)/Mathf.Max(.001f,threshold*.35f));
-                preview.visible = preview.progress > .01f && !completed;
-            }
+            var cycle = parent.GetComponent<ExperimentalConstrictionCycle2D>();
+            // A daughter cannot be spawned before its parent reaches the
+            // demonstrated physical constriction stage. This is not scission.
+            if (requireCompletedConstriction && (!cycle || !cycle.ReadyForScission)) return false;
             if (metabolism.energy < requiredEnergy) return false;
             // An actual growth-dependent biomass gate, not a timer-only reproduction.
             if (growth.structuralBiomass < 2f * minimumDaughterBiomass) return false;
