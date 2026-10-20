@@ -13,9 +13,15 @@ namespace Cells.EditorTools
         [MenuItem("Cells/Research/Export Membrane Constriction Trace")]
         public static void Export()
         {
-            var output=Environment.GetEnvironmentVariable("CELLS_ASSAY_OUTPUT");
-            if(string.IsNullOrEmpty(output))
-                output=Path.Combine(Directory.GetCurrentDirectory(),"artifacts","membrane-assay.json");
+            // GameCI may invoke the Editor from a working directory other
+            // than the Unity project root. Resolve artifacts against the
+            // project itself, not the process's current directory.
+            var projectRoot=Path.GetFullPath(Path.Combine(Application.dataPath,".."));
+            var requested=Environment.GetEnvironmentVariable("CELLS_ASSAY_OUTPUT");
+            if(string.IsNullOrWhiteSpace(requested))
+                requested=Path.Combine("artifacts","membrane-assay.json");
+            var output=Path.IsPathRooted(requested) ? requested :
+                Path.Combine(projectRoot,requested);
             GameObject go=null;
             try
             {
