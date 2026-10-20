@@ -21,36 +21,49 @@ namespace Cells.Physiology
             var result=new Result();
             if (!body || !body.Initialized || !float.IsFinite(maximumRatio) ||
                 maximumRatio<=0f || maximumRatio>=1f) return result;
-            int n=SoftCellBody2D.Nodes;
+            var vertices=new Vector2[SoftCellBody2D.Nodes];
+            for(int i=0;i<vertices.Length;i++)vertices[i]=body.Node(i);
+            return MeasureContour(vertices,maximumRatio);
+        }
+
+        public static Result MeasureContour(Vector2[] vertices,float maximumRatio=.70f)
+        {
+            var result=new Result();
+            if(vertices==null || vertices.Length!=SoftCellBody2D.Nodes ||
+                !float.IsFinite(maximumRatio) || maximumRatio<=0f || maximumRatio>=1f)
+                return result;
+            int n=vertices.Length;
             for(int i=0;i<n;i++)
             {
-                Vector2 v=body.Node(i);
+                Vector2 v=vertices[i];
                 if(!float.IsFinite(v.x) || !float.IsFinite(v.y))return result;
             }
             result.finite=true;
-            result.area=Mathf.Abs(body.SignedArea());
-            result.equatorWidth=Vector2.Distance(body.Node(0),body.Node(n/2));
-            float upper=Vector2.Distance(body.Node(n/8),body.Node(3*n/8));
-            float lower=Vector2.Distance(body.Node(5*n/8),body.Node(7*n/8));
+            float twiceArea=0f;
+            for(int i=0;i<n;i++)twiceArea+=Cross(Vector2.zero,vertices[i],vertices[(i+1)%n]);
+            result.area=Mathf.Abs(twiceArea)*.5f;
+            result.equatorWidth=Vector2.Distance(vertices[0],vertices[n/2]);
+            float upper=Vector2.Distance(vertices[n/8],vertices[3*n/8]);
+            float lower=Vector2.Distance(vertices[5*n/8],vertices[7*n/8]);
             result.shoulderWidth=(upper+lower)*.5f;
             result.ratio=result.shoulderWidth>1e-6f
                 ? result.equatorWidth/result.shoulderWidth : float.PositiveInfinity;
-            result.simple=IsSimple(body);
+            result.simple=IsSimple(vertices);
             result.valid=result.simple && result.area>1e-4f &&
                 float.IsFinite(result.ratio) && result.equatorWidth>1e-4f;
             result.narrowed=result.valid && result.ratio<=maximumRatio;
             return result;
         }
 
-        static bool IsSimple(SoftCellBody2D body)
+        static bool IsSimple(Vector2[] vertices)
         {
             int n=SoftCellBody2D.Nodes;
             for(int i=0;i<n;i++)
             for(int j=i+1;j<n;j++)
             {
                 if(j==i+1 || (i==0 && j==n-1))continue;
-                if(Crosses(body.Node(i),body.Node((i+1)%n),
-                    body.Node(j),body.Node((j+1)%n)))return false;
+                if(Crosses(vertices[i],vertices[(i+1)%n],
+                    vertices[j],vertices[(j+1)%n]))return false;
             }
             return true;
         }
