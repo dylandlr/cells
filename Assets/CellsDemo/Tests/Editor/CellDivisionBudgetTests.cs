@@ -6,6 +6,34 @@ namespace Cells.Tests
     public sealed class CellDivisionBudgetTests
     {
         [Test]
+        public void SyntheticContoursExerciseNarrowNeckAndInvalidShape()
+        {
+            var points=new UnityEngine.Vector2[SoftCellBody2D.Nodes];
+            for(int i=0;i<points.Length;i++)
+            {
+                float angle=i*2f*UnityEngine.Mathf.PI/points.Length;
+                points[i]=new UnityEngine.Vector2(UnityEngine.Mathf.Cos(angle),
+                    UnityEngine.Mathf.Sin(angle));
+            }
+            var round=MembraneNeckDiagnostic2D.MeasureContour(points);
+            Assert.IsTrue(round.valid);
+            Assert.IsFalse(round.narrowed);
+            for(int i=0;i<points.Length;i++)
+            {
+                float y=points[i].y;
+                float narrowing=1f-.62f*UnityEngine.Mathf.Exp(-y*y/.05f);
+                points[i].x*=narrowing;
+            }
+            var pinched=MembraneNeckDiagnostic2D.MeasureContour(points);
+            Assert.IsTrue(pinched.valid,
+                "Test constriction must preserve an ordinary simple polygon.");
+            Assert.IsTrue(pinched.narrowed,
+                "Observed equatorial ratio must detect synthetic neck narrowing.");
+            points[0]=new UnityEngine.Vector2(float.NaN,0f);
+            Assert.IsFalse(MembraneNeckDiagnostic2D.MeasureContour(points).valid);
+        }
+
+        [Test]
         public void UnconstrictedClosedMembraneDoesNotPassNeckGate()
         {
             var go = new UnityEngine.GameObject("neck diagnostic");
