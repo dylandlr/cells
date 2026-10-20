@@ -71,8 +71,12 @@ namespace Cells.Tests
             float initialBiomass = parentGrowth.structuralBiomass;
             float initialEnergy = parentMetabolism.energy;
             float initialNutrients = parentExchange.nutrientReserve;
-            var cycle = parent.GetComponent<ExperimentalConstrictionCycle2D>();
-            Assert.IsNotNull(cycle);
+            // This test enables the experiment after the scene has built;
+            // add the opt-in constriction component explicitly.
+            var cycle = parent.AddComponent<ExperimentalConstrictionCycle2D>();
+            cycle.body = parent.GetComponent<SoftCellBody2D>();
+            cycle.growth = parentGrowth;
+            cycle.metabolism = parentMetabolism;
             Assert.IsFalse(assay.TryDivide(), "Birth must await membrane constriction.");
             Assert.AreEqual(0,assay.committedBirths);
             cycle.Tick(cycle.rampSeconds);
