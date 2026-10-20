@@ -1,0 +1,77 @@
+# Experiment 001 revised deliverable — adaptive agents (v2 exploratory)
+
+## Status and alignment
+
+This is an **exploratory prototype**, not a certified replacement for the
+approved CSCE 631 proposal: the complete approved proposal and progress-report
+rubric have not been located. The professor's quoted feedback requests frozen
+genomes, matched seeds, explicit utility, communication ablation and scripted
+controls. This revision addresses those elements operationally while documenting
+its limitations.
+
+## Experiment design
+
+Existing `SignalingGameV1` environment: four agents, three patches, 80
+simultaneous decision steps per episode. World randomness uses a seed independent
+of the controllers. Four conditions per world seed:
+`adaptive_off`, `adaptive_on`, `scripted_off`, `scripted_on`.
+
+One periodic scripted sender is present in *all* four conditions, so a
+communication channel exists. Three adaptive followers learn online using
+reward-updated tabular action values; scripted followers instead use the fixed
+existing `SignalFollower` heuristic.
+
+A minimal `Genome` stores immutable learning rate 0.18, exploration 0.12
+and signal weight 0.75. These are inherited-parameter **proxies**: there is no
+genetic encoding, variation, reproduction, evolution or genotype-to-phenotype
+compiler. The learned action values can change while inherited parameters cannot.
+Each condition starts from untrained agent Q tables and fresh independent PRNGs.
+Evaluation measures *online adaptation during 80 decisions*, not learned-policy
+generalization to held-out episodes.
+
+**Important limitation:** the signal response coefficient is fixed, not learned.
+This experiment cannot yet establish learned communication protocols. It tests
+reward learning in the presence/absence of messages, versus scripted followers.
+
+## Reproduce
+
+```bash
+dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release -- --adaptive001 artifacts/experiment001-adaptive-v2 210000 30
+```
+
+Generates `episodes.csv`, `paired.csv`, `summary.csv`,
+`manifest.json`. Headless CI also runs this command and archives the output.
+Read the artifact and job logs before citing numerical effects.
+
+The analysis unit is the world seed; 30 matched seeds are **exploratory**.
+Neither a desirable positive result nor emergence is a required outcome.
+
+## Claims this prototype cannot support
+
+- Biological evolution or genomic coevolution
+- Complex learned communication strategies
+- Learned policies generalizing out of distribution
+- Broad cooperative behavior or Nash equilibria
+- Improvement over policies due specifically to learning, without further
+  learning-disabled and training-curve controls
+
+## Integration plan with latest code
+
+1. **Now:** preserve current Unity microscope chemistry, physiology,
+   experiment tools and visualization; keep the Unity-free study runner as
+   the research execution path.
+2. **Next:** add *actual* learning curves, a learning-disabled control,
+   signal-use choice as a learnable action, and held-out evaluation.
+   Decide research endpoint and sample size against the approved proposal.
+3. **Later:** define a shared agent observation/action schema with explicit
+   translation from Unity chemistry state to the headless research world.
+   No transfer results should be claimed until equivalence tests pass.
+4. **Only after core results:** optional scientific-minimalist read-only
+   replay from recorded state, then genome variation and intergenerational
+   evolution. See `SCIENTIFIC_MINIMALISM_VISUAL_CONTRACT.md`.
+
+## Provenance
+
+Original fixed-policy study: `Experiment001V1.cs` (preserved).
+New exploratory study: `AdaptiveExperiment001V2.cs`.
+Experimental figures must identify the corresponding version and Git commit.
