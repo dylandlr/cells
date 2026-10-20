@@ -94,6 +94,12 @@ namespace Cells.Tests
                 child.GetComponent<CellMetabolism>().energy,1e-5f);
             Assert.AreEqual(parentGenome.feedingRate,
                 child.GetComponent<OrganismPhenotype>().genome.feedingRate,1e-5f);
+            var daughterBody = child.GetComponent<SoftCellBody2D>();
+            Assert.IsNotNull(daughterBody);
+            Assert.IsTrue(daughterBody.Initialized);
+            Assert.AreEqual(child.GetComponent<CellBiomassGrowth>().VisualRadiusScale *
+                daughterBody.restRadius, daughterBody.CurrentRadius, 1e-5f);
+            Assert.IsTrue(child.gameObject.activeSelf);
             yield return null;
         }
 
