@@ -31,13 +31,14 @@ namespace Cells.Physiology
 
         public static Report Run(SoftCellBody2D body, float duration=20f,
             float timestep=.02f, float neckThreshold=.70f,
-            int sampleEvery=10)
+            int sampleEvery=10, float maximumActuation=1f)
         {
             if (!body || !body.Initialized ||
                 !float.IsFinite(duration) || duration<=0f || duration>180f ||
                 !float.IsFinite(timestep) || timestep<.001f || timestep>.05f ||
                 !float.IsFinite(neckThreshold) || neckThreshold<=0f ||
-                neckThreshold>=1f || sampleEvery<1)
+                neckThreshold>=1f || sampleEvery<1 ||
+                !float.IsFinite(maximumActuation) || maximumActuation<0f || maximumActuation>1f)
                 throw new ArgumentException("Invalid membrane assay configuration.");
 
             var report = new Report { status="not-narrowed",
@@ -50,10 +51,11 @@ namespace Cells.Physiology
                 for (int step=0;step<=count;step++)
                 {
                     float time=Mathf.Min(duration,step*timestep);
+                    float stepDuration=step==0 ? 0f : time-Mathf.Min(duration,(step-1)*timestep);
                     // A controlled linear ramp. Readiness timer and inherited
                     // genome state are intentionally excluded from this assay.
-                    body.divisionConstriction=Mathf.Clamp01(time/duration);
-                    if(step>0)body.Tick(timestep);
+                    body.divisionConstriction=maximumActuation*Mathf.Clamp01(time/duration);
+                    if(stepDuration>0f)body.Tick(stepDuration);
                     if(step%sampleEvery!=0 && step!=count)continue;
                     var geometry=MembraneNeckDiagnostic2D.Measure(body,neckThreshold);
                     var sample=new Sample {
