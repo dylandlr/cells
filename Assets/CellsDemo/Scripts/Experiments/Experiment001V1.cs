@@ -12,7 +12,7 @@ namespace Cells.Experiments
     {
         public sealed class Output
         {
-            public string EpisodesCsv, PairedCsv, SummaryCsv, ManifestJson;
+            public string EpisodesCsv, PairedCsv, SummaryCsv, ManifestJson, AgentCsv;
         }
 
         public static Output Run(int firstSeed=100001,int seeds=30)
@@ -22,6 +22,7 @@ namespace Cells.Experiments
                 throw new ArgumentOutOfRangeException("seeds");
             var rows=new StringBuilder("seed,delivery,collective_return,signals,invalid_actions\n");
             var pairs=new StringBuilder("seed,off_return,on_return,on_minus_off\n");
+            var agents=new StringBuilder("seed,delivery,seat,policy,realized_return,final_patch\n");
             var differences=new List<PairedAssayAnalysisV1.Record>();
             for(int i=0;i<seeds;i++)
             {
@@ -37,7 +38,15 @@ namespace Cells.Experiments
                     };
                     var result=SignalingGameV1.Evaluate(seed,policies,
                         SignalingGameV1.DefaultHorizon,condition==1);
-                    foreach(double value in result.Returns)total[condition]+=value;
+                    for(int seat=0;seat<result.Returns.Length;seat++)
+                    {
+                        total[condition]+=result.Returns[seat];
+                        agents.Append(seed).Append(',').Append(condition==1?"on":"off")
+                            .Append(',').Append(seat).Append(',')
+                            .Append(seat==0?"signaler":"follower").Append(',')
+                            .Append(F(result.Returns[seat])).Append(',')
+                            .Append(result.FinalPatches[seat]).Append('\n');
+                    }
                     rows.Append(seed).Append(',').Append(condition==1?"on":"off")
                         .Append(',').Append(F(total[condition])).Append(',')
                         .Append(result.SignalCount).Append(',')
@@ -51,6 +60,7 @@ namespace Cells.Experiments
             var effect=PairedAssayAnalysisV1.EstimatePaired(differences);
             return new Output {
                 EpisodesCsv=rows.ToString(),
+                AgentCsv=agents.ToString(),
                 PairedCsv=pairs.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
                     PairedAssayAnalysisV1.ToCsv("delivery_on_minus_off",effect),
