@@ -360,3 +360,23 @@ useful research result rather than treated as a programming failure.
 report output location, Editor test compilation, and the actual metric
 trace. In particular, no narrowed membrane or valid topological scission
 has been observed or demonstrated by this commit.
+
+## Assay reporting and license-free validation (2026-10-19)
+
+The Unity membrane assay workflow now runs
+`tools/capture/analyze_membrane_assay.py` on the Unity-produced JSON,
+checking all sample fields, finite values, strictly increasing timestamps,
+counter consistency, and classification consistency. The artifact includes
+`membrane-assay.json`, `membrane-trace.csv` and `membrane-summary.md`.
+An invalid-geometry report explicitly fails the validation step, while
+a valid but not-narrowed result is allowed as a diagnostic finding.
+
+`Tests/Headless/test_membrane_report.py` exercises report conversion,
+misclassified results, and invalid geometry using synthetic fixtures,
+and is included in the Headless research checks workflow. These tests
+are independent of the Unity license and **do not validate physical
+constriction or actual run results**.
+
+The GameCI Unity assay build, output path, activation, and real physics
+trace have still not been verified on a GitHub runner. The workflow
+should not be treated as passing before its first successful execution.
