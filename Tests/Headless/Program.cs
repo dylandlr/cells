@@ -28,6 +28,21 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--adaptive001")
+        {
+            if(args.Length!=2 && args.Length!=4)
+                throw new ArgumentException("Usage: --adaptive001 <output-dir> [first-seed count]");
+            int seed=args.Length==4?int.Parse(args[2]):210000;
+            int count=args.Length==4?int.Parse(args[3]):30;
+            var output=AdaptiveExperiment001V2.Run(seed,count);
+            Directory.CreateDirectory(args[1]);
+            File.WriteAllText(Path.Combine(args[1],"episodes.csv"),output.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"paired.csv"),output.PairedCsv);
+            File.WriteAllText(Path.Combine(args[1],"summary.csv"),output.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"manifest.json"),output.ManifestJson);
+            Console.WriteLine("Adaptive E001 exported: "+count+" paired seeds to "+args[1]);
+            return;
+        }
         if(args.Length>0 && args[0]=="--experiment001")
         {
             if(args.Length!=2 && args.Length!=4)
@@ -58,6 +73,14 @@ internal static class Program
             Almost(first.Returns[i], second.Returns[i], 0, "seed reproducibility");
         Check(first.InvalidActions == 0, "valid built-in actions");
 
+        var adaptive001=AdaptiveExperiment001V2.Run(210000,3);
+        var adaptiveRepeat=AdaptiveExperiment001V2.Run(210000,3);
+        Check(adaptive001.PairedCsv==adaptiveRepeat.PairedCsv,
+            "Adaptive experiment deterministic replay");
+        Check(adaptive001.EpisodesCsv.TrimEnd().Split('\n').Length==13,
+            "Adaptive experiment three seeds by four conditions");
+        Check(adaptive001.PairedCsv.TrimEnd().Split('\n').Length==4,
+            "Adaptive experiment three matched seed records");
         var e001 = Experiment001V1.Run(100001, 5);
         var e001Again = Experiment001V1.Run(100001, 5);
         Check(e001.PairedCsv == e001Again.PairedCsv,
