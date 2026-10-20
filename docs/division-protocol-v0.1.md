@@ -498,3 +498,20 @@ the 32-node outline, then switches the option off and confirms the
 32-triangle center-fan fallback. This checks renderer wiring but does
 not demonstrate a deeply pinched live cell, scene visual fidelity, or
 scission. Unity test execution remains unverified.
+
+## Invalid contour rendering fails closed (2026-10-19)
+
+Previously an invalid or self-intersecting membrane outline could
+be fed into the legacy center-fan rendering fallback, disguising a
+physics failure as a plausible-looking organism. The renderer now
+detects an invalid `BoundaryLoop2D`, hides its shell, rim and
+halo, increments a diagnostic failure counter, and reports zero
+visible shell triangles. When a future update returns a valid
+loop, the renderer enables the surfaces again. The optional
+center-fan fallback is used only when the contour is **valid**
+but the optional ear-clipping triangulation path fails.
+
+Editor tests check healthy shell visibility in both valid
+rendering modes; simulated invalid solver-node recovery and live
+Play Mode rendering still require direct runtime tests. A hidden
+invalid shell is a diagnostic safeguard, **not a repaired membrane**.
