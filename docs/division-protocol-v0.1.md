@@ -222,3 +222,24 @@ partly overlapping cell-cycle mechanisms. The segregation stage is
 still kinematic, and constriction remains an effective 2D actuator.
 Neither topology scission nor mechanistic genome partition is resolved.
 Unity compilation/test execution is pending an activated runner.
+
+## Two-body geometry handoff (2026-10-19)
+
+`DivisionGeometryHandoff2D` now positions independently initialized parent
+and daughter `SoftCellBody2D` solvers according to their measured
+biomass-dependent effective radii. It enforces nonoverlapping nominal
+bounding circles and zeroes the predivision constriction variable on
+both bodies. The parent position and constriction are restored if
+activation fails. The Play Mode reproduction assay includes a
+minimum-separation and reset assertion.
+
+**This remains a spawn-based geometric handoff, not mechanical scission**:
+the parent's original closed contour is not cut and reconnected into
+two loops. The parent solver's rest geometry relaxes toward reduced
+postdivision biomass on subsequent ticks. The daughter has its own
+initialized solver. No surface-area or membrane-material conservation
+law is claimed. There is no conservation-guaranteeing mechanism for
+all cell modules, and transient overlap of irregular deformed contours
+is possible despite bounding-radius separation. Simulation-driven
+lineage registration still follows successful handoff only.
+Unity validation is still blocked by license setup.
