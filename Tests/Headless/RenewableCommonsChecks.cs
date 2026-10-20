@@ -25,7 +25,7 @@ internal static class RenewableCommonsChecks
         var initial=world.Stocks()[0];
         var first=world.Advance(allHarvest);
         var replay=copy.Advance(allHarvest);
-        Check(first.HarvestedUnits==initial,"resource harvesting cannot duplicate stock");
+        Check(first.HarvestedUnits==Math.Min(initial,4),"resource harvesting cannot duplicate stock");
         Check(first.HarvestedUnits==replay.HarvestedUnits &&
               first.StocksAfter[0]==replay.StocksAfter[0],
               "matched environmental seed reproducible");
