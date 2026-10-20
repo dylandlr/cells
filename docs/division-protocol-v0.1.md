@@ -243,3 +243,21 @@ all cell modules, and transient overlap of irregular deformed contours
 is possible despite bounding-radius separation. Simulation-driven
 lineage registration still follows successful handoff only.
 Unity validation is still blocked by license setup.
+
+## Deformed-contour handoff safety (2026-10-19)
+
+The geometry handoff now scans all live `SoftCellBody2D` nodes
+and measures the largest finite local radial extent. For each cell,
+the conservative bound is the greater of its current
+biomass-dependent nominal radius and the measured extent.
+Parent and daughter are separated using the sum of these
+envelopes plus a configurable clearance fraction. Invalid
+(nonfinite) positions reject the transaction before
+transform positions are changed. A Play Mode regression
+asserts the post-handoff envelope clearance.
+
+This is a circle-envelope *safety approximation*: it does
+not detect intersections of irregular mesh edges, model
+adhesion, calculate local membrane collision impulses,
+partition actual membrane material or enact topological
+scission. Live Unity verification remains pending activation.
