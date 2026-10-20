@@ -85,7 +85,8 @@ namespace Cells.Experiments
                     var policies=new SignalingGameV1.IPolicy[SignalingGameV1.Players];
                     for(int seat=0;seat<policies.Length;seat++)
                     {
-                        if(adaptive){learners[seat]=new AdaptivePolicy(fixedGenome);policies[seat]=learners[seat];}
+                        if(adaptive){if(seat==0)policies[seat]=new SignalingGameV1.PeriodicSignaler();
+                            else{learners[seat]=new AdaptivePolicy(fixedGenome);policies[seat]=learners[seat];}}
                         else policies[seat]=seat==0?(SignalingGameV1.IPolicy)new SignalingGameV1.PeriodicSignaler():
                             new SignalingGameV1.SignalFollower();
                     }
@@ -94,7 +95,7 @@ namespace Cells.Experiments
                         (step,observations,actions,rewards)=>{
                             if(adaptive)
                                 for(int seat=0;seat<learners.Length;seat++)
-                                    learners[seat].Learn(rewards[seat]);
+                                    if(learners[seat]!=null)learners[seat].Learn(rewards[seat]);
                         });
                     foreach(double reward in outcome.Returns)totals[condition]+=reward;
                     episode.Append(seed).Append(',').Append(adaptive?"adaptive_":"scripted_")
