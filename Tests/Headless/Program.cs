@@ -28,6 +28,19 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--heldout001")
+        {
+            if(args.Length!=2)
+                throw new ArgumentException("Usage: --heldout001 <output-dir>");
+            var output=AdaptiveHeldOut001V3.Run();
+            Directory.CreateDirectory(args[1]);
+            File.WriteAllText(Path.Combine(args[1],"episodes.csv"),output.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"paired.csv"),output.PairsCsv);
+            File.WriteAllText(Path.Combine(args[1],"summary.csv"),output.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"manifest.json"),output.ManifestJson);
+            Console.WriteLine("Held-out Experiment 001 exported.");
+            return;
+        }
         if(args.Length>0 && args[0]=="--adaptive001")
         {
             if(args.Length!=2 && args.Length!=4)
@@ -73,6 +86,13 @@ internal static class Program
             Almost(first.Returns[i], second.Returns[i], 0, "seed reproducibility");
         Check(first.InvalidActions == 0, "valid built-in actions");
 
+        var heldout=AdaptiveHeldOut001V3.Run(310000,5,410000,3);
+        var heldoutAgain=AdaptiveHeldOut001V3.Run(310000,5,410000,3);
+        Check(heldout.PairsCsv==heldoutAgain.PairsCsv,"heldout exact deterministic replay");
+        Check(heldout.EpisodesCsv.TrimEnd().Split('\n').Length==10,
+            "heldout 3 seeds x 3 conditions");
+        Throws<ArgumentException>(()=>AdaptiveHeldOut001V3.Run(310000,5,310001,3),
+            "heldout must reject training seed overlap");
         var adaptive001=AdaptiveExperiment001V2.Run(210000,3);
         var adaptiveRepeat=AdaptiveExperiment001V2.Run(210000,3);
         Check(adaptive001.PairedCsv==adaptiveRepeat.PairedCsv,
