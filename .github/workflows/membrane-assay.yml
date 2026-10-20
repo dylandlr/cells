@@ -8,6 +8,7 @@ on:
       - 'Assets/CellsDemo/Scripts/Physiology/**'
       - 'Assets/CellsDemo/Editor/MembraneAssayBatchExport.cs'
       - 'tools/capture/analyze_membrane_assay.py'
+      - 'tools/capture/analyze_membrane_convergence.py'
       - '.github/workflows/membrane-assay.yml'
 
 permissions:
@@ -43,7 +44,9 @@ jobs:
         run: |
           set -euo pipefail
           test -s artifacts/membrane-assay.json
+          test -s artifacts/membrane-convergence.json
           python3 tools/capture/analyze_membrane_assay.py artifacts/membrane-assay.json artifacts
+          python3 tools/capture/analyze_membrane_convergence.py artifacts/membrane-convergence.json artifacts
 
       - name: Publish membrane assay trace
         if: always()
@@ -52,6 +55,8 @@ jobs:
           name: membrane-physics-trace
           path: |
             artifacts/membrane-assay.json
+            artifacts/membrane-convergence.json
+            artifacts/membrane-convergence-summary.md
             artifacts/membrane-trace.csv
             artifacts/membrane-summary.md
           if-no-files-found: warn
