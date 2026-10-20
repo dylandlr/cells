@@ -32,7 +32,8 @@ namespace Cells.Physiology
             float daughterExtent=MeasuredExtent(daughter);
             if (!float.IsFinite(parentExtent) || !float.IsFinite(daughterExtent) ||
                 parentExtent <= 0f || daughterExtent <= 0f) return false;
-            float spacing=(parentExtent+daughterExtent)*(1f+clearanceFraction);
+            float spacing=(Mathf.Max(parentRadius,parentExtent)+
+                Mathf.Max(childRadius,daughterExtent))*(1f+clearanceFraction);
             parent.transform.position=midpoint-axis*(spacing*.5f);
             daughter.transform.position=midpoint+axis*(spacing*.5f);
             parent.divisionConstriction=0f;
