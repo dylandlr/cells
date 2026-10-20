@@ -28,6 +28,13 @@ namespace Cells.EditorTools
                 var absolute=Path.GetFullPath(output);
                 Directory.CreateDirectory(Path.GetDirectoryName(absolute));
                 File.WriteAllText(absolute,JsonUtility.ToJson(report,true));
+                var convergence=MembraneConvergenceSweep2D.Run(20f,.70f);
+                var convergencePath=Path.Combine(Path.GetDirectoryName(absolute),
+                    "membrane-convergence.json");
+                File.WriteAllText(convergencePath,JsonUtility.ToJson(convergence,true));
+                Debug.Log("cells membrane convergence: valid="+convergence.allValid+
+                    "; maximum ratio difference="+convergence.maximumFinalRatioDifference+
+                    "; report="+convergencePath);
                 Debug.Log("cells membrane assay: "+report.status+
                     "; ratio="+report.lastRatio+
                     "; invalid samples="+report.invalidSamples+
