@@ -278,3 +278,27 @@ conversion of one closed membrane into two. The effective inventory is
 currently also separate from the authoritative structural biomass, so
 whole-cell material accounting remains incomplete. No Unity test
 execution has been verified due to CI licensing.
+
+## Observed membrane neck validation (2026-10-19)
+
+`MembraneNeckDiagnostic2D` measures the equatorial node-pair separation
+relative to upper/lower membrane shoulder widths, rejects nonfinite
+coordinates, near-zero area, and detected self-intersections. The
+experimental birth gate now requires an observed narrow, valid neck
+(default equator/shoulder ratio <= 0.70) in addition to completed
+constriction progress. This prevents a completed timer from being
+mistaken for a physically successful neck.
+
+The existing Play Mode resource-transaction test disables only the
+neck gate after explicitly checking that timer-only readiness fails;
+a separate Editor test confirms that a normal unpinched membrane does
+not qualify. Threshold calibration, positive constriction cases,
+numerical robustness, and real scene throughput must be validated
+in Unity before accepting the gate as a reliable reproduction
+criterion. In particular the 32-node star-shaped contour may not
+generate a viable narrow neck; the diagnostic intentionally permits
+division to stall rather than invent membrane scission.
+
+**No topological scission implemented.** Even a successful narrow-neck
+measurement only indicates shape readiness for an eventual topology
+operation. Unity tests have not been executed.
