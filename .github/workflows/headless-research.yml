@@ -117,3 +117,43 @@ jobs:
           path: artifacts/experiment001-pilot
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Run expanded Experiment 001 evaluation (100 paired seeds)
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --experiment001 artifacts/experiment001-expanded 110000 100
+      - name: Verify expanded Experiment 001 pairing and accounting
+        run: |
+          python3 - <<'PY'
+          import pathlib,csv,json
+          p=pathlib.Path("artifacts/experiment001-expanded")
+          manifest=json.loads((p/"manifest.json").read_text())
+          def load(name):
+              with (p/name).open(newline="") as f:return list(csv.DictReader(f))
+          episode=load("episodes.csv"); agents=load("agents.csv")
+          steps=load("steps.csv"); pairs=load("paired.csv")
+          assert manifest["seeds"]==100 and manifest["first_seed"]==110000
+          assert tuple(map(len,(episode,agents,steps,pairs)))==(200,800,64000,100)
+          totals={(int(row["seed"]),row["delivery"]):float(row["collective_return"]) for row in episode}
+          assert len(totals)==200
+          for row in pairs:
+              seed=int(row["seed"])
+              assert abs(totals[seed,"on"]-totals[seed,"off"]-float(row["on_minus_off"]))<1e-7
+          counted={}
+          for row in steps:
+              key=int(row["seed"]),row["delivery"]
+              counted[key]=counted.get(key,0)+float(row["reward"])
+              if row["delivery"]=="off":assert int(row["received_signals"])==0
+          assert len(counted)==200
+          for key,value in counted.items():assert abs(value-totals[key])<1e-6
+          print("Expanded E001 validated 100 paired seeds")
+          print("Paired summary:",load("summary.csv")[0])
+          PY
+      - name: Analyze expanded Experiment 001 trajectories
+        run: python3 tools/capture/analyze_experiment001_trajectories.py artifacts/experiment001-expanded/steps.csv artifacts/experiment001-expanded
+      - name: Publish expanded Experiment 001 study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-expanded-100-seeds
+          path: artifacts/experiment001-expanded
+          if-no-files-found: warn
+          retention-days: 60
