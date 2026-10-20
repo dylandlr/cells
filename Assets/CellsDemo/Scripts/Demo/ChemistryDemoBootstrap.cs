@@ -225,6 +225,7 @@ namespace Cells.Demo
             growth.metabolism = metabolism;
             growth.structuralBiomass = 1f;
             growth.referenceBiomass = 1f;
+            go.AddComponent<CellHeritableInventory>();
             // Founder phenotype: inherited parameters are expressed into actual physiology.
             var phenotype = go.AddComponent<OrganismPhenotype>();
             phenotype.genome = new OrganismGenome();
@@ -441,6 +442,13 @@ namespace Cells.Demo
                 metabolism.energy = split.daughterEnergy;
                 metabolism.alive = true;
                 exchange.nutrientReserve = split.daughterNutrient;
+                var inheritedInventory = parent.GetComponent<CellHeritableInventory>();
+                var daughterInventory = daughter.GetComponent<CellHeritableInventory>();
+                if (!inheritedInventory || !daughterInventory ||
+                    !inheritedInventory.TryAllocate(.5f,.01f,out var materialAllocation))
+                    throw new InvalidOperationException("Insufficient genetic template for daughter.");
+                daughterInventory.Assign(materialAllocation.daughterGenetic,
+                    materialAllocation.daughterVesicles,materialAllocation.daughterModules);
                 // Ensure inherited biomass sets the daughter shell's actual
                 // reference geometry, not just its visual appearance.
                 var softBody = daughter.GetComponent<SoftCellBody2D>();
