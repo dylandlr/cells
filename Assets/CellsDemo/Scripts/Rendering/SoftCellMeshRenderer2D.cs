@@ -173,9 +173,10 @@ namespace Cells.Rendering
             }
             // The boundary remains owned by the physical solver. This only
             // changes how its cytoplasm is filled visually, not its forces.
+            int[] boundaryTriangles = null;
             LastBoundaryTriangulationSucceeded = useBoundaryTriangulation &&
                 BoundaryEarClip2D.TryTriangulate(new BoundaryLoop2D(boundaryPoints),
-                    out var boundaryTriangles);
+                    out boundaryTriangles);
             int[] fillTriangles=triangles;
             if (LastBoundaryTriangulationSucceeded)
             {
