@@ -226,6 +226,7 @@ namespace Cells.Demo
             growth.structuralBiomass = 1f;
             growth.referenceBiomass = 1f;
             go.AddComponent<CellHeritableInventory>();
+            go.AddComponent<CellMembraneMaterial>();
             // Synthesis is attached after exchange, below, so dependencies exist.
             // Founder phenotype: inherited parameters are expressed into actual physiology.
             var phenotype = go.AddComponent<OrganismPhenotype>();
@@ -451,6 +452,14 @@ namespace Cells.Demo
                 metabolism.energy = split.daughterEnergy;
                 metabolism.alive = true;
                 exchange.nutrientReserve = split.daughterNutrient;
+                var parentMembraneMaterial=parent.GetComponent<CellMembraneMaterial>();
+                var daughterMembraneMaterial=daughter.GetComponent<CellMembraneMaterial>();
+                if (!parentMembraneMaterial || !daughterMembraneMaterial ||
+                    !parentMembraneMaterial.TryPartition(.5f,out var retainedMembrane,
+                        out var inheritedMembrane))
+                    throw new InvalidOperationException("Insufficient membrane material for daughter.");
+                daughterMembraneMaterial.minimumViableMaterial=parentMembraneMaterial.minimumViableMaterial;
+                daughterMembraneMaterial.material=inheritedMembrane;
                 var inheritedInventory = parent.GetComponent<CellHeritableInventory>();
                 var daughterInventory = daughter.GetComponent<CellHeritableInventory>();
                 if (!inheritedInventory || !daughterInventory ||
