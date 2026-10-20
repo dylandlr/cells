@@ -28,6 +28,17 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--commons-intentions")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --commons-intentions <output-dir>");
+            var report=CommonsIntentionStudyV1.Run();
+            Directory.CreateDirectory(args[1]);
+            File.WriteAllText(Path.Combine(args[1],"episodes.csv"),report.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"summary.csv"),report.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"manifest.json"),report.ManifestJson);
+            Console.WriteLine("Commons intention experiment exported.");
+            return;
+        }
         if(args.Length>0 && args[0]=="--commons001")
         {
             if(args.Length!=2)
