@@ -53,6 +53,10 @@ namespace Cells.Demo
             var exchange = parent.GetComponent<CellChemicalExchange>();
             var regulation = parent.GetComponent<GeneticRegulationController>();
             var inventory = parent.GetComponent<CellHeritableInventory>();
+            var membraneMaterial = parent.GetComponent<CellMembraneMaterial>();
+            if (!membraneMaterial ||
+                !membraneMaterial.TryPartition(.5f,out var retainedMembrane,
+                    out var daughterMembrane)) return false;
             var synthesis = parent.GetComponent<GeneticTemplateSynthesis2D>();
             var segregation = parent.GetComponent<GenomeCopySegregation2D>();
             if (!growth || !metabolism || !exchange || !regulation || !inventory ||
@@ -83,6 +87,7 @@ namespace Cells.Demo
                     float oldGenetic = inventory.geneticTemplateMass;
                     float oldVesicles = inventory.vesicleMaterialMass;
                     float oldModules = inventory.structuralModuleMass;
+                    float oldMembraneMaterial=membraneMaterial.material;
                     Vector3 originalParentPosition = parent.transform.position;
                     var parentShape = parent.GetComponent<SoftCellBody2D>();
                     float oldConstriction = parentShape ? parentShape.divisionConstriction : 0f;
@@ -93,6 +98,7 @@ namespace Cells.Demo
                         metabolism.energy = split.parentEnergy;
                         inventory.Assign(allocated.parentGenetic,
                             allocated.parentVesicles,allocated.parentModules);
+                        membraneMaterial.material=retainedMembrane;
                         var parentBody = parent.GetComponent<SoftCellBody2D>();
                         var childBody = staged.GetComponent<SoftCellBody2D>();
                         if (!DivisionGeometryHandoff2D.TrySeparate(parentBody,childBody))
@@ -108,6 +114,7 @@ namespace Cells.Demo
                         exchange.nutrientReserve = oldNutrient;
                         metabolism.energy = oldEnergy;
                         inventory.Assign(oldGenetic,oldVesicles,oldModules);
+                        membraneMaterial.material=oldMembraneMaterial;
                         parent.transform.position = originalParentPosition;
                         if (parentShape) parentShape.divisionConstriction = oldConstriction;
                         Debug.LogException(exception);
