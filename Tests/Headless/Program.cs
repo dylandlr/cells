@@ -28,6 +28,18 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--commons001")
+        {
+            if(args.Length!=2)
+                throw new ArgumentException("Usage: --commons001 <output-dir>");
+            var output=CommonsLearningV1.Run();
+            Directory.CreateDirectory(args[1]);
+            File.WriteAllText(Path.Combine(args[1],"episodes.csv"),output.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"summary.csv"),output.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"manifest.json"),output.ManifestJson);
+            Console.WriteLine("Commons study exported.");
+            return;
+        }
         if(args.Length>0 && args[0]=="--messageuse001")
         {
             if(args.Length!=2)
@@ -89,6 +101,11 @@ internal static class Program
         passed += PlanarDragChecks.Run();
         passed += Experiment001ValidityChecks.Run();
         passed += RenewableCommonsChecks.Run();
+        var commons=CommonsLearningV1.Run(710000,3,20);
+        Check(commons.EpisodesCsv==CommonsLearningV1.Run(710000,3,20).EpisodesCsv,
+            "renewable commons study reproducible");
+        Check(commons.EpisodesCsv.TrimEnd().Split('\n').Length==13,
+            "renewable commons four policies across three seeds");
         var randoms = new SignalingGameV1.IPolicy[] {
             new SignalingGameV1.RandomPolicy(), new SignalingGameV1.RandomPolicy(),
             new SignalingGameV1.RandomPolicy(), new SignalingGameV1.RandomPolicy()
