@@ -35,6 +35,14 @@ namespace Cells.Experiments
             public double[] Rewards;
         }
         private readonly int[] stocks=new int[Patches];
+        private int substrateReserve=120;
+        public int SubstrateReserve=>substrateReserve;
+        public int TotalExternalNutrients()
+        {
+            int total=substrateReserve;
+            for(int p=0;p<Patches;p++)total+=stocks[p];
+            return total;
+        }
         private readonly int[] hazard=new int[Patches];
         private readonly int[] locations=new int[Players];
         private readonly double[] energy=new double[Players];
@@ -71,7 +79,7 @@ namespace Cells.Experiments
         {
             if(acts==null||acts.Length!=Players)throw new ArgumentException("Four actions required");
             int[] before=Stocks(),repairers=new int[Patches],
-                harvesters=new int[Patches],nextMessages=new int[Patches],
+                nextMessages=new int[Patches],
                 requested=new int[Players];
             for(int i=0;i<Players;i++)
             {
@@ -79,7 +87,6 @@ namespace Cells.Experiments
                 if(code<0||code>=ActionCount)throw new ArgumentOutOfRangeException("acts");
                 requested[i]=code;
                 if(!alive[i])continue;
-                if(code<3)harvesters[code]++;
                 if(code>=3&&code<6)repairers[code-3]++;
                 if(code>=6&&code<9)nextMessages[code-6]++;
             }
@@ -118,7 +125,10 @@ namespace Cells.Experiments
             for(int p=0;p<Patches;p++)
                 if(repairers[p]>=RepairThreshold)
                 {
-                    stocks[p]=Math.Min(8,stocks[p]+4);successful++;
+                    int transfer=Math.Min(4,Math.Min(substrateReserve,8-stocks[p]));
+                    stocks[p]+=transfer;
+                    substrateReserve-=transfer;
+                    if(transfer>0)successful++;
                 }
             int deaths=0;
             for(int i=0;i<Players;i++)
@@ -126,7 +136,8 @@ namespace Cells.Experiments
             Array.Copy(nextMessages,messages,Patches);
             // Slow stochastic replenishment, independent of actions.
             for(int p=0;p<Patches;p++)
-                if(environment.NextDouble()<.025)stocks[p]=Math.Min(8,stocks[p]+1);
+                if(environment.NextDouble()<.025 && stocks[p]<8 && substrateReserve>0)
+                {stocks[p]++;substrateReserve--;}
             var outcome=new StepLog{Step=step,SuccessfulRepairs=successful,
                 HarvestedUnits=harvested,Deaths=deaths,
                 StocksBefore=before,StocksAfter=Stocks(),Actions=requested,
