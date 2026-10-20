@@ -515,3 +515,24 @@ Editor tests check healthy shell visibility in both valid
 rendering modes; simulated invalid solver-node recovery and live
 Play Mode rendering still require direct runtime tests. A hidden
 invalid shell is a diagnostic safeguard, **not a repaired membrane**.
+
+## Experimental boundary constraint prototype (2026-10-19)
+
+`BoundaryConstraintSolver2D` provides a standalone position-based
+closed-loop constraint iteration on `BoundaryLoop2D` vertices. It
+projects adjacent vertex pairs toward their initial edge lengths,
+then projects the enclosed signed area toward its initial value
+using analytic polygon-area gradients. A projection step validates
+finite, simple geometry and orientation, rolling positions back on
+failure. It exposes maximum absolute edge-length error and relative
+enclosed-area error as numerical diagnostics.
+
+`BoundaryConstraintSolver2DTests` contains an authored experiment
+starting from a perturbed square, checking that area error decreases,
+and verifies invalid settings do not change the loop.
+
+**Research prototype only.** This is not yet integrated with the
+live `SoftCellBody2D`, fluid transport, membrane growth, scission,
+or membrane material inventories. Rest lengths and target area are
+constant across this experiment. Unity test execution has not yet
+been verified.
