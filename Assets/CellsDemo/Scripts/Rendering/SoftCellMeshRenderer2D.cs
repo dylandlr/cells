@@ -179,6 +179,20 @@ namespace Cells.Rendering
             // changes how its cytoplasm is filled visually, not its forces.
             var observedLoop = new BoundaryLoop2D(boundaryPoints);
             LastContourWasValid = observedLoop.Valid;
+            // A self-intersecting or nonfinite contour is a solver fault,
+            // not an invitation to draw an invalid center-fan mesh.
+            if (!LastContourWasValid)
+            {
+                LastBoundaryTriangulationSucceeded = false;
+                if (useBoundaryTriangulation) BoundaryTriangulationFailures++;
+                if (surface) surface.enabled = false;
+                if (rim) rim.enabled = false;
+                if (halo) halo.enabled = false;
+                return;
+            }
+            if (surface) surface.enabled = true;
+            if (rim) rim.enabled = true;
+            if (halo) halo.enabled = true;
             int[] boundaryTriangles = null;
             LastBoundaryTriangulationSucceeded = useBoundaryTriangulation &&
                 BoundaryEarClip2D.TryTriangulate(observedLoop,
