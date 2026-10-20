@@ -105,6 +105,7 @@ namespace Cells.Experiments
         private readonly double[] returns = new double[Players];
         private readonly int[] signals = new int[Patches];
         private readonly int[] nextSignals = new int[Patches];
+        public System.Action<int, Observation[], Action[], double[]> OnDecisionStep;
         private int step;
         private int signalCount;
         private int harvestCount;
@@ -155,6 +156,9 @@ namespace Cells.Experiments
         {
             if (IsFinished) throw new InvalidOperationException("Episode finished.");
             if (actions == null || actions.Length != Players) throw new ArgumentException("Four actions required.");
+            var before = OnDecisionStep == null ? null : new Observation[Players];
+            if(before != null) for(int i=0;i<Players;i++) before[i]=Observe(i);
+            var stepRewards = new double[Players];
             int[] harvesters = new int[Patches];
             for (int i = 0; i < Players; ++i)
                 if (actions[i].Code >= 0 && actions[i].Code < Patches)
@@ -188,10 +192,12 @@ namespace Cells.Experiments
                     reward = -1.0;
                     invalidActions++;
                 }
+                stepRewards[i]=reward;
                 energy[i] += reward;
                 returns[i] += reward;
             }
 
+            if(OnDecisionStep!=null) OnDecisionStep(step,before,(Action[])actions.Clone(),stepRewards);
             Array.Copy(nextSignals, signals, Patches);
             // Drift is shared exogenous noise, independent of submitted policies.
             // This gives all policy comparisons with the same environment seed matched noise.
@@ -218,11 +224,13 @@ namespace Cells.Experiments
         }
 
         public static RunSummary Evaluate(int seed, IPolicy[] policies,
-            int horizon = DefaultHorizon, bool deliverSignals = true)
+            int horizon = DefaultHorizon, bool deliverSignals = true,
+            System.Action<int, Observation[], Action[], double[]> onDecisionStep = null)
         {
             if (policies == null || policies.Length != Players)
                 throw new ArgumentException("Exactly four policies required.");
             var game = new SignalingGameV1(seed, horizon, deliverSignals);
+            game.OnDecisionStep=onDecisionStep;
             var policyRandom = new Random[Players];
             for (int i = 0; i < Players; ++i)
             {
