@@ -7,6 +7,7 @@ on:
     paths:
       - 'Assets/CellsDemo/Scripts/Physiology/**'
       - 'Assets/CellsDemo/Editor/MembraneAssayBatchExport.cs'
+      - 'tools/capture/analyze_membrane_assay.py'
       - '.github/workflows/membrane-assay.yml'
 
 permissions:
@@ -37,28 +38,21 @@ jobs:
         with:
           targetPlatform: StandaloneLinux64
           buildMethod: Cells.EditorTools.MembraneAssayBatchExport.Export
-      - name: Verify report exists and inspect result
+      - name: Validate trace and write CSV and Markdown summary
         shell: bash
         run: |
           set -euo pipefail
           test -s artifacts/membrane-assay.json
-          python3 - <<'PY'
-          import json
-          p='artifacts/membrane-assay.json'
-          with open(p) as f: r=json.load(f)
-          print('Membrane assay status:',r.get('status'))
-          print('Initial neck ratio:',r.get('baselineRatio'))
-          print('Minimum neck ratio:',r.get('minimumRatio'))
-          print('Invalid geometry samples:',r.get('invalidSamples'))
-          print('Recorded samples:',len(r.get('samples',[])))
-          assert r.get('samples'), 'No simulation samples exported'
-          assert r.get('invalidSamples',0)==0, 'Membrane solver produced invalid geometry'
-          PY
+          python3 tools/capture/analyze_membrane_assay.py artifacts/membrane-assay.json artifacts
+
       - name: Publish membrane assay trace
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: membrane-physics-trace
-          path: artifacts/membrane-assay.json
+          path: |
+            artifacts/membrane-assay.json
+            artifacts/membrane-trace.csv
+            artifacts/membrane-summary.md
           if-no-files-found: warn
           retention-days: 30
