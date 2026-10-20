@@ -13,6 +13,7 @@
     <Compile Include="Experiment001ValidityChecks.cs" />
     <Compile Include="RenewableCommonsChecks.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/RenewableCommonsV0.cs" Link="RenewableCommonsV0.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/CommonsLearningV1.cs" Link="CommonsLearningV1.cs" />
     <Compile Include="PlanarDragChecks.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs" Link="PlanarDragBalance.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingGameV1.cs" Link="SignalingGameV1.cs" />
