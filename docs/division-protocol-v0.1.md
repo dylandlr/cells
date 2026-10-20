@@ -556,3 +556,21 @@ no biological membrane forces or measured parameters, no membrane
 growth, no physical neck severing, no fluid interaction, and no
 integration into the active cell population. Tests have not
 been executed in Unity.
+
+## Repeated boundary constriction experiment (2026-10-19)
+
+`BoundaryConstrictionAssay2D.Run` initializes a new 32-vertex
+elliptical loop and applies a sequence of bounded equatorial
+constriction impulses using the independent boundary constraint
+solver. It records an initial baseline and post-actuation observations:
+equatorial width, shoulder width, neck ratio, signed area, relative
+area error, and edge-length error. The report distinguishes completed
+sequences from rejected solver steps and invalid geometry rather than
+treating all attempted impulses as successful.
+
+An authored Editor regression test checks ordered observations,
+finite baseline measurements and explicit experiment status.
+The assay remains independent of the live cell simulation, and
+no Unity test results or stable neck narrowing can yet be claimed.
+The solver still has fixed target area and lengths, without membrane
+growth or scission.
