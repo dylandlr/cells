@@ -217,3 +217,33 @@ jobs:
           path: artifacts/experiment001-heldout-v3
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Run learnable message-use E001
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --messageuse001 artifacts/experiment001-messageuse-v4
+      - name: Validate learned message-use experiment
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,csv
+          p=pathlib.Path("artifacts/experiment001-messageuse-v4")
+          m=json.loads((p/"manifest.json").read_text())
+          def load(n):
+              with (p/n).open(newline="") as f:return list(csv.DictReader(f))
+          episodes=load("episodes.csv");summary=load("summary.csv")
+          assert m["test_updates"]==0 and m["test_seeds"]==30
+          assert len(episodes)==90 and len(summary)==1
+          assert {r["condition"] for r in episodes}=={"untrained_on","trained_on","trained_off"}
+          assert sum(int(r["exposed_decisions"]) for r in episodes if r["condition"]=="trained_on")>0
+          print("Learnable message-use results:",summary)
+          for name in ("trained_on","untrained_on"):
+              group=[r for r in episodes if r["condition"]==name]
+              print(name,"exposures:",sum(int(r["exposed_decisions"]) for r in group),
+                    "trusted:",sum(int(r["trust_decisions"]) for r in group))
+          PY
+      - name: Upload message-use study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-messageuse-v4
+          path: artifacts/experiment001-messageuse-v4
+          if-no-files-found: warn
+          retention-days: 60
