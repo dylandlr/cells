@@ -380,3 +380,26 @@ constriction or actual run results**.
 The GameCI Unity assay build, output path, activation, and real physics
 trace have still not been verified on a GitHub runner. The workflow
 should not be treated as passing before its first successful execution.
+
+## Membrane timestep sensitivity sweep (2026-10-19)
+
+`MembraneConvergenceSweep2D` executes three independent, disposable
+membrane constriction trials using 0.020, 0.010, and 0.005 simulation-second
+timesteps. Trials use the existing solver and nominally identical initial
+conditions. The report compares terminal neck ratios and terminal polygon
+areas to expose numerical sensitivity. This is a finite-resolution
+**sensitivity check**, not a proof of mathematical convergence.
+
+The Unity Editor assay exporter additionally writes
+`membrane-convergence.json`. GitHub Actions invokes
+`tools/capture/analyze_membrane_convergence.py` to verify report values
+and generate `membrane-convergence-summary.md`; the exported research
+artifact includes both. An authored Editor test checks that the sweep
+returns three finite trial reports.
+
+Current limitations: the sweep is not executed or calibrated in Unity
+yet; the membrane solver's internal maxSubstep may reduce observable
+differences between these outer timesteps; fluid/chemical interaction is
+not included in the disposable geometry assay; no topological split is
+modeled. The Unity CI license and workflow build-method compatibility
+still require actual runner verification.
