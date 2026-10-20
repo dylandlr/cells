@@ -69,6 +69,25 @@ internal static class RenewableCommonsChecks
         // first harvested resources deplete; coordinating restores stock.
         Check(repaired.StocksAfter[0]>first.StocksAfter[0],
             "joint repair produces a resource recovery opportunity");
+        var depletion=new RenewableCommonsV0(777);
+        int lastTotal=depletion.TotalExternalNutrients();
+        for(int turn=0;turn<150;turn++)
+        {
+            var beforeTotal=depletion.TotalExternalNutrients();
+            var restoration=depletion.Advance(new[]{
+                new RenewableCommonsV0.Act(3),new RenewableCommonsV0.Act(3),
+                new RenewableCommonsV0.Act(4),new RenewableCommonsV0.Act(4)});
+            // This repeated restoration test intentionally burns energy; once
+            // participants die, no restoration can occur.
+            Check(depletion.TotalExternalNutrients()==beforeTotal,
+                "transfer never manufactures external stock "+turn);
+            Check(depletion.SubstrateReserve>=0,
+                "substrate reserve never negative "+turn);
+            lastTotal=depletion.TotalExternalNutrients();
+        }
+        Check(lastTotal>0,"external nutrients stay accounted for");
+        // This particular death-bounded path may not exhaust the reserve;
+        // a reserve reaching zero is not required to pass.
         Console.WriteLine("Renewable commons validity checks passed: "+count);
         return count;
     }
