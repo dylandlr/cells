@@ -9,6 +9,7 @@ on:
       - 'Tests/Headless/**'
       - 'tools/capture/analyze_membrane_assay.py'
       - 'tools/capture/analyze_membrane_comparison.py'
+      - 'tools/capture/analyze_experiment001_trajectories.py'
       - '.github/workflows/headless-research.yml'
   pull_request:
     paths:
@@ -103,6 +104,11 @@ jobs:
           for condition in ("on","off"):
               print(condition, sum(int(r["signals"]) for r in episodes if r["delivery"]==condition)/5)
           PY
+      - name: Diagnose Experiment 001 paired trajectories
+        run: |
+          python3 tools/capture/analyze_experiment001_trajectories.py artifacts/experiment001-pilot/steps.csv artifacts/experiment001-pilot
+          test -s artifacts/experiment001-pilot/trajectory-diagnostics.csv
+          test -s artifacts/experiment001-pilot/trajectory-diagnostics.md
       - name: Publish Experiment 001 pilot data
         if: always()
         uses: actions/upload-artifact@v4
