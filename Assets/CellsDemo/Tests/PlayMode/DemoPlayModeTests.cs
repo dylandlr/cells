@@ -123,6 +123,12 @@ namespace Cells.Tests
             Assert.AreEqual(child.GetComponent<CellBiomassGrowth>().VisualRadiusScale *
                 daughterBody.restRadius, daughterBody.CurrentRadius, 1e-5f);
             Assert.IsTrue(child.gameObject.activeSelf);
+            var parentBodyAfter = parent.GetComponent<SoftCellBody2D>();
+            float distance = Vector2.Distance(parent.transform.position,child.position);
+            float radii = parentBodyAfter.CurrentRadius + daughterBody.CurrentRadius;
+            Assert.GreaterOrEqual(distance,radii-.001f,
+                "Two post-birth soft bodies must not begin overlapping.");
+            Assert.AreEqual(0f,parentBodyAfter.divisionConstriction,1e-6f);
             yield return null;
         }
 
