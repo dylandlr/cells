@@ -139,3 +139,25 @@ not physically segregated or generated from the new material pools.
 This step advances explicit conservation contracts; it does NOT complete
 the physical cell cycle. Unity tests and runtime visualization still await
 a licensed runner.
+
+## Finite-rate pseudo-template synthesis (2026-10-19)
+
+`GeneticTemplateSynthesis2D` converts intracellular nutrient reserve to
+an abstract genetic-template mass pool, spending metabolic energy at a
+separate declared per-template cost and respecting a fixed synthesis rate.
+Reproduction is now gated on reaching `ReplicationReady`. Finite
+precursor and energy availability cap each synthesis step, and an
+authored regression test checks nutrient+template material conservation.
+
+**Important:** This models effective template *material accumulation*, not
+literal DNA duplication, base-by-base fidelity, chromosome segregation,
+or complete synthesis of organelles. The initial experimental founder
+already starts with enough genetic material for 50/50 partition; the
+readiness gate can therefore initially be satisfied without additional
+synthesis. A future replication state machine must track two distinct
+heritable copies and require completion of replication before division.
+
+Energy is a separate budget and not a physical mass account. Synthesis
+does not model thermodynamic conversion efficiency. This code has not
+yet passed the Unity test runner because repository Unity activation
+remains unconfigured.
