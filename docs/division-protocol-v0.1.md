@@ -592,3 +592,23 @@ side-by-side experiment. The two solvers presently have different
 initialization, actuators and geometry constraints and must be
 normalized before numerical rankings or physical claims are valid.
 Unity tests are not yet verified.
+
+## Direct legacy-vs-boundary comparative assay (2026-10-19)
+
+`MembraneSolverComparisonAssay2D.Run` creates a disposable legacy
+`SoftCellBody2D` and clones its exact initial 32-node contour into
+an experimental `BoundaryConstraintSolver2D`. It samples both
+using the shared `MembraneComparisonMetrics2D` contract after
+each actuation update. The report records step/time, both neck
+ratios, areas, perimeters and relative area drift, and explicitly
+stops when either geometry is invalid or the boundary constraint
+operation rejects a step.
+
+This **is not a matched-force comparison**. The legacy model receives
+a linearly increasing internal actuator, while the experimental
+boundary solver receives a per-step bounded displacement followed by
+its own edge and area constraints. Equal starting shapes and sampling
+times support direct observation of their responses, not a scientifically
+defensible claim that one solver is more accurate or efficient.
+The authored Editor test verifies that both systems begin with
+identical geometric measurements. Tests remain unverified in Unity.
