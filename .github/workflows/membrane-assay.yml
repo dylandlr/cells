@@ -9,6 +9,7 @@ on:
       - 'Assets/CellsDemo/Editor/MembraneAssayBatchExport.cs'
       - 'tools/capture/analyze_membrane_assay.py'
       - 'tools/capture/analyze_membrane_convergence.py'
+      - 'tools/capture/analyze_membrane_comparison.py'
       - '.github/workflows/membrane-assay.yml'
 
 permissions:
@@ -45,8 +46,10 @@ jobs:
           set -euo pipefail
           test -s artifacts/membrane-assay.json
           test -s artifacts/membrane-convergence.json
+          test -s artifacts/membrane-comparison.json
           python3 tools/capture/analyze_membrane_assay.py artifacts/membrane-assay.json artifacts
           python3 tools/capture/analyze_membrane_convergence.py artifacts/membrane-convergence.json artifacts
+          python3 tools/capture/analyze_membrane_comparison.py artifacts/membrane-comparison.json artifacts
 
       - name: Publish membrane assay trace
         if: always()
@@ -57,6 +60,9 @@ jobs:
             artifacts/membrane-assay.json
             artifacts/membrane-convergence.json
             artifacts/membrane-convergence-summary.md
+            artifacts/membrane-comparison.json
+            artifacts/membrane-comparison.csv
+            artifacts/membrane-comparison-summary.md
             artifacts/membrane-trace.csv
             artifacts/membrane-summary.md
           if-no-files-found: warn
