@@ -46,6 +46,35 @@ to verify accounting, restoration costs and matched seeded execution.
 - The Unity chemistry engine has not been swapped out or wired to this
   simplified research scenario.
 
+## Verified rerun — 2026-10-20
+
+GitHub Actions: https://github.com/dylandlr/cells/actions/runs/39515768949
+
+C# headless build and **4,657 assertions passed**. Repeated
+restoration/conservation stress checks passed, and 30-seed four-policy
+evaluation outputs were archived.
+
+| Policy | Previous return | Conserved-substrate return |
+|---|---:|---:|
+| Online learner | +4.810 | +4.810 |
+| Updates disabled | −20.568 | −20.568 |
+| Greedy harvester | −20.043 | −20.043 |
+| Scheduled restoration | +230.147 | **+46.587** |
+
+Scheduled-restoration mean successful repair count fell from 49.0
+to 29.3; mean final patch stock fell from 12.267 to 7.8.
+The controlled learner-vs-frozen contrast remains **+25.378**
+(95% paired bootstrap interval [+22.185, +28.623]).
+
+The three other means did not change because these policies either
+did not effectively restore resources or restored so rarely that the
+finite reserve did not materially affect their payoffs on these seeds.
+That interpretation is provisional; the experiment additionally exports
+per-episode remaining reserve for inspection.
+
+**This is a new model version**, not a replication of unchanged v1
+dynamics. Earlier results must retain their model version identifiers.
+
 ## Next controlled evaluation
 
 Rerun the same four policy controls and matched seeds. Compare utility,
