@@ -574,3 +574,21 @@ The assay remains independent of the live cell simulation, and
 no Unity test results or stable neck narrowing can yet be claimed.
 The solver still has fixed target area and lengths, without membrane
 growth or scission.
+
+## Common membrane solver comparison metrics (2026-10-19)
+
+`MembraneComparisonMetrics2D` provides a shared 32-node
+closed-contour measurement contract for the live `SoftCellBody2D`
+and the experimental `BoundaryConstraintSolver2D`. It reports
+polygon validity, equatorial neck/shoulder width ratio, absolute
+enclosed area, perimeter, and normalized area drift relative to
+a caller-provided baseline. The geometry classifier is independent
+of either solver's forces. An authored Editor regression checks
+duplicate-geometry equivalence, baseline-zero area drift, and
+rejection of nonfinite nodes.
+
+This is a comparison **measurement layer**, not yet a completed
+side-by-side experiment. The two solvers presently have different
+initialization, actuators and geometry constraints and must be
+normalized before numerical rankings or physical claims are valid.
+Unity tests are not yet verified.
