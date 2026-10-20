@@ -317,3 +317,27 @@ effective proxy. Its ability to identify a synthetic narrowed contour
 **does not demonstrate** that the existing physical soft-body will
 produce that contour. That is a separate calibration/solver validation
 gate. No GitHub Actions Unity test execution is verified.
+
+## Reproducible constriction assay (2026-10-19)
+
+`MembraneConstrictionAssay2D.Run` provides an explicit fixed-step solver
+experiment. It ramps an effective equatorial constriction actuator from
+zero to one, integrates the existing `SoftCellBody2D` mesh, and records
+time, measured equatorial and shoulder width, neck ratio, polygon area,
+maximum numerical strain, and geometry validity at configurable intervals.
+The report classifies outcomes as `narrowed`, `not-narrowed`, or
+`invalid-geometry`. A Unity Editor regression asserts time/sample
+counts, actuator restoration, and geometric validity of a short assay.
+
+**Important:** This assay advances and changes the actual membrane state.
+It restores the actuator setting but does **not** reset node positions,
+velocities, or stress history. It should be run on a fresh disposable test
+organism, not on active population organisms in a live evolutionary
+experiment. It bypasses the genome/cell-cycle gates deliberately to
+isolate the shape solver; it does not trigger a birth.
+
+The assay and test are committed but not yet executed in Unity. In
+particular, the new diagnostic records evidence rather than assuming the
+solver reaches the 0.70 neck ratio threshold. Successful narrowing and
+absence of invalid mesh states still need real CI evidence before we
+implement two-loop scission.
