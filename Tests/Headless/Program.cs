@@ -101,6 +101,11 @@ internal static class Program
         passed += PlanarDragChecks.Run();
         passed += Experiment001ValidityChecks.Run();
         passed += RenewableCommonsChecks.Run();
+        var intentions=CommonsIntentionStudyV1.Run(810000,3,20);
+        Check(intentions.EpisodesCsv==CommonsIntentionStudyV1.Run(810000,3,20).EpisodesCsv,
+            "commons intention seeded replay");
+        Check(intentions.EpisodesCsv.TrimEnd().Split('\n').Length==13,
+            "intention comparison 4 conditions x 3 seeds");
         var commons=CommonsLearningV1.Run(710000,3,20);
         Check(commons.EpisodesCsv==CommonsLearningV1.Run(710000,3,20).EpisodesCsv,
             "renewable commons study reproducible");
