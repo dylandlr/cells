@@ -96,6 +96,7 @@ namespace Cells.Experiments
             public Action Decide(Observation o, Random rng) { return new Action(rng.Next(ActionCount)); }
         }
 
+        private readonly bool deliverSignals;
         private readonly int horizon;
         private readonly Random environmentRandom;
         private readonly int[] hiddenYield = new int[Patches];
@@ -117,10 +118,12 @@ namespace Cells.Experiments
         public const double MovementCost = 0.2;
         public const double RestGain = 0.1;
 
-        public SignalingGameV1(int seed, int decisionHorizon = DefaultHorizon)
+        public SignalingGameV1(int seed, int decisionHorizon = DefaultHorizon,
+            bool deliverSignals = true)
         {
             if (decisionHorizon < 1) throw new ArgumentOutOfRangeException("decisionHorizon");
             horizon = decisionHorizon;
+            this.deliverSignals = deliverSignals;
             environmentRandom = new Random(seed);
             for (int p = 0; p < Patches; ++p) hiddenYield[p] = 1 + environmentRandom.Next(4);
             for (int i = 0; i < Players; ++i) { locations[i] = i % Patches; energy[i] = 5.0; }
@@ -139,7 +142,7 @@ namespace Cells.Experiments
             return new Observation
             {
                 Agent = agent, Step = step, OwnPatch = locations[agent],
-                Energy = energy[agent], LocalCue = cue, ReceivedSignals = (int[])signals.Clone()
+                Energy = energy[agent], LocalCue = cue, ReceivedSignals = deliverSignals ? (int[])signals.Clone() : new int[Patches]
             };
         }
 
@@ -214,11 +217,12 @@ namespace Cells.Experiments
             };
         }
 
-        public static RunSummary Evaluate(int seed, IPolicy[] policies, int horizon = DefaultHorizon)
+        public static RunSummary Evaluate(int seed, IPolicy[] policies,
+            int horizon = DefaultHorizon, bool deliverSignals = true)
         {
             if (policies == null || policies.Length != Players)
                 throw new ArgumentException("Exactly four policies required.");
-            var game = new SignalingGameV1(seed, horizon);
+            var game = new SignalingGameV1(seed, horizon, deliverSignals);
             var policyRandom = new Random[Players];
             for (int i = 0; i < Players; ++i)
             {
