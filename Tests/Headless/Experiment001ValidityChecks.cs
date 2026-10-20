@@ -27,7 +27,7 @@ internal static class Experiment001ValidityChecks
         var x=a.Summary();var y=b.Summary();
         for(int i=0;i<4;i++)Check(Close(x.Returns[i],y.Returns[i]),
             "delivery toggle cannot change environment reward for fixed actions "+i);
-        Check(Close(x.Returns[0],x.Returns[1]-SignalingGameV1.MovementCost),
+        Check(Close(x.Returns[0],x.Returns[1]+SignalingGameV1.MovementCost),
             "movement cost only affects moving competitor");
         Check(Close(x.Returns[3],SignalingGameV1.RestGain),"rest is credited");
         Check(Close(x.TotalHarvest,x.Returns[0]+x.Returns[1]+x.Returns[2]+
