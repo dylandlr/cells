@@ -1,8 +1,7 @@
 # Experiment 001 v4 — Learning whether to trust messages
 
-Status: exploratory, implemented on `feat/substance-ontology`. Numeric
-results must be copied from a successful CI run; do not treat this
-file as proof that strategic communication emerged.
+Status: exploratory; implementation and evaluation completed in headless CI.
+The null outcome is preserved without tuning for a positive result.
 
 ## Design
 
@@ -29,6 +28,26 @@ seeds.
 ```bash
 dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release -- --messageuse001 artifacts/experiment001-messageuse-v4
 ```
+
+## Verified result (2026-10-20)
+
+Execution: https://github.com/dylandlr/cells/actions/runs/39512377900
+
+- **4,318 headless assertions passed**, including exact deterministic replay.
+- Trained minus untrained held-out collective utility: **0.00**.
+- Paired bootstrap 95% interval: **[0.00, 0.00]** (all 30 paired
+  outcomes identical; this is not an estimate of broad robustness).
+- With delivered signals, trained and untrained agents each had **960
+  signal-exposed decisions** and **64 trust decisions** on held-out seeds.
+- On this test distribution, learned trust behavior **did not
+  differ** from the untrained policy. The training scheme has not
+  demonstrated useful learned message use.
+
+Do not substitute the positive resource-learning result from v3 as
+evidence for learned communication. A sensible next experiment is
+to analyze whether messages offer predictive value beyond the recipient's
+local cues, then evaluate sender incentives/communication choices.
+Those would be new explorations, not hidden modifications of v4.
 
 ## Research interpretation
 
