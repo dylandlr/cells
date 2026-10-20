@@ -157,3 +157,32 @@ jobs:
           path: artifacts/experiment001-expanded
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Execute revised adaptive Experiment 001 (30 matched seeds)
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --adaptive001 artifacts/experiment001-adaptive-v2 210000 30
+      - name: Validate adaptive Experiment 001 outputs
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib,math
+          root=pathlib.Path("artifacts/experiment001-adaptive-v2")
+          m=json.loads((root/"manifest.json").read_text())
+          def read(name):
+              with (root/name).open(newline="") as f:return list(csv.DictReader(f))
+          episodes,pairs,summary=map(read,("episodes.csv","paired.csv","summary.csv"))
+          assert m["seeds"]==30 and m["genome_frozen"] and m["agent_q_updates"]
+          assert len(episodes)==120 and len(pairs)==30 and len(summary)==2
+          assert {r["condition"] for r in episodes}=={"adaptive_on","adaptive_off","scripted_on","scripted_off"}
+          for p in pairs:
+              assert abs(float(p["adaptive_on"])-float(p["adaptive_off"])-float(p["adaptive_on_minus_off"]))<1e-7
+              assert abs(float(p["adaptive_on"])-float(p["scripted_on"])-float(p["adaptive_on_minus_scripted_on"]))<1e-7
+          print("Revised adaptive Experiment 001:",summary)
+          print("Observed adaptive signaling actions:",sum(int(x["signals"]) for x in episodes if x["condition"]=="adaptive_on"))
+          PY
+      - name: Publish revised adaptive Experiment 001
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-adaptive-v2-30-seeds
+          path: artifacts/experiment001-adaptive-v2
+          if-no-files-found: warn
+          retention-days: 60
