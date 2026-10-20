@@ -105,6 +105,16 @@ namespace Cells.Tests
             Assert.AreEqual(0,assay.committedBirths);
             cycle.Tick(cycle.rampSeconds);
             Assert.IsTrue(cycle.ReadyForScission);
+            // Actuation progress alone is insufficient: geometry hasn't
+            // necessarily narrowed without advancing the soft-body solver.
+            var initialNeck = MembraneNeckDiagnostic2D.Measure(cycle.body);
+            Assert.IsTrue(initialNeck.finite);
+            Assert.IsTrue(initialNeck.valid);
+            Assert.IsFalse(assay.TryDivide(),
+                "A completed timer alone cannot authorize a birth.");
+            // This is the inheritance/transaction assay. The geometric
+            // narrowing threshold is validated separately.
+            assay.requireMeasuredNeck = false;
             Assert.IsTrue(assay.TryDivide());
             Assert.IsTrue(assay.completed);
             var child = demo.transform.Find("Descendant " + assay.daughterIndividualId);
