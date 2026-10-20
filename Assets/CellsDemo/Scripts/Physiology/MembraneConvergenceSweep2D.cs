@@ -17,6 +17,8 @@ namespace Cells.Physiology
             public float timestep;
             public string status;
             public float minimumRatio, finalRatio, finalArea;
+            public float controlFinalRatio, controlFinalArea, actuationEffect;
+            public bool controlValid;
             public int invalidSamples, narrowedSamples;
         }
 
@@ -46,16 +48,36 @@ namespace Cells.Physiology
                     var trace=MembraneConstrictionAssay2D.Run(
                         body,duration,steps[index],neckThreshold,
                         Mathf.Max(1,Mathf.RoundToInt(.2f/steps[index])));
+                    // Matched fresh no-actuation control at the same dt.
+                    var controlObject=new GameObject("Convergence control "+index);
+                    MembraneConstrictionAssay2D.Report control;
+                    try
+                    {
+                        controlObject.SetActive(false);
+                        controlObject.AddComponent<MembraneIntegrity>();
+                        var controlBody=controlObject.AddComponent<SoftCellBody2D>();
+                        controlBody.Initialize();
+                        control=MembraneConstrictionAssay2D.Run(
+                            controlBody,duration,steps[index],neckThreshold,
+                            Mathf.Max(1,Mathf.RoundToInt(.2f/steps[index])),
+                            maximumActuation:0f);
+                    }
+                    finally { UnityEngine.Object.DestroyImmediate(controlObject); }
+                    var controlLast=control.samples[control.samples.Count-1];
                     var last=trace.samples[trace.samples.Count-1];
                     var trial=new Trial {
                         timestep=steps[index],status=trace.status,
                         minimumRatio=trace.minimumRatio,
                         finalRatio=trace.lastRatio,finalArea=last.area,
+                        controlFinalRatio=control.lastRatio,
+                        controlFinalArea=controlLast.area,
+                        controlValid=control.invalidSamples==0 && controlLast.valid,
+                        actuationEffect=control.lastRatio-trace.lastRatio,
                         invalidSamples=trace.invalidSamples,
                         narrowedSamples=trace.narrowedSamples
                     };
                     report.trials.Add(trial);
-                    if(trace.invalidSamples>0 || !last.valid)
+                    if(trace.invalidSamples>0 || !last.valid || !trial.controlValid)
                         report.allValid=false;
                     if(index==0) { firstRatio=trial.finalRatio;firstArea=trial.finalArea; }
                     else
