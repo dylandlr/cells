@@ -263,6 +263,8 @@ namespace Cells.Demo
             replication.inventory = go.GetComponent<CellHeritableInventory>();
             replication.exchange = exchange;
             replication.metabolism = metabolism;
+            var copySegregation = go.AddComponent<GenomeCopySegregation2D>();
+            copySegregation.synthesis = replication;
             exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", membrane, 16);
             exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", membrane, 0);
             exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", membrane, 24);
@@ -460,6 +462,8 @@ namespace Cells.Demo
                 if (softBody) softBody.Initialize();
                 var compartments = daughter.GetComponent<InternalCompartments2D>();
                 if (compartments) compartments.Initialize();
+                var copiedGenomes = daughter.GetComponent<GenomeCopySegregation2D>();
+                if (copiedGenomes) { copiedGenomes.body = softBody; copiedGenomes.ResetForNewCell(); }
                 // The staged cell must remain inactive until the parent budget
                 // has successfully been transferred.
                 return daughter;
