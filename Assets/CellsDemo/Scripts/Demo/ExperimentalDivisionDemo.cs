@@ -17,6 +17,8 @@ namespace Cells.Demo
         [Min(0f)] public float cooldownSeconds = 20f;
         public bool completed;
         public bool requireCompletedConstriction = true;
+        public bool requireMeasuredNeck = true;
+        [Range(.2f,.95f)] public float maximumNeckRatio = .70f;
         public int daughterIndividualId;
         public int committedBirths => coordinator == null ? 0 : coordinator.lineage.Count-1;
         DivisionLineageCoordinator coordinator;
@@ -67,6 +69,12 @@ namespace Cells.Demo
             // A daughter cannot be spawned before its parent reaches the
             // demonstrated physical constriction stage. This is not scission.
             if (requireCompletedConstriction && (!cycle || !cycle.ReadyForScission)) return false;
+            if (requireMeasuredNeck)
+            {
+                var measuredBody=parent.GetComponent<SoftCellBody2D>();
+                var neck=MembraneNeckDiagnostic2D.Measure(measuredBody,maximumNeckRatio);
+                if (!neck.narrowed) return false;
+            }
             if (metabolism.energy < requiredEnergy) return false;
             // An actual growth-dependent biomass gate, not a timer-only reproduction.
             if (growth.structuralBiomass < 2f * minimumDaughterBiomass) return false;
