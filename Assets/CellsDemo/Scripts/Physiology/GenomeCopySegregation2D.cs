@@ -32,6 +32,8 @@ namespace Cells.Physiology
 
         public void Tick(float dt)
         {
+            if (!body) body=GetComponent<SoftCellBody2D>();
+            if (!synthesis) synthesis=GetComponent<GeneticTemplateSynthesis2D>();
             if (!synthesis || !body || !body.Initialized ||
                 !float.IsFinite(dt) || dt <= 0f) return;
             if (synthesis.ReplicationReady)
