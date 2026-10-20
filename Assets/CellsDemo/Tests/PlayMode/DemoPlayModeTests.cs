@@ -71,6 +71,12 @@ namespace Cells.Tests
             float initialBiomass = parentGrowth.structuralBiomass;
             float initialEnergy = parentMetabolism.energy;
             float initialNutrients = parentExchange.nutrientReserve;
+            var cycle = parent.GetComponent<ExperimentalConstrictionCycle2D>();
+            Assert.IsNotNull(cycle);
+            Assert.IsFalse(assay.TryDivide(), "Birth must await membrane constriction.");
+            Assert.AreEqual(0,assay.committedBirths);
+            cycle.Tick(cycle.rampSeconds);
+            Assert.IsTrue(cycle.ReadyForScission);
             Assert.IsTrue(assay.TryDivide());
             Assert.IsTrue(assay.completed);
             var child = demo.transform.Find("Descendant " + assay.daughterIndividualId);
