@@ -1,6 +1,6 @@
 # Experiment 001 v3 — held-out policy transfer
 
-**Status:** executable experiment, subject to CI validation. This is a
+**Status:** executed and validated in headless GitHub CI. This is a
 separate follow-up to the exploratory v2 learning ablation; not an approved
 replacement for the course proposal.
 
@@ -35,6 +35,23 @@ dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration 
 
 Expected artifacts: `episodes.csv`, `paired.csv`, `summary.csv`,
 `manifest.json`.
+
+## Verified execution — 2026-10-20
+
+GitHub Actions run: https://github.com/dylandlr/cells/actions/runs/39511073826
+
+- Passed **4,315** headless assertions and C# compilation.
+- Training: 200 episodes on seeds 310000–310199.
+- Evaluation: 30 held-out world seeds 410000–410029, no weight updates.
+- Trained ON minus Untrained ON: **+173.44** collective utility, paired
+  bootstrap 95% interval **[+158.93, +187.25]**.
+- Trained ON minus Trained OFF: **−37.37**, paired bootstrap 95%
+  interval **[−48.14, −27.62]**.
+- All 90 evaluation episodes and 30 paired-seed results passed CI validation;
+  raw results and configuration were uploaded as a workflow artifact.
+
+These results support held-out improvement in this *specific symbolic resource
+allocation problem*, not biological emergence or learned communication.
 
 ## Interpretation limits
 
