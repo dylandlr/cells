@@ -341,3 +341,22 @@ particular, the new diagnostic records evidence rather than assuming the
 solver reaches the 0.70 neck ratio threshold. Successful narrowing and
 absence of invalid mesh states still need real CI evidence before we
 implement two-loop scission.
+
+## GitHub Actions membrane assay export (2026-10-19)
+
+`Assets/CellsDemo/Editor/MembraneAssayBatchExport.cs` provides
+`Cells/Research/Export Membrane Constriction Trace`, also accessible
+through a Unity Editor batch execute-method invocation. It constructs
+a disposable cell and writes the fixed-step physics assay report as JSON
+to `CELLS_ASSAY_OUTPUT` or `artifacts/membrane-assay.json`.
+
+`.github/workflows/membrane-assay.yml` attempts to run this in GitHub
+Actions with GameCI using Unity activation secrets and publish a
+`membrane-physics-trace` artifact. Its output validation fails for
+invalid membrane geometry, while `not-narrowed` is retained as a
+useful research result rather than treated as a programming failure.
+
+**Not yet validated:** CI Unity activation, GameCI custom method execution,
+report output location, Editor test compilation, and the actual metric
+trace. In particular, no narrowed membrane or valid topological scission
+has been observed or demonstrated by this commit.
