@@ -77,8 +77,8 @@ internal static class Program
         var adaptiveRepeat=AdaptiveExperiment001V2.Run(210000,3);
         Check(adaptive001.PairedCsv==adaptiveRepeat.PairedCsv,
             "Adaptive experiment deterministic replay");
-        Check(adaptive001.EpisodesCsv.TrimEnd().Split('\n').Length==13,
-            "Adaptive experiment three seeds by four conditions");
+        Check(adaptive001.EpisodesCsv.TrimEnd().Split('\n').Length==19,
+            "Adaptive experiment three seeds by six conditions");
         Check(adaptive001.PairedCsv.TrimEnd().Split('\n').Length==4,
             "Adaptive experiment three matched seed records");
         var e001 = Experiment001V1.Run(100001, 5);
