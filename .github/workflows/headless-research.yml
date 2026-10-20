@@ -79,6 +79,21 @@ jobs:
               crowd=sum(int(r["foragers_on_selected_patch"]) for r in foragers)/len(foragers)
               print(condition, "forager-weighted crowding:",round(crowd,5),
                     "foraging actions:",len(foragers))
+          on_followers=[r for r in steps if r["delivery"]=="on" and int(r["seat"])>0]
+          exposed=[r for r in on_followers if int(r["signaled_patch"])>=0]
+          unexposed=[r for r in on_followers if int(r["signaled_patch"])<0]
+          align=sum(int(r["signal_alignment"]) for r in exposed)
+          print("Signal exposure on follower-decision rows:",len(exposed),
+                "of",len(on_followers))
+          print("Follower match to advertised patch on exposure:",align,
+                "of",len(exposed))
+          for label, group in (("exposed",exposed),("unexposed",unexposed)):
+              changed=sum(int(r["changed_patch"]) for r in group)
+              print("Patch changes among",label,"followers:",changed,
+                    "of",len(group))
+          assert all(int(r["received_signals"])==0 and int(r["signaled_patch"])==-1
+                     for r in steps if r["delivery"]=="off")
+          assert len(exposed)>0
           print("Mean signaling actions per seed by condition:")
           for condition in ("on","off"):
               print(condition, sum(int(r["signals"]) for r in episodes if r["delivery"]==condition)/5)
