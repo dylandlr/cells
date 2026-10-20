@@ -83,6 +83,9 @@ namespace Cells.Demo
                     float oldGenetic = inventory.geneticTemplateMass;
                     float oldVesicles = inventory.vesicleMaterialMass;
                     float oldModules = inventory.structuralModuleMass;
+                    Vector3 originalParentPosition = parent.transform.position;
+                    var parentShape = parent.GetComponent<SoftCellBody2D>();
+                    float oldConstriction = parentShape ? parentShape.divisionConstriction : 0f;
                     try
                     {
                         growth.structuralBiomass = split.parentBiomass;
@@ -90,6 +93,10 @@ namespace Cells.Demo
                         metabolism.energy = split.parentEnergy;
                         inventory.Assign(allocated.parentGenetic,
                             allocated.parentVesicles,allocated.parentModules);
+                        var parentBody = parent.GetComponent<SoftCellBody2D>();
+                        var childBody = staged.GetComponent<SoftCellBody2D>();
+                        if (!DivisionGeometryHandoff2D.TrySeparate(parentBody,childBody))
+                            throw new System.InvalidOperationException("Division geometry handoff failed.");
                         staged.SetActive(true);
                         return true;
                     }
@@ -101,6 +108,8 @@ namespace Cells.Demo
                         exchange.nutrientReserve = oldNutrient;
                         metabolism.energy = oldEnergy;
                         inventory.Assign(oldGenetic,oldVesicles,oldModules);
+                        parent.transform.position = originalParentPosition;
+                        if (parentShape) parentShape.divisionConstriction = oldConstriction;
                         Debug.LogException(exception);
                         if (staged) Destroy(staged);
                         staged = null;
