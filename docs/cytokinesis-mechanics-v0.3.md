@@ -49,3 +49,28 @@ Reference discipline: Substrate: Emergence user-supplied binary + README
 are visual/gameplay references, not accessible editable C# source.
 The actuation is an explicitly gamified approximation, not evidence of
 real organism viability.
+
+## Safety/sequence correction — 2026-10-19
+
+The opt-in `ExperimentalDivisionDemo` now rejects births until
+`ExperimentalConstrictionCycle2D.ReadyForScission` is true, rather than
+creating an independent daughter while the membrane is still unconstricted.
+The name `ReadyForScission` indicates a *progress threshold* only. True
+membrane topology change has NOT been implemented. The experimental scene
+remains opt-in and supports at most one birth.
+
+The Play Mode reproduction regression now asserts that an early birth fails
+and explicitly advances the constriction cycle before attempting the birth.
+Because that test enables the experiment after the scene has initialized,
+it attaches the cycle component during setup. These tests are not verified
+until Unity runs with CI activation.
+
+The daughter factory now rejects secretor organisms because the current
+resource budget does not include toxin storage. Permitting such a birth
+would create unaccounted toxin material in the daughter. Generalized
+division must eventually include the full organism inventory, stage objects
+inactive before configuring *any* component, and implement rollback after
+any failed activation or parenting step.
+
+**Next:** complete topology separation, internal organelle partitioning,
+and atomic resource transfer before enabling continuous generations.
