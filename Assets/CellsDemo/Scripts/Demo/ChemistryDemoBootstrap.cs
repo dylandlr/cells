@@ -226,6 +226,7 @@ namespace Cells.Demo
             growth.structuralBiomass = 1f;
             growth.referenceBiomass = 1f;
             go.AddComponent<CellHeritableInventory>();
+            // Synthesis is attached after exchange, below, so dependencies exist.
             // Founder phenotype: inherited parameters are expressed into actual physiology.
             var phenotype = go.AddComponent<OrganismPhenotype>();
             phenotype.genome = new OrganismGenome();
@@ -258,6 +259,10 @@ namespace Cells.Demo
             exchange.toxinRate = .4f;
             exchange.nutrientReserve = .5f;
             exchange.digestionRate = .04f;
+            var replication = go.AddComponent<GeneticTemplateSynthesis2D>();
+            replication.inventory = go.GetComponent<CellHeritableInventory>();
+            replication.exchange = exchange;
+            replication.metabolism = metabolism;
             exchange.feedingPore = CreatePore(go.transform, "Dissolved feeding pore", membrane, 16);
             exchange.secretionPore = CreatePore(go.transform, "Toxin secretion pore", membrane, 0);
             exchange.metabolicOutlet = CreatePore(go.transform, "Metabolic outlet", membrane, 24);
