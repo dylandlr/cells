@@ -482,3 +482,19 @@ This is a renderer integration only. Cell physics still uses its
 A fallback fill on invalid geometry is not proof of solver validity,
 and it may still render incorrectly if a star-shaped assumption
 fails. Live Play Mode and shader compatibility tests remain pending.
+
+## Live renderer diagnostic coverage (2026-10-19)
+
+`SoftCellMeshRenderer2D` now exposes a read-only last-frame contour
+validity flag, cumulative boundary-triangulation success and fallback
+counts, and rendered triangle count. These observations distinguish
+actual successful concave triangulation from a visually plausible
+legacy fan fallback. Counters increment on requested geometry updates
+and are not simulation-timestep-normalized scientific metrics.
+
+`LiveMembraneRendererTests` constructs a healthy soft body in Unity
+Editor, checks that boundary ear clipping produces 30 triangles for
+the 32-node outline, then switches the option off and confirms the
+32-triangle center-fan fallback. This checks renderer wiring but does
+not demonstrate a deeply pinched live cell, scene visual fidelity, or
+scission. Unity test execution remains unverified.
