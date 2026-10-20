@@ -69,6 +69,36 @@ The CI artifact contains `episodes.csv`, `paired.csv`, `summary.csv`
 and `manifest.json`; the report below describes integration without
 claiming that Unity behavior has been executed.
 
+## Controlled learning ablation — executed 2026-10-20
+
+Run: https://github.com/dylandlr/cells/actions/runs/39510414608
+
+The study now includes two additional conditions: `frozen_off` and
+`frozen_on`. They instantiate the *same* action-selection class,
+initialized values, fixed traits and exploration as the adaptive followers,
+but do **not** update Q-values. All conditions retain a common scripted
+signaling sender. Thirty matched world seeds, 80 decision steps per episode.
+
+Paired seed-level mean collective utility differences:
+
+| Contrast | Mean | Paired bootstrap 95% interval |
+|---|---:|---:|
+| Adaptive ON - Frozen-update-disabled ON | +142.60 | [+119.53, +166.62] |
+| Adaptive OFF - Frozen-update-disabled OFF | +104.37 | [+85.21, +122.37] |
+| Adaptive ON - Adaptive OFF | -9.83 | [-16.79, -4.06] |
+
+All 4,312 headless checks passed, output cardinality and comparisons
+validated in CI. This isolates the effect of online reward updates
+*within this specific controller class* more clearly than the prior
+adaptive-vs-scripted comparison. It does not demonstrate learned
+communication: the common periodic signaling sender remains scripted,
+and `SignalWeight` is a fixed inherited proxy. It is an exploratory
+30-seed demonstration, not a preregistered study or biological result.
+
+**Next acceptance gate:** add a training curve, learned-policy snapshot
+evaluated on disjoint held-out seeds, and a learned message-use or send
+decision before claiming adaptive communication or intelligence.
+
 ## Claims this prototype cannot support
 
 - Biological evolution or genomic coevolution
