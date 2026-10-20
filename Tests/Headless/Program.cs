@@ -40,6 +40,27 @@ internal static class Program
             Almost(first.Returns[i], second.Returns[i], 0, "seed reproducibility");
         Check(first.InvalidActions == 0, "valid built-in actions");
 
+        var e001 = Experiment001V1.Run(100001, 5);
+        var e001Again = Experiment001V1.Run(100001, 5);
+        Check(e001.PairedCsv == e001Again.PairedCsv,
+            "Experiment 001 deterministic paired seed outcomes");
+        Check(e001.EpisodesCsv.TrimEnd().Split('\n').Length == 11,
+            "Experiment 001 five seeds times two conditions");
+        Check(e001.PairedCsv.TrimEnd().Split('\n').Length == 6,
+            "Experiment 001 five paired outcomes");
+        var samplePolicies = new SignalingGameV1.IPolicy[] {
+            new SignalingGameV1.PeriodicSignaler(),
+            new SignalingGameV1.SignalFollower(),
+            new SignalingGameV1.SignalFollower(),
+            new SignalingGameV1.SignalFollower()
+        };
+        var controlOn = SignalingGameV1.Evaluate(100001, samplePolicies,
+            SignalingGameV1.DefaultHorizon, true);
+        var controlOff = SignalingGameV1.Evaluate(100001, samplePolicies,
+            SignalingGameV1.DefaultHorizon, false);
+        Check(controlOn.InvalidActions == 0 && controlOff.InvalidActions == 0,
+            "Experiment 001 all controller actions valid");
+
         var experiment = SignalingExperimentRunnerV1.Run(2);
         Check(experiment.Episodes == 20, "ten profile variants per seed");
         Check(experiment.AgentCsv.TrimEnd().Split('\n').Length == 81,
