@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Cells.Experiments;
 
 internal static class Program
@@ -25,8 +26,23 @@ internal static class Program
         throw new Exception("FAILED (expected " + typeof(T).Name + "): " + message);
     }
 
-    private static void Main()
+    private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--experiment001")
+        {
+            if(args.Length!=2 && args.Length!=4)
+                throw new ArgumentException("Usage: --experiment001 <output-dir> [first-seed count]");
+            int seed=args.Length==4?int.Parse(args[2]):100001;
+            int count=args.Length==4?int.Parse(args[3]):30;
+            var output=Experiment001V1.Run(seed,count);
+            Directory.CreateDirectory(args[1]);
+            File.WriteAllText(Path.Combine(args[1],"episodes.csv"),output.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"paired.csv"),output.PairedCsv);
+            File.WriteAllText(Path.Combine(args[1],"summary.csv"),output.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"manifest.json"),output.ManifestJson);
+            Console.WriteLine("Experiment 001 pilot exported: "+count+" paired seeds to "+args[1]);
+            return;
+        }
         Console.WriteLine("cells: headless research verification (Unity-independent)");
         passed += PlanarDragChecks.Run();
         var randoms = new SignalingGameV1.IPolicy[] {
