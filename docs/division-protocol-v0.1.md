@@ -183,3 +183,20 @@ DNA sequences, strand-specific replication, or physically segregated
 chromosomes. The mutation scheduler currently creates a variant at birth,
 not at individual pseudo-base synthesis events. Actual two-copy genetic
 objects and segregation dynamics are still future work.
+
+## Spatial two-copy checkpoint (2026-10-19)
+
+`GenomeCopySegregation2D` introduces two separately positioned **effective
+genome-equivalent markers**. The second becomes present only when
+`GeneticTemplateSynthesis2D.ReplicationReady` is reached; their
+opposing local-frame positions separate progressively within the membrane.
+The experimental division gate now requires this segregation stage to
+finish before birth, and a Play Mode test checks copy separation.
+
+`GenomeCopiesRenderer2D` creates original procedural glowing markers
+following these positions in the microscope. These are deliberately
+kinematic markers, not actual chromosomes, independent heritable sequence
+objects, or collision-constrained internal organelles. Genetic material
+mass remains tracked by `CellHeritableInventory`. Membrane scission,
+mechanistic chromosome partitioning, and fully validated mass accounting
+remain unimplemented. Unity compilation and scene rendering remain untested.
