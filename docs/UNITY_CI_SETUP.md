@@ -78,3 +78,23 @@ The exporter is **not** a gameplay reproduction test. Outputs are
 numerical geometry experiments under effective 2D forces, not calibrated
 biological data or proof of membrane scission. Do not accept JSON output
 until the three Python analyzers have checked it.
+
+## One-command Windows membrane assay
+
+For a locally activated Unity Editor, run from the repository root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/capture/run_membrane_assay.ps1
+```
+
+If the Editor is installed outside the Unity Hub default paths, supply
+`-UnityExe "C:\path\to\Unity.exe"`. The script runs the export through
+Unity batch mode, removes previous JSON reports first (so stale output
+cannot masquerade as a new run), checks the Unity exit code and verifies
+all three newly generated JSON reports are nonempty before running the
+Python analysis scripts. It generates a Unity log at
+`artifacts/membrane-unity.log`. A failed validation is a failed run,
+not a success. Avoid opening the same project in another Unity Editor
+instance while running this script because Unity may lock it.
+
+No local Unity execution has been performed by the assistant.
