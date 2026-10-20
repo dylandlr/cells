@@ -18,6 +18,10 @@ namespace Cells.Tests.Editor
             foreach(var trial in report.trials)
             {
                 Assert.Greater(trial.finalArea,0f);
+                Assert.IsTrue(trial.controlValid);
+                Assert.Greater(trial.controlFinalArea,0f);
+                Assert.AreEqual(trial.controlFinalRatio-trial.finalRatio,
+                    trial.actuationEffect,1e-5f);
                 Assert.IsTrue(float.IsFinite(trial.finalRatio));
             }
         }
