@@ -27,6 +27,25 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void GeneticAndCompartmentInventoriesPartitionWithoutCreation()
+        {
+            var go = new UnityEngine.GameObject("inventory conservation");
+            try
+            {
+                var pool=go.AddComponent<CellHeritableInventory>();
+                float before=pool.Total;
+                Assert.IsTrue(pool.TryAllocate(.5f,.01f,out var split));
+                float parent=split.parentGenetic+split.parentVesicles+split.parentModules;
+                float daughter=split.daughterGenetic+split.daughterVesicles+split.daughterModules;
+                Assert.AreEqual(before,parent+daughter,1e-6f);
+                pool.Assign(split.parentGenetic,split.parentVesicles,split.parentModules);
+                Assert.AreEqual(parent,pool.Total,1e-6f);
+                Assert.IsFalse(pool.TryAllocate(.5f,.04f,out _));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void ValidPartitionPreservesAllThreeResourceAccounts()
         {
             Assert.IsTrue(CellDivisionBudget.TryPartition(2.4f,.8f,6f,.5f,.5f,out var split));
