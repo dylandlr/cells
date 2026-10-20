@@ -16,6 +16,7 @@ namespace Cells.Demo
         public CellBiomassGrowth growth;
         public CellMetabolism metabolism;
         public CellDivisionPreview2D preview;
+        public GenomeCopySegregation2D segregation;
         [Min(.01f)] public float activationBiomass = 1.7f;
         [Min(0f)] public float minimumEnergy = 1f;
         [Min(.1f)] public float rampSeconds = 12f;
@@ -29,6 +30,7 @@ namespace Cells.Demo
             if (!growth) growth = GetComponent<CellBiomassGrowth>();
             if (!metabolism) metabolism = GetComponent<CellMetabolism>();
             if (!preview) preview = GetComponent<CellDivisionPreview2D>();
+            if (!segregation) segregation = GetComponent<GenomeCopySegregation2D>();
         }
 
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
@@ -36,8 +38,10 @@ namespace Cells.Demo
         public void Tick(float dt)
         {
             if (!body || !growth || !metabolism || !float.IsFinite(dt) || dt <= 0f) return;
-            bool eligible = metabolism.alive && metabolism.energy >= minimumEnergy
-                && growth.structuralBiomass >= activationBiomass;
+            if (!segregation) segregation = GetComponent<GenomeCopySegregation2D>();
+            bool eligible = segregation && segregation.Complete &&
+                metabolism.alive && metabolism.energy >= minimumEnergy &&
+                growth.structuralBiomass >= activationBiomass;
             if (eligible) Progress = Mathf.Clamp01(Progress + dt / Mathf.Max(.1f,rampSeconds));
             else Progress = Mathf.MoveTowards(Progress,0f,dt/Mathf.Max(.1f,rampSeconds));
             body.divisionConstriction = Progress * maximumConstriction;
