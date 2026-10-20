@@ -27,7 +27,7 @@ namespace Cells.Experiments
             }
         }
 
-        private sealed class AdaptivePolicy : SignalingGameV1.IPolicy
+        public sealed class AdaptivePolicy : SignalingGameV1.IPolicy
         {
             private readonly Genome genome;
             private readonly double[,] q=new double[2,SignalingGameV1.Patches];
@@ -51,6 +51,22 @@ namespace Cells.Experiments
                 previousCue=cue;
                 previousAction=action;
                 return new SignalingGameV1.Action(action);
+            }
+            public double[,] Snapshot()
+            {
+                return (double[,])q.Clone();
+            }
+            public AdaptivePolicy(Genome fixedGenome, double[,] initialValues) : this(fixedGenome)
+            {
+                if(initialValues==null || initialValues.GetLength(0)!=2 ||
+                   initialValues.GetLength(1)!=SignalingGameV1.Patches)
+                    throw new ArgumentException("Invalid value table");
+                for(int i=0;i<2;i++)for(int p=0;p<SignalingGameV1.Patches;p++)
+                {
+                    if(double.IsNaN(initialValues[i,p]) || double.IsInfinity(initialValues[i,p]))
+                        throw new ArgumentException("Non-finite value");
+                    q[i,p]=initialValues[i,p];
+                }
             }
             public void Learn(double reward)
             {
