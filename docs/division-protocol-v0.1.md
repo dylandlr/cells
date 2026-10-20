@@ -462,3 +462,23 @@ or collinear edges require further robustness experiments.
 uses its earlier mesh strategy. Boundary ear clipping is a
 geometry-only prerequisite, not actual topology splitting,
 mechanical scission, or membrane material conservation.
+
+## Live renderer: optional concave boundary fill (2026-10-19)
+
+`SoftCellMeshRenderer2D` now defaults to filling the live
+`SoftCellBody2D` contour with `BoundaryEarClip2D`. The triangulator
+returns indices into the boundary ring; the renderer maps them to its
+existing mesh vertex buffer (with index zero still reserved for the
+legacy center point). The unused center vertex is harmless when
+boundary triangulation succeeds. The real-time halo, rim, stress
+colors and organelle transforms remain unchanged. If the polygon is
+non-simple, degenerates, or triangulation fails, the prior central fan
+is used as a **visual fallback**. `useBoundaryTriangulation` can
+disable the new path and `LastBoundaryTriangulationSucceeded`
+exposes whether the current frame uses it.
+
+This is a renderer integration only. Cell physics still uses its
+32-node single-loop constraints; the boundary is not cut into two.
+A fallback fill on invalid geometry is not proof of solver validity,
+and it may still render incorrectly if a star-shaped assumption
+fails. Live Play Mode and shader compatibility tests remain pending.
