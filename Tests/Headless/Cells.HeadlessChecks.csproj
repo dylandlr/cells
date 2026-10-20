@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="Experiment001ValidityChecks.cs" />
     <Compile Include="PlanarDragChecks.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs" Link="PlanarDragBalance.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingGameV1.cs" Link="SignalingGameV1.cs" />
