@@ -412,6 +412,9 @@ namespace Cells.Demo
             var originalMembrane = parent.GetComponent<MembraneIntegrity>();
             if (!originalExchange || !originalGrowth || !originalMembrane) return null;
             bool secretor = originalExchange.secretionEnabled;
+            // Secretory inventories have not yet been added to the binary
+            // partition budget. Do not spawn a daughter with free toxin mass.
+            if (secretor) return null;
             Vector2 direction = parent.transform.up;
             float separation = originalGrowth.VisualRadiusScale * 2.2f;
             Vector2 position = (Vector2)parent.transform.position + direction * separation;
