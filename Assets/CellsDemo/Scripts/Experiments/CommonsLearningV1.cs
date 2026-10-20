@@ -38,7 +38,7 @@ namespace Cells.Experiments
         {
             if(firstSeed<0||seeds<2||seeds>5000||horizon<1||horizon>1000
                 ||(long)firstSeed+seeds>int.MaxValue)throw new ArgumentException("Invalid study scope");
-            var csv=new StringBuilder("seed,condition,collective_return,repairs,harvests,final_stock,alive\n");
+            var csv=new StringBuilder("seed,condition,collective_return,repairs,harvests,final_stock,alive,reserve_remaining\n");
             var records=new List<PairedAssayAnalysisV1.Record>();
             for(int n=0;n<seeds;n++)
             {
@@ -81,7 +81,8 @@ namespace Cells.Experiments
                     csv.Append(seed).Append(',').Append(label).Append(',')
                         .Append(F(totals[condition])).Append(',').Append(repairs)
                         .Append(',').Append(harvests).Append(',').Append(stocks)
-                        .Append(',').Append(alive).Append('\n');
+                        .Append(',').Append(alive).Append(',')
+                        .Append(world.SubstrateReserve).Append('\n');
                 }
                 records.Add(new PairedAssayAnalysisV1.Record(seed,totals[1],totals[0]));
             }
