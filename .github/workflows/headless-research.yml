@@ -51,11 +51,18 @@ jobs:
           manifest=json.loads((root/"manifest.json").read_text())
           with (root/"episodes.csv").open(newline="") as f: episodes=list(csv.DictReader(f))
           with (root/"agents.csv").open(newline="") as f: agents=list(csv.DictReader(f))
+          with (root/"steps.csv").open(newline="") as f: steps=list(csv.DictReader(f))
           with (root/"paired.csv").open(newline="") as f: pairs=list(csv.DictReader(f))
           with (root/"summary.csv").open(newline="") as f: summary=list(csv.DictReader(f))
           assert manifest["seeds"] == 5
           assert len(episodes) == 10 and len(pairs) == 5 and len(summary) == 1
-          assert len(agents) == 40
+          assert len(agents) == 40 and len(steps) == 3200
+          for condition in ("on","off"):
+              selected=[r for r in steps if r["delivery"]==condition]
+              assert len(selected)==1600
+              total=sum(float(r["reward"]) for r in selected)
+              reported=sum(float(r["collective_return"]) for r in episodes if r["delivery"]==condition)
+              assert abs(total-reported)<1e-7
           assert {r["delivery"] for r in episodes} == {"on", "off"}
           for pair in pairs:
               assert abs(float(pair["on_return"])-float(pair["off_return"])-
@@ -66,6 +73,12 @@ jobs:
               on=sum(float(r["realized_return"]) for r in agents if int(r["seat"])==seat and r["delivery"]=="on")
               off=sum(float(r["realized_return"]) for r in agents if int(r["seat"])==seat and r["delivery"]=="off")
               print("Seat", seat, "on-minus-off mean:", (on-off)/5)
+          print("Mean per-step patch crowding by condition:")
+          for condition in ("on","off"):
+              foragers=[r for r in steps if r["delivery"]==condition and int(r["action"])<3]
+              crowd=sum(int(r["foragers_on_selected_patch"]) for r in foragers)/len(foragers)
+              print(condition, "forager-weighted crowding:",round(crowd,5),
+                    "foraging actions:",len(foragers))
           print("Mean signaling actions per seed by condition:")
           for condition in ("on","off"):
               print(condition, sum(int(r["signals"]) for r in episodes if r["delivery"]==condition)/5)
