@@ -12,7 +12,7 @@ namespace Cells.Experiments
     {
         public sealed class Output
         {
-            public string EpisodesCsv, PairedCsv, SummaryCsv, ManifestJson, AgentCsv;
+            public string EpisodesCsv, PairedCsv, SummaryCsv, ManifestJson, AgentCsv, StepsCsv;
         }
 
         public static Output Run(int firstSeed=100001,int seeds=30)
@@ -23,6 +23,7 @@ namespace Cells.Experiments
             var rows=new StringBuilder("seed,delivery,collective_return,signals,invalid_actions\n");
             var pairs=new StringBuilder("seed,off_return,on_return,on_minus_off\n");
             var agents=new StringBuilder("seed,delivery,seat,policy,realized_return,final_patch\n");
+            var stepsCsv=new StringBuilder("seed,delivery,step,seat,own_patch,action,received_signals,reward,foragers_on_selected_patch\n");
             var differences=new List<PairedAssayAnalysisV1.Record>();
             for(int i=0;i<seeds;i++)
             {
@@ -37,7 +38,28 @@ namespace Cells.Experiments
                         new SignalingGameV1.SignalFollower()
                     };
                     var result=SignalingGameV1.Evaluate(seed,policies,
-                        SignalingGameV1.DefaultHorizon,condition==1);
+                        SignalingGameV1.DefaultHorizon,condition==1,
+                        (step, observed, actions, rewards) => {
+                            int[] occupancy=new int[SignalingGameV1.Patches];
+                            foreach(var action in actions)
+                                if(action.Code>=0 && action.Code<SignalingGameV1.Patches)
+                                    occupancy[action.Code]++;
+                            for(int seat=0;seat<SignalingGameV1.Players;seat++)
+                            {
+                                int action=actions[seat].Code;
+                                int received=0;
+                                foreach(int signal in observed[seat].ReceivedSignals)
+                                    received+=signal;
+                                stepsCsv.Append(seed).Append(',')
+                                    .Append(condition==1?"on":"off").Append(',')
+                                    .Append(step).Append(',').Append(seat).Append(',')
+                                    .Append(observed[seat].OwnPatch).Append(',')
+                                    .Append(action).Append(',').Append(received).Append(',')
+                                    .Append(F(rewards[seat])).Append(',')
+                                    .Append(action>=0 && action<SignalingGameV1.Patches?
+                                        occupancy[action]:0).Append('\n');
+                            }
+                        });
                     for(int seat=0;seat<result.Returns.Length;seat++)
                     {
                         total[condition]+=result.Returns[seat];
@@ -61,6 +83,7 @@ namespace Cells.Experiments
             return new Output {
                 EpisodesCsv=rows.ToString(),
                 AgentCsv=agents.ToString(),
+                StepsCsv=stepsCsv.ToString(),
                 PairedCsv=pairs.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
                     PairedAssayAnalysisV1.ToCsv("delivery_on_minus_off",effect),
