@@ -6,6 +6,26 @@ namespace Cells.Tests
     public sealed class CellDivisionBudgetTests
     {
         [Test]
+        public void UnconstrictedClosedMembraneDoesNotPassNeckGate()
+        {
+            var go = new UnityEngine.GameObject("neck diagnostic");
+            try
+            {
+                go.AddComponent<MembraneIntegrity>();
+                var body=go.AddComponent<SoftCellBody2D>();
+                body.Initialize();
+                var observed=MembraneNeckDiagnostic2D.Measure(body);
+                Assert.IsTrue(observed.finite);
+                Assert.IsTrue(observed.simple);
+                Assert.IsTrue(observed.valid);
+                Assert.IsFalse(observed.narrowed,
+                    "An ordinary round membrane cannot pass a constriction gate.");
+                Assert.Greater(observed.area,0f);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void ConstrictionActuatesRealMembraneNodes()
         {
             var go = new UnityEngine.GameObject("constriction-test");
