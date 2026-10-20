@@ -277,3 +277,33 @@ jobs:
           path: artifacts/commons-learning-v1
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Evaluate intention-aware commons learning
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-intentions artifacts/commons-intentions
+      - name: Validate intention experiment and report outcomes
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          root=pathlib.Path("artifacts/commons-intentions")
+          m=json.loads((root/"manifest.json").read_text())
+          with (root/"episodes.csv").open(newline="") as f: data=list(csv.DictReader(f))
+          with (root/"summary.csv").open(newline="") as f: summary=list(csv.DictReader(f))
+          assert m["seeds"]==30 and len(data)==120 and len(summary)==1
+          expected={"learning_on","frozen_on","learning_off","scripted_on"}
+          assert {r["condition"] for r in data}==expected
+          for group in sorted(expected):
+              rows=[r for r in data if r["condition"]==group]
+              print(group,"mean_return",round(sum(float(x["return"]) for x in rows)/30,4),
+                    "repairs",round(sum(int(x["successful_repairs"]) for x in rows)/30,4),
+                    "intentions",sum(int(x["accepted_intentions"]) for x in rows),
+                    "survival",round(sum(int(x["survivors"]) for x in rows)/30,4))
+          print("Paired study:",summary)
+          PY
+      - name: Archive intention commons study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-intentions-study
+          path: artifacts/commons-intentions
+          if-no-files-found: warn
+          retention-days: 60
