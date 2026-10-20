@@ -40,3 +40,32 @@ jobs:
         run: python3 -m unittest discover -s Tests/Headless -p 'test_membrane_comparison_report.py' -v
       - name: Verify membrane report conversion without Unity
         run: python3 -m unittest discover -s Tests/Headless -p 'test_membrane_report.py' -v
+
+      - name: Execute Experiment 001 five-seed pilot
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --experiment001 artifacts/experiment001-pilot 100001 5
+      - name: Verify Experiment 001 output files
+        run: |
+          python3 - <<'PY'
+          import csv, json, pathlib
+          root=pathlib.Path("artifacts/experiment001-pilot")
+          manifest=json.loads((root/"manifest.json").read_text())
+          with (root/"episodes.csv").open(newline="") as f: episodes=list(csv.DictReader(f))
+          with (root/"paired.csv").open(newline="") as f: pairs=list(csv.DictReader(f))
+          with (root/"summary.csv").open(newline="") as f: summary=list(csv.DictReader(f))
+          assert manifest["seeds"] == 5
+          assert len(episodes) == 10 and len(pairs) == 5 and len(summary) == 1
+          assert {r["delivery"] for r in episodes} == {"on", "off"}
+          for pair in pairs:
+              assert abs(float(pair["on_return"])-float(pair["off_return"])-
+                         float(pair["on_minus_off"])) < 1e-8
+          print("Experiment 001 verified five paired world seeds")
+          print("Paired summary:", summary[0])
+          PY
+      - name: Publish Experiment 001 pilot data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-pilot-5-seeds
+          path: artifacts/experiment001-pilot
+          if-no-files-found: warn
+          retention-days: 30
