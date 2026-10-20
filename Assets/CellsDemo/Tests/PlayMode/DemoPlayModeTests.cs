@@ -129,6 +129,13 @@ namespace Cells.Tests
             Assert.GreaterOrEqual(distance,radii-.001f,
                 "Two post-birth soft bodies must not begin overlapping.");
             Assert.AreEqual(0f,parentBodyAfter.divisionConstriction,1e-6f);
+            Assert.GreaterOrEqual(distance,
+                Mathf.Max(parentBodyAfter.CurrentRadius,
+                    DivisionGeometryHandoff2D.MeasuredExtent(parentBodyAfter)) +
+                Mathf.Max(daughterBody.CurrentRadius,
+                    DivisionGeometryHandoff2D.MeasuredExtent(daughterBody)) - .001f,
+                "Observed membrane outlines must have nonoverlapping radial envelopes.");
+
             yield return null;
         }
 
