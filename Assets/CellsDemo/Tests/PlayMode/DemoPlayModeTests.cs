@@ -81,6 +81,15 @@ namespace Cells.Tests
             var segregation = parent.GetComponent<GenomeCopySegregation2D>();
             Assert.IsNotNull(segregation);
             Assert.IsFalse(segregation.Complete);
+            // Constriction cannot start merely because biomass is abundant:
+            // the two effective genome equivalents must segregate first.
+            var orderedCycle = parent.AddComponent<ExperimentalConstrictionCycle2D>();
+            orderedCycle.body = parent.GetComponent<SoftCellBody2D>();
+            orderedCycle.growth = parentGrowth;
+            orderedCycle.metabolism = parentMetabolism;
+            orderedCycle.segregation = segregation;
+            orderedCycle.Tick(orderedCycle.rampSeconds);
+            Assert.AreEqual(0f,orderedCycle.Progress,1e-6f);
             segregation.Tick(segregation.segregationSeconds);
             Assert.IsTrue(segregation.Complete);
             Assert.Greater(Vector2.Distance(segregation.FirstCopyPosition,
@@ -90,10 +99,7 @@ namespace Cells.Tests
             float initialNutrients = parentExchange.nutrientReserve;
             // This test enables the experiment after the scene has built;
             // add the opt-in constriction component explicitly.
-            var cycle = parent.AddComponent<ExperimentalConstrictionCycle2D>();
-            cycle.body = parent.GetComponent<SoftCellBody2D>();
-            cycle.growth = parentGrowth;
-            cycle.metabolism = parentMetabolism;
+            var cycle = orderedCycle;
             Assert.IsFalse(assay.TryDivide(), "Birth must await membrane constriction.");
             Assert.AreEqual(0,assay.committedBirths);
             cycle.Tick(cycle.rampSeconds);
