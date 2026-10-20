@@ -1,0 +1,64 @@
+name: Membrane physics assay
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/substance-ontology]
+    paths:
+      - 'Assets/CellsDemo/Scripts/Physiology/**'
+      - 'Assets/CellsDemo/Editor/MembraneAssayBatchExport.cs'
+      - '.github/workflows/membrane-assay.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  membrane-assay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Unity activation
+        shell: bash
+        run: |
+          if [ -z "$UNITY_LICENSE" ] && { [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; }; then
+            echo "::error::Unity credentials required for membrane solver assay."
+            exit 1
+          fi
+      - name: Run Unity Editor research assay
+        uses: game-ci/unity-builder@v4
+        env:
+          CELLS_ASSAY_OUTPUT: artifacts/membrane-assay.json
+        with:
+          targetPlatform: StandaloneLinux64
+          buildMethod: Cells.EditorTools.MembraneAssayBatchExport.Export
+      - name: Verify report exists and inspect result
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s artifacts/membrane-assay.json
+          python3 - <<'PY'
+          import json
+          p='artifacts/membrane-assay.json'
+          with open(p) as f: r=json.load(f)
+          print('Membrane assay status:',r.get('status'))
+          print('Initial neck ratio:',r.get('baselineRatio'))
+          print('Minimum neck ratio:',r.get('minimumRatio'))
+          print('Invalid geometry samples:',r.get('invalidSamples'))
+          print('Recorded samples:',len(r.get('samples',[])))
+          assert r.get('samples'), 'No simulation samples exported'
+          assert r.get('invalidSamples',0)==0, 'Membrane solver produced invalid geometry'
+          PY
+      - name: Publish membrane assay trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: membrane-physics-trace
+          path: artifacts/membrane-assay.json
+          if-no-files-found: warn
+          retention-days: 30
