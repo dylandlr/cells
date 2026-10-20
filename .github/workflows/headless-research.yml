@@ -50,16 +50,25 @@ jobs:
           root=pathlib.Path("artifacts/experiment001-pilot")
           manifest=json.loads((root/"manifest.json").read_text())
           with (root/"episodes.csv").open(newline="") as f: episodes=list(csv.DictReader(f))
+          with (root/"agents.csv").open(newline="") as f: agents=list(csv.DictReader(f))
           with (root/"paired.csv").open(newline="") as f: pairs=list(csv.DictReader(f))
           with (root/"summary.csv").open(newline="") as f: summary=list(csv.DictReader(f))
           assert manifest["seeds"] == 5
           assert len(episodes) == 10 and len(pairs) == 5 and len(summary) == 1
+          assert len(agents) == 40
           assert {r["delivery"] for r in episodes} == {"on", "off"}
           for pair in pairs:
               assert abs(float(pair["on_return"])-float(pair["off_return"])-
                          float(pair["on_minus_off"])) < 1e-8
           print("Experiment 001 verified five paired world seeds")
           print("Paired summary:", summary[0])
+          for seat in range(4):
+              on=sum(float(r["realized_return"]) for r in agents if int(r["seat"])==seat and r["delivery"]=="on")
+              off=sum(float(r["realized_return"]) for r in agents if int(r["seat"])==seat and r["delivery"]=="off")
+              print("Seat", seat, "on-minus-off mean:", (on-off)/5)
+          print("Mean signaling actions per seed by condition:")
+          for condition in ("on","off"):
+              print(condition, sum(int(r["signals"]) for r in episodes if r["delivery"]==condition)/5)
           PY
       - name: Publish Experiment 001 pilot data
         if: always()
