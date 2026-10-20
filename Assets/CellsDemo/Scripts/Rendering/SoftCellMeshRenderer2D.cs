@@ -35,7 +35,9 @@ namespace Cells.Rendering
         public int BoundaryTriangulationFailures { get; private set; }
         public int BoundaryTriangulationSuccesses { get; private set; }
         public bool LastContourWasValid { get; private set; }
-        public int RenderTriangleCount => mesh ? mesh.triangles.Length / 3 : 0;
+        public int RenderTriangleCount => surface && surface.enabled && mesh
+            ? mesh.triangles.Length / 3 : 0;
+        public bool ShellVisible => surface && surface.enabled;
         readonly Vector2[] boundaryPoints = new Vector2[SoftCellBody2D.Nodes];
         Mesh mesh;
         MeshFilter filter;
