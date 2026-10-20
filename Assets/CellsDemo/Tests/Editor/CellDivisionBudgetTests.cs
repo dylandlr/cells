@@ -43,11 +43,13 @@ namespace Cells.Tests
                 exchange.nutrientReserve=.025f;
                 metabolism.energy=1f;
                 synth.templatePerSecond=.1f;
-                synth.targetTemplateMass=.06f;
+                synth.targetTemplateMass=.12f;
                 float beforeMass=inventory.geneticTemplateMass+exchange.nutrientReserve;
                 float beforeEnergy=metabolism.energy;
                 float made=synth.Tick(1f);
                 Assert.AreEqual(.025f,made,1e-5f);
+                Assert.AreEqual(1,synth.CompletedCopyCount);
+                Assert.IsFalse(synth.ReplicationReady);
                 Assert.AreEqual(beforeMass,inventory.geneticTemplateMass+
                     exchange.nutrientReserve,1e-5f);
                 Assert.AreEqual(beforeEnergy-made*synth.energyPerTemplate,
