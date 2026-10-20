@@ -69,16 +69,19 @@ namespace Cells.Experiments
             if(seeds<2||seeds>10000||firstSeed<0||(long)firstSeed+seeds>int.MaxValue)
                 throw new ArgumentOutOfRangeException("Invalid seed range");
             var episode=new StringBuilder("seed,condition,collective_return,signals,invalid_actions\n");
-            var pairs=new StringBuilder("seed,adaptive_off,adaptive_on,scripted_off,scripted_on,adaptive_on_minus_off,adaptive_on_minus_scripted_on\n");
+            var pairs=new StringBuilder("seed,adaptive_off,adaptive_on,scripted_off,scripted_on,frozen_off,frozen_on,adaptive_on_minus_off,adaptive_on_minus_scripted_on,adaptive_on_minus_frozen_on,adaptive_off_minus_frozen_off\n");
             var comm=new System.Collections.Generic.List<PairedAssayAnalysisV1.Record>();
             var learning=new System.Collections.Generic.List<PairedAssayAnalysisV1.Record>();
+            var vsFrozenOn=new System.Collections.Generic.List<PairedAssayAnalysisV1.Record>();
+            var vsFrozenOff=new System.Collections.Generic.List<PairedAssayAnalysisV1.Record>();
             for(int i=0;i<seeds;i++)
             {
                 int seed=firstSeed+i;
-                double[] totals=new double[4];
+                double[] totals=new double[6];
                 for(int condition=0;condition<4;condition++)
                 {
-                    bool adaptive=condition<2;
+                    bool adaptive=condition<2 || condition>=4;
+                    bool learnEnabled=condition<2;
                     bool delivery=condition%2==1;
                     var fixedGenome=new Genome(.18,.12,.75);
                     var learners=new AdaptivePolicy[SignalingGameV1.Players];
@@ -93,12 +96,12 @@ namespace Cells.Experiments
                     var outcome=SignalingGameV1.Evaluate(seed,policies,
                         SignalingGameV1.DefaultHorizon,delivery,
                         (step,observations,actions,rewards)=>{
-                            if(adaptive)
+                            if(learnEnabled)
                                 for(int seat=0;seat<learners.Length;seat++)
                                     if(learners[seat]!=null)learners[seat].Learn(rewards[seat]);
                         });
                     foreach(double reward in outcome.Returns)totals[condition]+=reward;
-                    episode.Append(seed).Append(',').Append(adaptive?"adaptive_":"scripted_")
+                    episode.Append(seed).Append(',').Append(condition>=4?"frozen_":adaptive?"adaptive_":"scripted_")
                         .Append(delivery?"on":"off").Append(',')
                         .Append(F(totals[condition])).Append(',')
                         .Append(outcome.SignalCount).Append(',')
@@ -106,16 +109,22 @@ namespace Cells.Experiments
                 }
                 comm.Add(new PairedAssayAnalysisV1.Record(seed,totals[0],totals[1]));
                 learning.Add(new PairedAssayAnalysisV1.Record(seed,totals[3],totals[1]));
+                vsFrozenOn.Add(new PairedAssayAnalysisV1.Record(seed,totals[5],totals[1]));
+                vsFrozenOff.Add(new PairedAssayAnalysisV1.Record(seed,totals[4],totals[0]));
                 pairs.Append(seed);
                 foreach(double value in totals)pairs.Append(',').Append(F(value));
                 pairs.Append(',').Append(F(totals[1]-totals[0]))
-                    .Append(',').Append(F(totals[1]-totals[3])).Append('\n');
+                    .Append(',').Append(F(totals[1]-totals[3]))
+                    .Append(',').Append(F(totals[1]-totals[5]))
+                    .Append(',').Append(F(totals[0]-totals[4])).Append('\n');
             }
             var summary=new StringBuilder(PairedAssayAnalysisV1.Header);
             summary.Append(PairedAssayAnalysisV1.ToCsv("adaptive_delivery_on_minus_off",
                 PairedAssayAnalysisV1.EstimatePaired(comm)));
             summary.Append(PairedAssayAnalysisV1.ToCsv("adaptive_on_minus_scripted_on",
                 PairedAssayAnalysisV1.EstimatePaired(learning)));
+            summary.Append(PairedAssayAnalysisV1.ToCsv("adaptive_on_minus_frozen_on",PairedAssayAnalysisV1.EstimatePaired(vsFrozenOn)));
+            summary.Append(PairedAssayAnalysisV1.ToCsv("adaptive_off_minus_frozen_off",PairedAssayAnalysisV1.EstimatePaired(vsFrozenOff)));
             return new Output {
                 EpisodesCsv=episode.ToString(), PairedCsv=pairs.ToString(),
                 SummaryCsv=summary.ToString(),
