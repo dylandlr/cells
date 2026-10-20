@@ -28,6 +28,18 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--messageuse001")
+        {
+            if(args.Length!=2)
+                throw new ArgumentException("Usage: --messageuse001 <output-dir>");
+            var output=MessageUseExperiment001V4.Run();
+            Directory.CreateDirectory(args[1]);
+            File.WriteAllText(Path.Combine(args[1],"episodes.csv"),output.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"summary.csv"),output.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"manifest.json"),output.ManifestJson);
+            Console.WriteLine("Message-use E001 exported.");
+            return;
+        }
         if(args.Length>0 && args[0]=="--heldout001")
         {
             if(args.Length!=2)
@@ -86,6 +98,14 @@ internal static class Program
             Almost(first.Returns[i], second.Returns[i], 0, "seed reproducibility");
         Check(first.InvalidActions == 0, "valid built-in actions");
 
+        var messageUse=MessageUseExperiment001V4.Run(510000,5,610000,3);
+        var messageRepeat=MessageUseExperiment001V4.Run(510000,5,610000,3);
+        Check(messageUse.EpisodesCsv==messageRepeat.EpisodesCsv,
+            "message use exact deterministic replay");
+        Check(messageUse.EpisodesCsv.TrimEnd().Split('\n').Length==10,
+            "message use three held-out seeds and three conditions");
+        Throws<ArgumentException>(()=>MessageUseExperiment001V4.Run(510000,5,510002,3),
+            "message use rejects overlapping seed splits");
         var heldout=AdaptiveHeldOut001V3.Run(310000,5,410000,3);
         var heldoutAgain=AdaptiveHeldOut001V3.Run(310000,5,410000,3);
         Check(heldout.PairsCsv==heldoutAgain.PairsCsv,"heldout exact deterministic replay");
