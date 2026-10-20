@@ -200,3 +200,25 @@ objects, or collision-constrained internal organelles. Genetic material
 mass remains tracked by `CellHeritableInventory`. Membrane scission,
 mechanistic chromosome partitioning, and fully validated mass accounting
 remain unimplemented. Unity compilation and scene rendering remain untested.
+
+## Ordered constriction checkpoint (2026-10-19)
+
+The previous implementation allowed `ExperimentalConstrictionCycle2D` to
+advance from biomass and energy alone, in parallel with genetic copying
+and segregation. This permitted visible narrowing before the genetic
+contents were prepared for separation.
+
+The experimental constriction driver now also requires
+`GenomeCopySegregation2D.Complete`. With insufficient genetic templates
+or incomplete marker segregation it cannot advance. If readiness is
+subsequently lost, constriction relaxes toward zero, as before.
+The existing Play Mode reproduction assay now verifies that a fully
+resourced parent cannot start constriction prior to segregation, and
+then checks normal advancement after segregation is complete.
+
+This ordering is a **simulation design contract**, not a universal
+biological claim: real bacteria and eukaryotic cells have diverse,
+partly overlapping cell-cycle mechanisms. The segregation stage is
+still kinematic, and constriction remains an effective 2D actuator.
+Neither topology scission nor mechanistic genome partition is resolved.
+Unity compilation/test execution is pending an activated runner.
