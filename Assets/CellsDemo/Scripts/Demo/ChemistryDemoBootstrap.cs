@@ -423,6 +423,9 @@ namespace Cells.Demo
             {
                 daughter = CreateCell("Descendant " + preparedId, NextExperimentalOrganismId++,
                     position, secretor, originalMembrane.chemicalResistance, originalMotor != null);
+                // The constructor currently creates an active GameObject. Disable
+                // immediately and explicitly reinitialize physical subsystems
+                // after overwriting the inherited physiological properties.
                 daughter.SetActive(false);
                 var phenotype = daughter.GetComponent<OrganismPhenotype>();
                 var regulation = daughter.GetComponent<GeneticRegulationController>();
@@ -438,8 +441,14 @@ namespace Cells.Demo
                 metabolism.energy = split.daughterEnergy;
                 metabolism.alive = true;
                 exchange.nutrientReserve = split.daughterNutrient;
-                // All component references were assigned by CreateCell. No physics
-                // ticks run while this inactive staged daughter is configured.
+                // Ensure inherited biomass sets the daughter shell's actual
+                // reference geometry, not just its visual appearance.
+                var softBody = daughter.GetComponent<SoftCellBody2D>();
+                if (softBody) softBody.Initialize();
+                var compartments = daughter.GetComponent<InternalCompartments2D>();
+                if (compartments) compartments.Initialize();
+                // The staged cell must remain inactive until the parent budget
+                // has successfully been transferred.
                 return daughter;
             }
             catch (Exception ex)
