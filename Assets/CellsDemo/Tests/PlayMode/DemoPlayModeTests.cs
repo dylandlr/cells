@@ -78,6 +78,13 @@ namespace Cells.Tests
             float synthesisQuantity = synthesis.Tick(1f);
             Assert.AreEqual(.06f,synthesisQuantity,1e-5f);
             Assert.IsTrue(synthesis.ReplicationReady);
+            var segregation = parent.GetComponent<GenomeCopySegregation2D>();
+            Assert.IsNotNull(segregation);
+            Assert.IsFalse(segregation.Complete);
+            segregation.Tick(segregation.segregationSeconds);
+            Assert.IsTrue(segregation.Complete);
+            Assert.Greater(Vector2.Distance(segregation.FirstCopyPosition,
+                segregation.SecondCopyPosition),.1f);
             float initialBiomass = parentGrowth.structuralBiomass;
             float initialEnergy = parentMetabolism.energy;
             float initialNutrients = parentExchange.nutrientReserve;
