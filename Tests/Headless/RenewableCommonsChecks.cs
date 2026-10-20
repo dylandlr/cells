@@ -23,8 +23,11 @@ internal static class RenewableCommonsChecks
             new RenewableCommonsV0.Act(0),new RenewableCommonsV0.Act(0),
             new RenewableCommonsV0.Act(0),new RenewableCommonsV0.Act(0)};
         var initial=world.Stocks()[0];
+        int initialTotal=world.TotalExternalNutrients();
         var first=world.Advance(allHarvest);
         var replay=copy.Advance(allHarvest);
+        Check(world.TotalExternalNutrients()==initialTotal-first.HarvestedUnits,
+            "harvested external nutrients accounted for");
         Check(first.HarvestedUnits==Math.Min(initial,4),"resource harvesting cannot duplicate stock");
         Check(first.HarvestedUnits==replay.HarvestedUnits &&
               first.StocksAfter[0]==replay.StocksAfter[0],
@@ -35,10 +38,14 @@ internal static class RenewableCommonsChecks
             new RenewableCommonsV0.Act(3),new RenewableCommonsV0.Act(3),
             new RenewableCommonsV0.Act(9),new RenewableCommonsV0.Act(9)};
         int depleted=world.Stocks()[0];
+        int beforeRepairTotal=world.TotalExternalNutrients();
         var repaired=world.Advance(cooperators);
+        Check(world.TotalExternalNutrients()==beforeRepairTotal,
+            "restoration and passive replenishment conserve external nutrients");
         Check(repaired.SuccessfulRepairs==1,"two restorers succeed");
         Check(repaired.StocksAfter[0]>=depleted+4 || repaired.StocksAfter[0]==8,
             "restoration adds renewable stock");
+        Check(world.SubstrateReserve<120,"restoration draws finite reserve");
         Check(repaired.Rewards[0]<0 && repaired.Rewards[1]<0,
             "restoration costs immediate energy");
         var solitary=new RenewableCommonsV0(44);
