@@ -23,7 +23,7 @@ namespace Cells.Experiments
             var rows=new StringBuilder("seed,delivery,collective_return,signals,invalid_actions\n");
             var pairs=new StringBuilder("seed,off_return,on_return,on_minus_off\n");
             var agents=new StringBuilder("seed,delivery,seat,policy,realized_return,final_patch\n");
-            var stepsCsv=new StringBuilder("seed,delivery,step,seat,own_patch,action,received_signals,reward,foragers_on_selected_patch,signaled_patch,signal_alignment,changed_patch\n");
+            var stepsCsv=new StringBuilder("seed,delivery,step,seat,own_patch,action,received_signals,reward,foragers_on_selected_patch,signaled_patch,signal_alignment,changed_patch,counterfactual_no_message_action,message_changed_action\n");
             var differences=new List<PairedAssayAnalysisV1.Record>();
             for(int i=0;i<seeds;i++)
             {
@@ -58,6 +58,16 @@ namespace Cells.Experiments
                                         bestSignal=observed[seat].ReceivedSignals[patch];
                                         signaledPatch=patch;
                                     }
+                                int counterfactual=-1;
+                                int messageChanged=0;
+                                if(seat>0 && condition==1)
+                                {
+                                    var noMessage=observed[seat];
+                                    noMessage.ReceivedSignals=new int[SignalingGameV1.Patches];
+                                    counterfactual=policies[seat].Decide(noMessage,
+                                        new Random(0)).Code;
+                                    messageChanged=counterfactual!=action?1:0;
+                                }
                                 stepsCsv.Append(seed).Append(',')
                                     .Append(condition==1?"on":"off").Append(',')
                                     .Append(step).Append(',').Append(seat).Append(',')
@@ -70,7 +80,9 @@ namespace Cells.Experiments
                                     .Append(signaledPatch>=0 && action==signaledPatch?1:0)
                                     .Append(',').Append(action>=0 &&
                                         action<SignalingGameV1.Patches &&
-                                        action!=observed[seat].OwnPatch?1:0).Append('\n');
+                                        action!=observed[seat].OwnPatch?1:0).Append(',')
+                                    .Append(counterfactual).Append(',')
+                                    .Append(messageChanged).Append('\n');
                             }
                         });
                     for(int seat=0;seat<result.Returns.Length;seat++)
