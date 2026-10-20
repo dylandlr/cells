@@ -38,6 +38,7 @@ internal static class Program
             Directory.CreateDirectory(args[1]);
             File.WriteAllText(Path.Combine(args[1],"episodes.csv"),output.EpisodesCsv);
             File.WriteAllText(Path.Combine(args[1],"agents.csv"),output.AgentCsv);
+            File.WriteAllText(Path.Combine(args[1],"steps.csv"),output.StepsCsv);
             File.WriteAllText(Path.Combine(args[1],"paired.csv"),output.PairedCsv);
             File.WriteAllText(Path.Combine(args[1],"summary.csv"),output.SummaryCsv);
             File.WriteAllText(Path.Combine(args[1],"manifest.json"),output.ManifestJson);
@@ -63,6 +64,8 @@ internal static class Program
             "Experiment 001 deterministic paired seed outcomes");
         Check(e001.EpisodesCsv.TrimEnd().Split('\n').Length == 11,
             "Experiment 001 five seeds times two conditions");
+        Check(e001.StepsCsv.TrimEnd().Split('\n').Length == 3201,
+            "Experiment 001 five seeds times two conditions times 80 steps times four agents");
         Check(e001.AgentCsv.TrimEnd().Split('\n').Length == 41,
             "Experiment 001 five seeds times two conditions times four agents");
         Check(e001.PairedCsv.TrimEnd().Split('\n').Length == 6,
