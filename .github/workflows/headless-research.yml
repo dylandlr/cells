@@ -7,6 +7,7 @@ on:
       - 'Assets/CellsDemo/Scripts/Experiments/**'
       - 'Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs'
       - 'Tests/Headless/**'
+      - 'tools/capture/analyze_membrane_assay.py'
       - '.github/workflows/headless-research.yml'
   pull_request:
     paths:
@@ -33,3 +34,6 @@ jobs:
         run: dotnet build Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release
       - name: Run deterministic research invariants
         run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build
+
+      - name: Verify membrane report conversion without Unity
+        run: python3 -m unittest discover -s Tests/Headless -p 'test_membrane_report.py' -v
