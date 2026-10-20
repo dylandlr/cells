@@ -161,3 +161,25 @@ Energy is a separate budget and not a physical mass account. Synthesis
 does not model thermodynamic conversion efficiency. This code has not
 yet passed the Unity test runner because repository Unity activation
 remains unconfigured.
+
+## Copy-completion gate (2026-10-19)
+
+The founder's pre-existing 0.06-unit genetic-template inventory now
+represents **one effective genome equivalent**. `GeneticTemplateSynthesis2D`
+requires an additional 0.06 equivalent synthesized from finite nutrient
+reserve at explicit energy cost, before the experimental birth gate is
+satisfied. The synthesis target defaults to 0.12 and
+`CompletedCopyCount` reports two only after the required new synthesis,
+not merely because the starting resource pool exceeds the minimum.
+After a 50/50 division, the parent and daughter have one equivalent
+each; each new cycle would need replication anew.
+
+The opt-in reproduction Play Mode test explicitly synthesizes the second
+equivalent and verifies readiness before proceeding. Unity test execution
+remains blocked on the configured CI licensing.
+
+**Limitations:** these are numerical genome equivalents, not independent
+DNA sequences, strand-specific replication, or physically segregated
+chromosomes. The mutation scheduler currently creates a variant at birth,
+not at individual pseudo-base synthesis events. Actual two-copy genetic
+objects and segregation dynamics are still future work.
