@@ -28,6 +28,11 @@ namespace Cells.Rendering
         public Color edgeColor = new Color(.55f,.98f,.85f,.95f);
         public bool showStress = true;
         public Color highStressColor = new Color(1f,.36f,.12f,1f);
+        // Ear-clipped fill is preferred for valid concave outlines.
+        // The legacy center fan remains a defensive rendering fallback.
+        public bool useBoundaryTriangulation = true;
+        public bool LastBoundaryTriangulationSucceeded { get; private set; }
+        readonly Vector2[] boundaryPoints = new Vector2[SoftCellBody2D.Nodes];
         Mesh mesh;
         MeshFilter filter;
         MeshRenderer surface;
@@ -159,16 +164,29 @@ namespace Cells.Rendering
                 Color injured=new Color(.95f,.22f,.12f,.82f);
                 Color baseColor=Color.Lerp(injured,healthy,integrity);
                 colors[i+1]=showStress ? Color.Lerp(baseColor,highStressColor,body.StressAt(i)) : baseColor;
+                boundaryPoints[i]=p;
                 triangles[i*3]=0;
                 triangles[i*3+1]=i+1;
                 triangles[i*3+2]=(i+1)%SoftCellBody2D.Nodes+1;
                 if(rim)rim.SetPosition(i,new Vector3(p.x,p.y,-.015f));
                 if(halo)halo.SetPosition(i,new Vector3(p.x,p.y,.01f));
             }
+            // The boundary remains owned by the physical solver. This only
+            // changes how its cytoplasm is filled visually, not its forces.
+            LastBoundaryTriangulationSucceeded = useBoundaryTriangulation &&
+                BoundaryEarClip2D.TryTriangulate(new BoundaryLoop2D(boundaryPoints),
+                    out var boundaryTriangles);
+            int[] fillTriangles=triangles;
+            if (LastBoundaryTriangulationSucceeded)
+            {
+                fillTriangles=new int[boundaryTriangles.Length];
+                for(int i=0;i<boundaryTriangles.Length;i++)
+                    fillTriangles[i]=boundaryTriangles[i]+1;
+            }
             mesh.Clear();
             mesh.vertices=vertices;
             mesh.colors=colors;
-            mesh.triangles=triangles;
+            mesh.triangles=fillTriangles;
             mesh.RecalculateBounds();
             for(int i=0;i<organelleNodes.Length;i++)
             {
