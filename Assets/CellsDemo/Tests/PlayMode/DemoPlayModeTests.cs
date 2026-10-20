@@ -94,6 +94,7 @@ namespace Cells.Tests
             Assert.IsTrue(segregation.Complete);
             Assert.Greater(Vector2.Distance(segregation.FirstCopyPosition,
                 segregation.SecondCopyPosition),.1f);
+            float initialMembraneMaterial=parent.GetComponent<CellMembraneMaterial>().material;
             float initialBiomass = parentGrowth.structuralBiomass;
             float initialEnergy = parentMetabolism.energy;
             float initialNutrients = parentExchange.nutrientReserve;
@@ -123,6 +124,9 @@ namespace Cells.Tests
             Assert.AreEqual(child.GetComponent<CellBiomassGrowth>().VisualRadiusScale *
                 daughterBody.restRadius, daughterBody.CurrentRadius, 1e-5f);
             Assert.IsTrue(child.gameObject.activeSelf);
+            Assert.AreEqual(initialMembraneMaterial,
+                parent.GetComponent<CellMembraneMaterial>().material+
+                child.GetComponent<CellMembraneMaterial>().material,1e-6f);
             var parentBodyAfter = parent.GetComponent<SoftCellBody2D>();
             float distance = Vector2.Distance(parent.transform.position,child.position);
             float radii = parentBodyAfter.CurrentRadius + daughterBody.CurrentRadius;
