@@ -53,7 +53,9 @@ namespace Cells.Demo
             var exchange = parent.GetComponent<CellChemicalExchange>();
             var regulation = parent.GetComponent<GeneticRegulationController>();
             var inventory = parent.GetComponent<CellHeritableInventory>();
+            var synthesis = parent.GetComponent<GeneticTemplateSynthesis2D>();
             if (!growth || !metabolism || !exchange || !regulation || !inventory ||
+                !synthesis || !synthesis.ReplicationReady ||
                 !metabolism.alive || !inventory.TryAllocate(.5f,.01f,out var allocated)) return false;
             var cycle = parent.GetComponent<ExperimentalConstrictionCycle2D>();
             // A daughter cannot be spawned before its parent reaches the
