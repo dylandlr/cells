@@ -536,3 +536,23 @@ live `SoftCellBody2D`, fluid transport, membrane growth, scission,
 or membrane material inventories. Rest lengths and target area are
 constant across this experiment. Unity test execution has not yet
 been verified.
+
+## Experimental boundary constriction actuation (2026-10-19)
+
+`BoundaryConstraintSolver2D.TryConstrict` now provides a bounded
+equatorial displacement field, concentrated near the local y=0
+plane, before iteratively restoring edge-length and enclosed-area
+constraints. The actuator validates finite settings and limits
+individual displacement per call. If the constraint projection fails,
+the candidate positions are restored to the state before actuation.
+
+`BoundaryConstrictionTests` adds authored Editor cases for a
+discretized ellipse under a modest actuator impulse, checking
+closed-loop validity and bounded area error, plus an invalid-input
+case requiring exact position preservation.
+
+This remains a disposable independent numerical prototype:
+no biological membrane forces or measured parameters, no membrane
+growth, no physical neck severing, no fluid interaction, and no
+integration into the active cell population. Tests have not
+been executed in Unity.
