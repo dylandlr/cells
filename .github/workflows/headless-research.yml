@@ -247,3 +247,33 @@ jobs:
           path: artifacts/experiment001-messageuse-v4
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Run renewable commons learning controls
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons001 artifacts/commons-learning-v1
+      - name: Validate commons experiment and report behavior
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          root=pathlib.Path("artifacts/commons-learning-v1")
+          meta=json.loads((root/"manifest.json").read_text())
+          with (root/"episodes.csv").open(newline="") as f: rows=list(csv.DictReader(f))
+          with (root/"summary.csv").open(newline="") as f: summary=list(csv.DictReader(f))
+          assert meta["seeds"]==30 and len(rows)==120 and len(summary)==1
+          assert {r["condition"] for r in rows}=={"learner","frozen","greedy","scheduled_repair"}
+          for condition in ("learner","frozen","greedy","scheduled_repair"):
+              samples=[r for r in rows if r["condition"]==condition]
+              assert len(samples)==30
+              print(condition,"mean_return:",round(sum(float(r["collective_return"]) for r in samples)/30,3),
+                    "mean_repairs:",round(sum(int(r["repairs"]) for r in samples)/30,3),
+                    "mean_stock:",round(sum(int(r["final_stock"]) for r in samples)/30,3),
+                    "mean_survivors:",round(sum(int(r["alive"]) for r in samples)/30,3))
+          print("Commons paired learning effect:",summary[0])
+          PY
+      - name: Upload commons learning study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-learning-v1-30-seeds
+          path: artifacts/commons-learning-v1
+          if-no-files-found: warn
+          retention-days: 60
