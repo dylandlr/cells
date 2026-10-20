@@ -78,7 +78,7 @@ namespace Cells.Experiments
             {
                 int seed=firstSeed+i;
                 double[] totals=new double[6];
-                for(int condition=0;condition<4;condition++)
+                for(int condition=0;condition<6;condition++)
                 {
                     bool adaptive=condition<2 || condition>=4;
                     bool learnEnabled=condition<2;
