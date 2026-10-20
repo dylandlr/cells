@@ -189,3 +189,31 @@ jobs:
           path: artifacts/experiment001-adaptive-v2
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Run frozen-policy held-out evaluation
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --heldout001 artifacts/experiment001-heldout-v3
+      - name: Validate held-out evaluation and print conclusions
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          p=pathlib.Path("artifacts/experiment001-heldout-v3")
+          manifest=json.loads((p/"manifest.json").read_text())
+          def read(path):
+              with (p/path).open(newline="") as f:return list(csv.DictReader(f))
+          episodes,pairs,summary=map(read,("episodes.csv","paired.csv","summary.csv"))
+          assert manifest["test_updates"]==0 and manifest["test_seeds"]==30
+          assert len(episodes)==90 and len(pairs)==30 and len(summary)==2
+          assert {r["condition"] for r in episodes}=={"untrained_on","trained_on","trained_off"}
+          assert manifest["train_first_seed"]+manifest["train_episodes"] <= manifest["test_first_seed"]
+          for r in pairs:
+              assert abs(float(r["trained_on"])-float(r["untrained_on"])-float(r["trained_minus_untrained"]))<1e-7
+          print("Held-out evaluation summaries:",summary)
+          PY
+      - name: Upload held-out evaluation data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-heldout-v3
+          path: artifacts/experiment001-heldout-v3
+          if-no-files-found: warn
+          retention-days: 60
