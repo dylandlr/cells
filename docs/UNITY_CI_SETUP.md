@@ -98,3 +98,31 @@ not a success. Avoid opening the same project in another Unity Editor
 instance while running this script because Unity may lock it.
 
 No local Unity execution has been performed by the assistant.
+
+## GitHub Actions activation and trustworthy test reporting (2026-10-20)
+
+The `Unity tests` workflow now triggers on pushes to
+`feat/substance-ontology` as well as pull requests and manual dispatch.
+Both EditMode and PlayMode jobs receive `UNITY_LICENSE`,
+`UNITY_EMAIL`, `UNITY_PASSWORD`, and `UNITY_SERIAL` from GitHub
+Actions secrets, as applicable to the GameCI activation method in use.
+These are secret **names**, not credentials; do not put secret values
+in workflow files, issues, chat, or commit history.
+
+To configure, open
+`https://github.com/dylandlr/cells/settings/secrets/actions`
+with repository admin privileges, follow the current GameCI Unity
+activation guide appropriate to your subscription, and create the
+supported secrets there. Then manually dispatch **Unity tests** on
+`feat/substance-ontology` and confirm **both** modes advance past
+the activation preflight to the Unity test runner itself. A skipped
+Unity test step is **not** a test failure in C# and **not** a pass.
+Only actual Unity test reports can establish whether the source
+compiles and its tests pass. No installed secret values can be read
+back through the repository's source API.
+
+Once tests run, separately dispatch **Membrane physics assay** and
+confirm its output JSONs, CSVs and summary artifacts exist. This
+workflow also has unverified GameCI custom-build-method compatibility
+that must be corrected if the runner reaches the Editor but does not
+produce assay reports.
