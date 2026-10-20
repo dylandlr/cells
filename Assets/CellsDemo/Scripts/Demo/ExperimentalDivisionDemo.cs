@@ -52,7 +52,9 @@ namespace Cells.Demo
             var metabolism = parent.GetComponent<CellMetabolism>();
             var exchange = parent.GetComponent<CellChemicalExchange>();
             var regulation = parent.GetComponent<GeneticRegulationController>();
-            if (!growth || !metabolism || !exchange || !regulation || !metabolism.alive) return false;
+            var inventory = parent.GetComponent<CellHeritableInventory>();
+            if (!growth || !metabolism || !exchange || !regulation || !inventory ||
+                !metabolism.alive || !inventory.TryAllocate(.5f,.01f,out var allocated)) return false;
             var cycle = parent.GetComponent<ExperimentalConstrictionCycle2D>();
             // A daughter cannot be spawned before its parent reaches the
             // demonstrated physical constriction stage. This is not scission.
@@ -74,11 +76,16 @@ namespace Cells.Demo
                     float oldBiomass = growth.structuralBiomass;
                     float oldNutrient = exchange.nutrientReserve;
                     float oldEnergy = metabolism.energy;
+                    float oldGenetic = inventory.geneticTemplateMass;
+                    float oldVesicles = inventory.vesicleMaterialMass;
+                    float oldModules = inventory.structuralModuleMass;
                     try
                     {
                         growth.structuralBiomass = split.parentBiomass;
                         exchange.nutrientReserve = split.parentNutrient;
                         metabolism.energy = split.parentEnergy;
+                        inventory.Assign(allocated.parentGenetic,
+                            allocated.parentVesicles,allocated.parentModules);
                         staged.SetActive(true);
                         return true;
                     }
@@ -89,6 +96,7 @@ namespace Cells.Demo
                         growth.structuralBiomass = oldBiomass;
                         exchange.nutrientReserve = oldNutrient;
                         metabolism.energy = oldEnergy;
+                        inventory.Assign(oldGenetic,oldVesicles,oldModules);
                         Debug.LogException(exception);
                         if (staged) Destroy(staged);
                         staged = null;
