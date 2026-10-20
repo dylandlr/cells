@@ -170,11 +170,14 @@ jobs:
               with (root/name).open(newline="") as f:return list(csv.DictReader(f))
           episodes,pairs,summary=map(read,("episodes.csv","paired.csv","summary.csv"))
           assert m["seeds"]==30 and m["genome_frozen"] and m["agent_q_updates"]
-          assert len(episodes)==120 and len(pairs)==30 and len(summary)==2
-          assert {r["condition"] for r in episodes}=={"adaptive_on","adaptive_off","scripted_on","scripted_off"}
+          assert len(episodes)==180 and len(pairs)==30 and len(summary)==4
+          assert {r["condition"] for r in episodes}=={"adaptive_on","adaptive_off","scripted_on","scripted_off","frozen_on","frozen_off"}
           for p in pairs:
               assert abs(float(p["adaptive_on"])-float(p["adaptive_off"])-float(p["adaptive_on_minus_off"]))<1e-7
               assert abs(float(p["adaptive_on"])-float(p["scripted_on"])-float(p["adaptive_on_minus_scripted_on"]))<1e-7
+          for p in pairs:
+              assert abs(float(p["adaptive_on"])-float(p["frozen_on"])-float(p["adaptive_on_minus_frozen_on"]))<1e-7
+              assert abs(float(p["adaptive_off"])-float(p["frozen_off"])-float(p["adaptive_off_minus_frozen_off"]))<1e-7
           print("Revised adaptive Experiment 001:",summary)
           print("Observed adaptive signaling actions:",sum(int(x["signals"]) for x in episodes if x["condition"]=="adaptive_on"))
           PY
