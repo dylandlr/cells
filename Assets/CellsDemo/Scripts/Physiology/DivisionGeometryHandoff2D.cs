@@ -26,12 +26,31 @@ namespace Cells.Physiology
             axis.Normalize();
             Vector2 midpoint=((Vector2)parent.transform.position+
                 (Vector2)daughter.transform.position)*.5f;
-            float spacing=(parentRadius+childRadius)*(1f+clearanceFraction);
+            // Measured contour extents are more robust than nominal radius:
+            // injured/deformed membranes can bulge outside their rest circles.
+            float parentExtent=MeasuredExtent(parent);
+            float daughterExtent=MeasuredExtent(daughter);
+            if (!float.IsFinite(parentExtent) || !float.IsFinite(daughterExtent) ||
+                parentExtent <= 0f || daughterExtent <= 0f) return false;
+            float spacing=(parentExtent+daughterExtent)*(1f+clearanceFraction);
             parent.transform.position=midpoint-axis*(spacing*.5f);
             daughter.transform.position=midpoint+axis*(spacing*.5f);
             parent.divisionConstriction=0f;
             daughter.divisionConstriction=0f;
             return true;
+        }
+        public static float MeasuredExtent(SoftCellBody2D body)
+        {
+            if (!body || !body.Initialized) return 0f;
+            float maximum=0f;
+            for (int i=0;i<SoftCellBody2D.Nodes;i++)
+            {
+                Vector2 node=body.Node(i);
+                if (!float.IsFinite(node.x) || !float.IsFinite(node.y))
+                    return float.NaN;
+                maximum=Mathf.Max(maximum,node.magnitude);
+            }
+            return maximum;
         }
     }
 }
