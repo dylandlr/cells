@@ -1,0 +1,635 @@
+# Division protocol v0.1 — conservative preparation
+
+This is a **preparatory API, not live mitosis**. Authored in Unity C#;
+Unity compilation, Edit Mode tests and Play Mode have not been run.
+
+## Implemented
+- `CellDivisionBudget.TryPartition`: validates positive finite pools,
+  daughter fraction, and minimum structural biomass for both halves.
+  Splits intracellular nutrient reserves, structural biomass and metabolic
+  energy into paired shares with no arithmetic duplication.
+- `DivisionLineageCoordinator.TryRecordDivision`: validates a division
+  budget and existing parent record, invokes a caller-provided birth
+  confirmation callback, then records one descendant and calls the
+  existing seeded `GeneticMutationScheduler`. It disables the separate
+  legacy quantitative-genome mutation for that operation to avoid two
+  independent mutation chances.
+- NUnit tests cover conservation, invalid inputs, failed confirmation
+  without lineage entry, and successful lineage record with mutation.
+
+## Important unresolved issue
+The callback only confirms birth; it does NOT yet receive the prepared
+daughter genotype or enact the parent's resource partition. It cannot
+guarantee atomic rollback if a Unity GameObject factory partially spawns
+and then fails. Therefore the coordinator is NOT sufficient for a
+scientifically valid live reproduction implementation. Do not hook it
+to automatic mitosis before designing a prepare/commit/rollback flow
+that allocates the child genome before spawning but commits mutation
+statistics only after successful adoption.
+
+Still required:
+1. Replication readiness and time costs, including energetic cost of copying
+   pseudo-genetic information.
+2. A **single owner** of Unity spawn and split commit, complete rollback
+   semantics, and no double accounting for metabolic reserves.
+3. Correct reinitialization of physics, organs, membrane patches, rotation,
+   cytoplasm, motility and internal transport for both daughters.
+4. Parent and daughter geometries that do not initially overlap; interaction
+   with growing-cell contact solver.
+5. Genotype copied or mutated before phenotype assembly and applied to
+   both metabolic and regulatory modules.
+6. Division-related birth/death telemetry, event log and save/replay.
+7. Play Mode checks and mass balance under repeated division.
+
+## Scientific and game design boundaries
+In real cell division, DNA replication, segregation, envelope synthesis,
+mechanical division, and growth-cycle control interact. This code is
+only a macroscopic partition, not a mechanistic reproduction claim.
+See Taheri-Araghi et al., 2015, Cell-Size Control and Homeostasis in
+Bacteria, https://pubmed.ncbi.nlm.nih.gov/25544609/
+
+The user-provided Substrate: Emergence README discusses nutrient use and
+mitosis; it is a gameplay and visual design reference, not source code
+for the implementation in this repository.
+
+## Amendment: prepared inheritance transaction (2026-10-19)
+
+New API `DivisionLineageCoordinator.TryPrepareAndRecordDivision`
+calculates a conservative split, computes the daughter's **copied**
+quantitative genome and proposed mutated regulatory genome, passes both to
+the daughter factory for initialization, then adds the descendant and
+commits the genetic mutation event *only after factory confirmation*.
+
+`GeneticMutationScheduler.Preview` uses a seed derived from committed birth
+count; rejected preparations don't consume future mutation opportunities.
+`LineageRegistry.PeekNextIndividualId` supports pre-spawn identity assignment.
+The prior `TryRecordDivision` is retained for compatibility but does not
+provide these stronger genotype-before-spawn semantics. Prefer the new API.
+
+**Still not a complete atomic transaction:** a Unity factory returning true
+must have fully initialized a daughter and committed the parent resource
+partition, while a factory returning false must roll back any partial
+GameObject/resource changes. The coordinator does not undo Unity side effects.
+A factory exception could also leave effects outside the registry. Real
+replication costs, independent daughter cellular assemblies, collision-free
+placement, and evidence from running tests remain outstanding. This new
+interface is not wired to live Play Mode births yet.
+
+This amendment adds NUnit coverage for a rejected prepared birth and retry
+with identical inherited genes; the tests have not run in Unity.
+
+## Opt-in Unity daughter-spawn assay (2026-10-19)
+
+`ChemistryDemoBootstrap.enableExperimentalDivision` defaults to false.
+When explicitly enabled before Build, `ExperimentalDivisionDemo` watches
+the named Grazer for sufficient structural biomass and energy, then attempts
+exactly **one** reproduction. It uses the existing cell constructor to
+instantiate a daughter, applies copied quantitative genes and previewed
+regulatory genes, initializes the daughter with the daughter-side energy,
+nutrient and structural biomass shares, and assigns the remaining shares
+to the parent. Ancestor registration and mutation commitment happen
+after the prepared factory returns success. A distinct chemical-event
+organism ID is used rather than reusing the lineage record ID.
+
+A Play Mode regression test is authored to force a resource-eligible
+parent, invoke the opt-in path, confirm a daughter object exists and
+assert the combined intracellular biomass, nutrient reserve and energy
+are unchanged at birth. **Test execution has not been verified.**
+
+Limitations are material: this is a prototype **daughter spawning**
+mechanic, not simulated cytokinesis. It creates the daughter using the
+existing component builder, not a progressive pinching/splitting membrane;
+the parent and daughter do not go through a replicated DNA/material
+segregation animation; collision-free placement is only a heuristic;
+toxin/secretory reserves are not partitioned, and creating a
+secretor-class daughter would provision its default toxin inventory
+without accounting for the parent's reserve. The assay currently
+uses the nonsecretory Grazer only. Internal organelle inventory is not
+conserved. A failure during/after activation needs full explicit
+resource rollback and object cleanup, which this simple factory does
+not yet guarantee. A sustained population/evolution assay is **not**
+enabled: only one birth is permitted. A production version needs a
+proper serializable transaction object and shared authoritative module
+inventory before reproduction becomes general gameplay.
+
+Substrate: Emergence's supplied documents and build artifacts remain
+visual/gameplay references, not a source-code basis for this factory.
+
+## Heritable material pool accounting (2026-10-19)
+
+`CellHeritableInventory` adds explicit nonnegative abstract material pools
+for pseudo-genetic templates, vesicle contents/material and structural
+functional modules. The opt-in demo assigns each newly built cell a baseline
+inventory. Division now computes a 50/50 allocation for all three pools,
+rejects insufficient inherited genetic material, transfers the parent's share
+only after a daughter has been prepared, and restores the original parent
+inventory on activation exceptions. NUnit conservation tests are authored.
+
+These material budgets are **separate from `CellBiomassGrowth.structuralBiomass`**.
+They are tracked as additional illustrative resources rather than proven
+subcomponents of a closed total mass budget; this risks double counting
+if combined naively. A subsequent systems migration must define one
+authoritative accounting hierarchy for cellular dry mass.
+
+A pseudo-genetic material share is **not** a duplicated chromosome. Actual
+replication must acquire precursor molecules, spend energy, and produce
+sufficient copies so both viable daughters inherit the genetic program.
+Compartments remain fixed-count physical visualization objects and are
+not physically segregated or generated from the new material pools.
+This step advances explicit conservation contracts; it does NOT complete
+the physical cell cycle. Unity tests and runtime visualization still await
+a licensed runner.
+
+## Finite-rate pseudo-template synthesis (2026-10-19)
+
+`GeneticTemplateSynthesis2D` converts intracellular nutrient reserve to
+an abstract genetic-template mass pool, spending metabolic energy at a
+separate declared per-template cost and respecting a fixed synthesis rate.
+Reproduction is now gated on reaching `ReplicationReady`. Finite
+precursor and energy availability cap each synthesis step, and an
+authored regression test checks nutrient+template material conservation.
+
+**Important:** This models effective template *material accumulation*, not
+literal DNA duplication, base-by-base fidelity, chromosome segregation,
+or complete synthesis of organelles. The initial experimental founder
+already starts with enough genetic material for 50/50 partition; the
+readiness gate can therefore initially be satisfied without additional
+synthesis. A future replication state machine must track two distinct
+heritable copies and require completion of replication before division.
+
+Energy is a separate budget and not a physical mass account. Synthesis
+does not model thermodynamic conversion efficiency. This code has not
+yet passed the Unity test runner because repository Unity activation
+remains unconfigured.
+
+## Copy-completion gate (2026-10-19)
+
+The founder's pre-existing 0.06-unit genetic-template inventory now
+represents **one effective genome equivalent**. `GeneticTemplateSynthesis2D`
+requires an additional 0.06 equivalent synthesized from finite nutrient
+reserve at explicit energy cost, before the experimental birth gate is
+satisfied. The synthesis target defaults to 0.12 and
+`CompletedCopyCount` reports two only after the required new synthesis,
+not merely because the starting resource pool exceeds the minimum.
+After a 50/50 division, the parent and daughter have one equivalent
+each; each new cycle would need replication anew.
+
+The opt-in reproduction Play Mode test explicitly synthesizes the second
+equivalent and verifies readiness before proceeding. Unity test execution
+remains blocked on the configured CI licensing.
+
+**Limitations:** these are numerical genome equivalents, not independent
+DNA sequences, strand-specific replication, or physically segregated
+chromosomes. The mutation scheduler currently creates a variant at birth,
+not at individual pseudo-base synthesis events. Actual two-copy genetic
+objects and segregation dynamics are still future work.
+
+## Spatial two-copy checkpoint (2026-10-19)
+
+`GenomeCopySegregation2D` introduces two separately positioned **effective
+genome-equivalent markers**. The second becomes present only when
+`GeneticTemplateSynthesis2D.ReplicationReady` is reached; their
+opposing local-frame positions separate progressively within the membrane.
+The experimental division gate now requires this segregation stage to
+finish before birth, and a Play Mode test checks copy separation.
+
+`GenomeCopiesRenderer2D` creates original procedural glowing markers
+following these positions in the microscope. These are deliberately
+kinematic markers, not actual chromosomes, independent heritable sequence
+objects, or collision-constrained internal organelles. Genetic material
+mass remains tracked by `CellHeritableInventory`. Membrane scission,
+mechanistic chromosome partitioning, and fully validated mass accounting
+remain unimplemented. Unity compilation and scene rendering remain untested.
+
+## Ordered constriction checkpoint (2026-10-19)
+
+The previous implementation allowed `ExperimentalConstrictionCycle2D` to
+advance from biomass and energy alone, in parallel with genetic copying
+and segregation. This permitted visible narrowing before the genetic
+contents were prepared for separation.
+
+The experimental constriction driver now also requires
+`GenomeCopySegregation2D.Complete`. With insufficient genetic templates
+or incomplete marker segregation it cannot advance. If readiness is
+subsequently lost, constriction relaxes toward zero, as before.
+The existing Play Mode reproduction assay now verifies that a fully
+resourced parent cannot start constriction prior to segregation, and
+then checks normal advancement after segregation is complete.
+
+This ordering is a **simulation design contract**, not a universal
+biological claim: real bacteria and eukaryotic cells have diverse,
+partly overlapping cell-cycle mechanisms. The segregation stage is
+still kinematic, and constriction remains an effective 2D actuator.
+Neither topology scission nor mechanistic genome partition is resolved.
+Unity compilation/test execution is pending an activated runner.
+
+## Two-body geometry handoff (2026-10-19)
+
+`DivisionGeometryHandoff2D` now positions independently initialized parent
+and daughter `SoftCellBody2D` solvers according to their measured
+biomass-dependent effective radii. It enforces nonoverlapping nominal
+bounding circles and zeroes the predivision constriction variable on
+both bodies. The parent position and constriction are restored if
+activation fails. The Play Mode reproduction assay includes a
+minimum-separation and reset assertion.
+
+**This remains a spawn-based geometric handoff, not mechanical scission**:
+the parent's original closed contour is not cut and reconnected into
+two loops. The parent solver's rest geometry relaxes toward reduced
+postdivision biomass on subsequent ticks. The daughter has its own
+initialized solver. No surface-area or membrane-material conservation
+law is claimed. There is no conservation-guaranteeing mechanism for
+all cell modules, and transient overlap of irregular deformed contours
+is possible despite bounding-radius separation. Simulation-driven
+lineage registration still follows successful handoff only.
+Unity validation is still blocked by license setup.
+
+## Deformed-contour handoff safety (2026-10-19)
+
+The geometry handoff now scans all live `SoftCellBody2D` nodes
+and measures the largest finite local radial extent. For each cell,
+the conservative bound is the greater of its current
+biomass-dependent nominal radius and the measured extent.
+Parent and daughter are separated using the sum of these
+envelopes plus a configurable clearance fraction. Invalid
+(nonfinite) positions reject the transaction before
+transform positions are changed. A Play Mode regression
+asserts the post-handoff envelope clearance.
+
+This is a circle-envelope *safety approximation*: it does
+not detect intersections of irregular mesh edges, model
+adhesion, calculate local membrane collision impulses,
+partition actual membrane material or enact topological
+scission. Live Unity verification remains pending activation.
+
+## Explicit membrane-material budget (2026-10-19)
+
+`CellMembraneMaterial` now holds an effective finite material inventory
+separate from membrane geometry and membrane integrity. Experimental
+reproduction requires enough material for two viable shares, assigns
+one share to the staged daughter, subtracts it from the parent on the
+successful handoff path, and restores parent material if activation
+throws. A Play Mode test checks the conserved summed inventory.
+
+This is a **bookkeeping prerequisite**, not physical membrane scission:
+there is no tracked lipid/protein composition, local surface density,
+material transport to the furrow, area-to-mass calibration, or direct
+conversion of one closed membrane into two. The effective inventory is
+currently also separate from the authoritative structural biomass, so
+whole-cell material accounting remains incomplete. No Unity test
+execution has been verified due to CI licensing.
+
+## Observed membrane neck validation (2026-10-19)
+
+`MembraneNeckDiagnostic2D` measures the equatorial node-pair separation
+relative to upper/lower membrane shoulder widths, rejects nonfinite
+coordinates, near-zero area, and detected self-intersections. The
+experimental birth gate now requires an observed narrow, valid neck
+(default equator/shoulder ratio <= 0.70) in addition to completed
+constriction progress. This prevents a completed timer from being
+mistaken for a physically successful neck.
+
+The existing Play Mode resource-transaction test disables only the
+neck gate after explicitly checking that timer-only readiness fails;
+a separate Editor test confirms that a normal unpinched membrane does
+not qualify. Threshold calibration, positive constriction cases,
+numerical robustness, and real scene throughput must be validated
+in Unity before accepting the gate as a reliable reproduction
+criterion. In particular the 32-node star-shaped contour may not
+generate a viable narrow neck; the diagnostic intentionally permits
+division to stall rather than invent membrane scission.
+
+**No topological scission implemented.** Even a successful narrow-neck
+measurement only indicates shape readiness for an eventual topology
+operation. Unity tests have not been executed.
+
+## Independent membrane-neck geometry fixtures (2026-10-19)
+
+The live-body diagnostic now delegates to
+`MembraneNeckDiagnostic2D.MeasureContour(Vector2[])`, allowing direct
+tests of the geometric classifier without a Unity physics timestep.
+Authored Edit Mode fixtures include a unit circular membrane (not
+constricted), a synthetic equatorially pinched simple contour
+(constricted), and invalid nonfinite node positions (rejected).
+
+The classifier's shoulder/equator metric is deliberately a 32-sector
+effective proxy. Its ability to identify a synthetic narrowed contour
+**does not demonstrate** that the existing physical soft-body will
+produce that contour. That is a separate calibration/solver validation
+gate. No GitHub Actions Unity test execution is verified.
+
+## Reproducible constriction assay (2026-10-19)
+
+`MembraneConstrictionAssay2D.Run` provides an explicit fixed-step solver
+experiment. It ramps an effective equatorial constriction actuator from
+zero to one, integrates the existing `SoftCellBody2D` mesh, and records
+time, measured equatorial and shoulder width, neck ratio, polygon area,
+maximum numerical strain, and geometry validity at configurable intervals.
+The report classifies outcomes as `narrowed`, `not-narrowed`, or
+`invalid-geometry`. A Unity Editor regression asserts time/sample
+counts, actuator restoration, and geometric validity of a short assay.
+
+**Important:** This assay advances and changes the actual membrane state.
+It restores the actuator setting but does **not** reset node positions,
+velocities, or stress history. It should be run on a fresh disposable test
+organism, not on active population organisms in a live evolutionary
+experiment. It bypasses the genome/cell-cycle gates deliberately to
+isolate the shape solver; it does not trigger a birth.
+
+The assay and test are committed but not yet executed in Unity. In
+particular, the new diagnostic records evidence rather than assuming the
+solver reaches the 0.70 neck ratio threshold. Successful narrowing and
+absence of invalid mesh states still need real CI evidence before we
+implement two-loop scission.
+
+## GitHub Actions membrane assay export (2026-10-19)
+
+`Assets/CellsDemo/Editor/MembraneAssayBatchExport.cs` provides
+`Cells/Research/Export Membrane Constriction Trace`, also accessible
+through a Unity Editor batch execute-method invocation. It constructs
+a disposable cell and writes the fixed-step physics assay report as JSON
+to `CELLS_ASSAY_OUTPUT` or `artifacts/membrane-assay.json`.
+
+`.github/workflows/membrane-assay.yml` attempts to run this in GitHub
+Actions with GameCI using Unity activation secrets and publish a
+`membrane-physics-trace` artifact. Its output validation fails for
+invalid membrane geometry, while `not-narrowed` is retained as a
+useful research result rather than treated as a programming failure.
+
+**Not yet validated:** CI Unity activation, GameCI custom method execution,
+report output location, Editor test compilation, and the actual metric
+trace. In particular, no narrowed membrane or valid topological scission
+has been observed or demonstrated by this commit.
+
+## Assay reporting and license-free validation (2026-10-19)
+
+The Unity membrane assay workflow now runs
+`tools/capture/analyze_membrane_assay.py` on the Unity-produced JSON,
+checking all sample fields, finite values, strictly increasing timestamps,
+counter consistency, and classification consistency. The artifact includes
+`membrane-assay.json`, `membrane-trace.csv` and `membrane-summary.md`.
+An invalid-geometry report explicitly fails the validation step, while
+a valid but not-narrowed result is allowed as a diagnostic finding.
+
+`Tests/Headless/test_membrane_report.py` exercises report conversion,
+misclassified results, and invalid geometry using synthetic fixtures,
+and is included in the Headless research checks workflow. These tests
+are independent of the Unity license and **do not validate physical
+constriction or actual run results**.
+
+The GameCI Unity assay build, output path, activation, and real physics
+trace have still not been verified on a GitHub runner. The workflow
+should not be treated as passing before its first successful execution.
+
+## Membrane timestep sensitivity sweep (2026-10-19)
+
+`MembraneConvergenceSweep2D` executes three independent, disposable
+membrane constriction trials using 0.020, 0.010, and 0.005 simulation-second
+timesteps. Trials use the existing solver and nominally identical initial
+conditions. The report compares terminal neck ratios and terminal polygon
+areas to expose numerical sensitivity. This is a finite-resolution
+**sensitivity check**, not a proof of mathematical convergence.
+
+The Unity Editor assay exporter additionally writes
+`membrane-convergence.json`. GitHub Actions invokes
+`tools/capture/analyze_membrane_convergence.py` to verify report values
+and generate `membrane-convergence-summary.md`; the exported research
+artifact includes both. An authored Editor test checks that the sweep
+returns three finite trial reports.
+
+Current limitations: the sweep is not executed or calibrated in Unity
+yet; the membrane solver's internal maxSubstep may reduce observable
+differences between these outer timesteps; fluid/chemical interaction is
+not included in the disposable geometry assay; no topological split is
+modeled. The Unity CI license and workflow build-method compatibility
+still require actual runner verification.
+
+## Matched membrane controls and remainder timesteps (2026-10-19)
+
+The physics constriction assay now supports a maximum actuation parameter,
+including a **zero-actuation negative control**. The final integration step
+uses only the remaining simulation time if the requested duration is not
+evenly divisible by the timestep; reported duration and integrated time
+therefore agree.
+
+`MembraneConvergenceSweep2D` now runs a fresh independent control body
+for each tested timestep. The report records control final area and
+neck ratio plus the difference from the actuation trial. This avoids
+mistaking ordinary geometry drift or solver relaxation for a division
+effect. Its JSON validator checks control validity and arithmetic
+consistency, and the summary compares control and actuated ratios.
+
+These studies still require Unity execution and show neither scission
+nor calibrated biological constriction. A positive actuation effect
+means numerical equatorial narrowing **relative to control**, not
+proof of physically viable cytokinesis.
+
+## Center-free boundary representation prototype (2026-10-19)
+
+`BoundaryLoop2D` adds a separate ordered closed-polyline geometry
+representation. Unlike the current renderer's single-center triangle
+fan, it does not require the cell interior to be visible from one
+distinguished central point. It computes signed polygon area, boundary
+length, area-weighted centroid, finite-coordinate checks and
+nonadjacent segment intersections, with no dependency on the active
+physiology or soft-body solver.
+
+Authored Editor tests exercise a concave two-lobed loop, a
+self-intersecting bowtie loop and clockwise/counterclockwise
+orientation invariance. This module is **not yet a replacement**
+for the 32-node membrane dynamics, a concave-polygon triangulator,
+or a topology-changing scission implementation. It does not
+partition material or spawn daughters. All Unity tests remain
+unverified until Unity CI can execute successfully.
+
+## Center-free concave membrane triangulation (2026-10-19)
+
+`BoundaryEarClip2D` adds ear-clipping triangulation of a valid
+`BoundaryLoop2D` closed polygon. The algorithm outputs indices
+into the original ordered vertices, with winding-aware convexity
+and interior-vertex rejection. It does not create a single center
+point, so concave two-lobed outlines can be filled without
+the original center-fan assumption.
+
+Authored Editor tests check that a deeply concave simple outline
+has N−2 nondegenerate triangles whose aggregate area matches
+the original polygon, including reversal of vertex order, and
+that self-intersecting contours are rejected. Unity execution is
+still unverified; potential degeneracies with nearly coincident
+or collinear edges require further robustness experiments.
+
+**Not integrated yet:** The active `SoftCellMeshRenderer2D` still
+uses its earlier mesh strategy. Boundary ear clipping is a
+geometry-only prerequisite, not actual topology splitting,
+mechanical scission, or membrane material conservation.
+
+## Live renderer: optional concave boundary fill (2026-10-19)
+
+`SoftCellMeshRenderer2D` now defaults to filling the live
+`SoftCellBody2D` contour with `BoundaryEarClip2D`. The triangulator
+returns indices into the boundary ring; the renderer maps them to its
+existing mesh vertex buffer (with index zero still reserved for the
+legacy center point). The unused center vertex is harmless when
+boundary triangulation succeeds. The real-time halo, rim, stress
+colors and organelle transforms remain unchanged. If the polygon is
+non-simple, degenerates, or triangulation fails, the prior central fan
+is used as a **visual fallback**. `useBoundaryTriangulation` can
+disable the new path and `LastBoundaryTriangulationSucceeded`
+exposes whether the current frame uses it.
+
+This is a renderer integration only. Cell physics still uses its
+32-node single-loop constraints; the boundary is not cut into two.
+A fallback fill on invalid geometry is not proof of solver validity,
+and it may still render incorrectly if a star-shaped assumption
+fails. Live Play Mode and shader compatibility tests remain pending.
+
+## Live renderer diagnostic coverage (2026-10-19)
+
+`SoftCellMeshRenderer2D` now exposes a read-only last-frame contour
+validity flag, cumulative boundary-triangulation success and fallback
+counts, and rendered triangle count. These observations distinguish
+actual successful concave triangulation from a visually plausible
+legacy fan fallback. Counters increment on requested geometry updates
+and are not simulation-timestep-normalized scientific metrics.
+
+`LiveMembraneRendererTests` constructs a healthy soft body in Unity
+Editor, checks that boundary ear clipping produces 30 triangles for
+the 32-node outline, then switches the option off and confirms the
+32-triangle center-fan fallback. This checks renderer wiring but does
+not demonstrate a deeply pinched live cell, scene visual fidelity, or
+scission. Unity test execution remains unverified.
+
+## Invalid contour rendering fails closed (2026-10-19)
+
+Previously an invalid or self-intersecting membrane outline could
+be fed into the legacy center-fan rendering fallback, disguising a
+physics failure as a plausible-looking organism. The renderer now
+detects an invalid `BoundaryLoop2D`, hides its shell, rim and
+halo, increments a diagnostic failure counter, and reports zero
+visible shell triangles. When a future update returns a valid
+loop, the renderer enables the surfaces again. The optional
+center-fan fallback is used only when the contour is **valid**
+but the optional ear-clipping triangulation path fails.
+
+Editor tests check healthy shell visibility in both valid
+rendering modes; simulated invalid solver-node recovery and live
+Play Mode rendering still require direct runtime tests. A hidden
+invalid shell is a diagnostic safeguard, **not a repaired membrane**.
+
+## Experimental boundary constraint prototype (2026-10-19)
+
+`BoundaryConstraintSolver2D` provides a standalone position-based
+closed-loop constraint iteration on `BoundaryLoop2D` vertices. It
+projects adjacent vertex pairs toward their initial edge lengths,
+then projects the enclosed signed area toward its initial value
+using analytic polygon-area gradients. A projection step validates
+finite, simple geometry and orientation, rolling positions back on
+failure. It exposes maximum absolute edge-length error and relative
+enclosed-area error as numerical diagnostics.
+
+`BoundaryConstraintSolver2DTests` contains an authored experiment
+starting from a perturbed square, checking that area error decreases,
+and verifies invalid settings do not change the loop.
+
+**Research prototype only.** This is not yet integrated with the
+live `SoftCellBody2D`, fluid transport, membrane growth, scission,
+or membrane material inventories. Rest lengths and target area are
+constant across this experiment. Unity test execution has not yet
+been verified.
+
+## Experimental boundary constriction actuation (2026-10-19)
+
+`BoundaryConstraintSolver2D.TryConstrict` now provides a bounded
+equatorial displacement field, concentrated near the local y=0
+plane, before iteratively restoring edge-length and enclosed-area
+constraints. The actuator validates finite settings and limits
+individual displacement per call. If the constraint projection fails,
+the candidate positions are restored to the state before actuation.
+
+`BoundaryConstrictionTests` adds authored Editor cases for a
+discretized ellipse under a modest actuator impulse, checking
+closed-loop validity and bounded area error, plus an invalid-input
+case requiring exact position preservation.
+
+This remains a disposable independent numerical prototype:
+no biological membrane forces or measured parameters, no membrane
+growth, no physical neck severing, no fluid interaction, and no
+integration into the active cell population. Tests have not
+been executed in Unity.
+
+## Repeated boundary constriction experiment (2026-10-19)
+
+`BoundaryConstrictionAssay2D.Run` initializes a new 32-vertex
+elliptical loop and applies a sequence of bounded equatorial
+constriction impulses using the independent boundary constraint
+solver. It records an initial baseline and post-actuation observations:
+equatorial width, shoulder width, neck ratio, signed area, relative
+area error, and edge-length error. The report distinguishes completed
+sequences from rejected solver steps and invalid geometry rather than
+treating all attempted impulses as successful.
+
+An authored Editor regression test checks ordered observations,
+finite baseline measurements and explicit experiment status.
+The assay remains independent of the live cell simulation, and
+no Unity test results or stable neck narrowing can yet be claimed.
+The solver still has fixed target area and lengths, without membrane
+growth or scission.
+
+## Common membrane solver comparison metrics (2026-10-19)
+
+`MembraneComparisonMetrics2D` provides a shared 32-node
+closed-contour measurement contract for the live `SoftCellBody2D`
+and the experimental `BoundaryConstraintSolver2D`. It reports
+polygon validity, equatorial neck/shoulder width ratio, absolute
+enclosed area, perimeter, and normalized area drift relative to
+a caller-provided baseline. The geometry classifier is independent
+of either solver's forces. An authored Editor regression checks
+duplicate-geometry equivalence, baseline-zero area drift, and
+rejection of nonfinite nodes.
+
+This is a comparison **measurement layer**, not yet a completed
+side-by-side experiment. The two solvers presently have different
+initialization, actuators and geometry constraints and must be
+normalized before numerical rankings or physical claims are valid.
+Unity tests are not yet verified.
+
+## Direct legacy-vs-boundary comparative assay (2026-10-19)
+
+`MembraneSolverComparisonAssay2D.Run` creates a disposable legacy
+`SoftCellBody2D` and clones its exact initial 32-node contour into
+an experimental `BoundaryConstraintSolver2D`. It samples both
+using the shared `MembraneComparisonMetrics2D` contract after
+each actuation update. The report records step/time, both neck
+ratios, areas, perimeters and relative area drift, and explicitly
+stops when either geometry is invalid or the boundary constraint
+operation rejects a step.
+
+This **is not a matched-force comparison**. The legacy model receives
+a linearly increasing internal actuator, while the experimental
+boundary solver receives a per-step bounded displacement followed by
+its own edge and area constraints. Equal starting shapes and sampling
+times support direct observation of their responses, not a scientifically
+defensible claim that one solver is more accurate or efficient.
+The authored Editor test verifies that both systems begin with
+identical geometric measurements. Tests remain unverified in Unity.
+
+## Exported side-by-side solver traces (2026-10-19)
+
+The Unity Editor batch export now runs
+`MembraneSolverComparisonAssay2D.Run` and writes
+`artifacts/membrane-comparison.json` alongside the constriction
+and timestep convergence experiments. The membrane assay workflow
+validates this data with
+`tools/capture/analyze_membrane_comparison.py` and uploads
+`membrane-comparison.csv` and `membrane-comparison-summary.md`.
+The converter checks finite shared observables, sequential samples,
+initial geometry equality, valid status, and flags a completed report
+that contains invalid geometry.
+
+A standalone Python regression suite runs in license-free headless
+CI, testing a valid conversion, unequal starting geometry, and an
+incorrect completed status. This validation does not run or calibrate
+Unity's two actual physics solvers. Their actuators remain different,
+so the output is a diagnostic comparison, **not evidence that one is
+physically superior**. As of this change, Unity execution and the
+comparison artifact itself are not verified.

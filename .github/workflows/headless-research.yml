@@ -1,0 +1,656 @@
+name: Headless research checks
+on:
+  push:
+    branches:
+      - feat/substance-ontology
+    paths:
+      - 'Assets/CellsDemo/Scripts/Experiments/**'
+      - 'Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs'
+      - 'Tests/Headless/**'
+      - 'tools/capture/analyze_membrane_assay.py'
+      - 'tools/capture/analyze_membrane_comparison.py'
+      - 'tools/capture/analyze_experiment001_trajectories.py'
+      - '.github/workflows/headless-research.yml'
+  pull_request:
+    paths:
+      - 'Assets/CellsDemo/Scripts/Experiments/**'
+      - 'Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs'
+      - 'Tests/Headless/**'
+      - '.github/workflows/headless-research.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  experiments:
+    name: Compile and exercise research algorithms
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Build plain C# experiments
+        run: dotnet build Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release
+      - name: Run deterministic research invariants
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build
+
+      - name: Verify comparison report conversion without Unity
+        run: python3 -m unittest discover -s Tests/Headless -p 'test_membrane_comparison_report.py' -v
+      - name: Verify membrane report conversion without Unity
+        run: python3 -m unittest discover -s Tests/Headless -p 'test_membrane_report.py' -v
+
+      - name: Execute Experiment 001 five-seed pilot
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --experiment001 artifacts/experiment001-pilot 100001 5
+      - name: Verify Experiment 001 output files
+        run: |
+          python3 - <<'PY'
+          import csv, json, pathlib
+          root=pathlib.Path("artifacts/experiment001-pilot")
+          manifest=json.loads((root/"manifest.json").read_text())
+          with (root/"episodes.csv").open(newline="") as f: episodes=list(csv.DictReader(f))
+          with (root/"agents.csv").open(newline="") as f: agents=list(csv.DictReader(f))
+          with (root/"steps.csv").open(newline="") as f: steps=list(csv.DictReader(f))
+          with (root/"paired.csv").open(newline="") as f: pairs=list(csv.DictReader(f))
+          with (root/"summary.csv").open(newline="") as f: summary=list(csv.DictReader(f))
+          assert manifest["seeds"] == 5
+          assert len(episodes) == 10 and len(pairs) == 5 and len(summary) == 1
+          assert len(agents) == 40 and len(steps) == 3200
+          for condition in ("on","off"):
+              selected=[r for r in steps if r["delivery"]==condition]
+              assert len(selected)==1600
+              total=sum(float(r["reward"]) for r in selected)
+              reported=sum(float(r["collective_return"]) for r in episodes if r["delivery"]==condition)
+              assert abs(total-reported)<1e-7
+          assert {r["delivery"] for r in episodes} == {"on", "off"}
+          for pair in pairs:
+              assert abs(float(pair["on_return"])-float(pair["off_return"])-
+                         float(pair["on_minus_off"])) < 1e-8
+          print("Experiment 001 verified five paired world seeds")
+          print("Paired summary:", summary[0])
+          for seat in range(4):
+              on=sum(float(r["realized_return"]) for r in agents if int(r["seat"])==seat and r["delivery"]=="on")
+              off=sum(float(r["realized_return"]) for r in agents if int(r["seat"])==seat and r["delivery"]=="off")
+              print("Seat", seat, "on-minus-off mean:", (on-off)/5)
+          print("Mean per-step patch crowding by condition:")
+          for condition in ("on","off"):
+              foragers=[r for r in steps if r["delivery"]==condition and int(r["action"])<3]
+              crowd=sum(int(r["foragers_on_selected_patch"]) for r in foragers)/len(foragers)
+              print(condition, "forager-weighted crowding:",round(crowd,5),
+                    "foraging actions:",len(foragers))
+          on_followers=[r for r in steps if r["delivery"]=="on" and int(r["seat"])>0]
+          exposed=[r for r in on_followers if int(r["signaled_patch"])>=0]
+          unexposed=[r for r in on_followers if int(r["signaled_patch"])<0]
+          align=sum(int(r["signal_alignment"]) for r in exposed)
+          print("Signal exposure on follower-decision rows:",len(exposed),
+                "of",len(on_followers))
+          print("Follower match to advertised patch on exposure:",align,
+                "of",len(exposed))
+          for label, group in (("exposed",exposed),("unexposed",unexposed)):
+              changed=sum(int(r["changed_patch"]) for r in group)
+              print("Patch changes among",label,"followers:",changed,
+                    "of",len(group))
+          assert all(int(r["received_signals"])==0 and int(r["signaled_patch"])==-1
+                     for r in steps if r["delivery"]=="off")
+          assert len(exposed)>0
+          changed=[r for r in on_followers if int(r["message_changed_action"])==1]
+          print("Counterfactual action changes:",len(changed),"of",len(on_followers))
+          print("Counterfactual action changes among exposed:",sum(int(r["message_changed_action"]) for r in exposed),"of",len(exposed))
+          assert all(int(r["message_changed_action"])==0 for r in unexposed)
+          assert all(int(r["message_changed_action"])==0 for r in steps if r["delivery"]=="off")
+          print("Mean signaling actions per seed by condition:")
+          for condition in ("on","off"):
+              print(condition, sum(int(r["signals"]) for r in episodes if r["delivery"]==condition)/5)
+          PY
+      - name: Diagnose Experiment 001 paired trajectories
+        run: |
+          python3 tools/capture/analyze_experiment001_trajectories.py artifacts/experiment001-pilot/steps.csv artifacts/experiment001-pilot
+          test -s artifacts/experiment001-pilot/trajectory-diagnostics.csv
+          test -s artifacts/experiment001-pilot/trajectory-diagnostics.md
+      - name: Publish Experiment 001 pilot data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-pilot-5-seeds
+          path: artifacts/experiment001-pilot
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Run expanded Experiment 001 evaluation (100 paired seeds)
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --experiment001 artifacts/experiment001-expanded 110000 100
+      - name: Verify expanded Experiment 001 pairing and accounting
+        run: |
+          python3 - <<'PY'
+          import pathlib,csv,json
+          p=pathlib.Path("artifacts/experiment001-expanded")
+          manifest=json.loads((p/"manifest.json").read_text())
+          def load(name):
+              with (p/name).open(newline="") as f:return list(csv.DictReader(f))
+          episode=load("episodes.csv"); agents=load("agents.csv")
+          steps=load("steps.csv"); pairs=load("paired.csv")
+          assert manifest["seeds"]==100 and manifest["first_seed"]==110000
+          assert tuple(map(len,(episode,agents,steps,pairs)))==(200,800,64000,100)
+          totals={(int(row["seed"]),row["delivery"]):float(row["collective_return"]) for row in episode}
+          assert len(totals)==200
+          for row in pairs:
+              seed=int(row["seed"])
+              assert abs(totals[seed,"on"]-totals[seed,"off"]-float(row["on_minus_off"]))<1e-7
+          counted={}
+          for row in steps:
+              key=int(row["seed"]),row["delivery"]
+              counted[key]=counted.get(key,0)+float(row["reward"])
+              if row["delivery"]=="off":assert int(row["received_signals"])==0
+          assert len(counted)==200
+          for key,value in counted.items():assert abs(value-totals[key])<1e-6
+          print("Expanded E001 validated 100 paired seeds")
+          print("Paired summary:",load("summary.csv")[0])
+          PY
+      - name: Analyze expanded Experiment 001 trajectories
+        run: python3 tools/capture/analyze_experiment001_trajectories.py artifacts/experiment001-expanded/steps.csv artifacts/experiment001-expanded
+      - name: Publish expanded Experiment 001 study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-expanded-100-seeds
+          path: artifacts/experiment001-expanded
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Execute revised adaptive Experiment 001 (30 matched seeds)
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --adaptive001 artifacts/experiment001-adaptive-v2 210000 30
+      - name: Validate adaptive Experiment 001 outputs
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib,math
+          root=pathlib.Path("artifacts/experiment001-adaptive-v2")
+          m=json.loads((root/"manifest.json").read_text())
+          def read(name):
+              with (root/name).open(newline="") as f:return list(csv.DictReader(f))
+          episodes,pairs,summary=map(read,("episodes.csv","paired.csv","summary.csv"))
+          assert m["seeds"]==30 and m["genome_frozen"] and m["agent_q_updates"]
+          assert len(episodes)==180 and len(pairs)==30 and len(summary)==4
+          assert {r["condition"] for r in episodes}=={"adaptive_on","adaptive_off","scripted_on","scripted_off","frozen_on","frozen_off"}
+          for p in pairs:
+              assert abs(float(p["adaptive_on"])-float(p["adaptive_off"])-float(p["adaptive_on_minus_off"]))<1e-7
+              assert abs(float(p["adaptive_on"])-float(p["scripted_on"])-float(p["adaptive_on_minus_scripted_on"]))<1e-7
+          for p in pairs:
+              assert abs(float(p["adaptive_on"])-float(p["frozen_on"])-float(p["adaptive_on_minus_frozen_on"]))<1e-7
+              assert abs(float(p["adaptive_off"])-float(p["frozen_off"])-float(p["adaptive_off_minus_frozen_off"]))<1e-7
+          print("Revised adaptive Experiment 001:",summary)
+          print("Observed adaptive signaling actions:",sum(int(x["signals"]) for x in episodes if x["condition"]=="adaptive_on"))
+          PY
+      - name: Publish revised adaptive Experiment 001
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-adaptive-v2-30-seeds
+          path: artifacts/experiment001-adaptive-v2
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Run frozen-policy held-out evaluation
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --heldout001 artifacts/experiment001-heldout-v3
+      - name: Validate held-out evaluation and print conclusions
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          p=pathlib.Path("artifacts/experiment001-heldout-v3")
+          manifest=json.loads((p/"manifest.json").read_text())
+          def read(path):
+              with (p/path).open(newline="") as f:return list(csv.DictReader(f))
+          episodes,pairs,summary=map(read,("episodes.csv","paired.csv","summary.csv"))
+          assert manifest["test_updates"]==0 and manifest["test_seeds"]==30
+          assert len(episodes)==90 and len(pairs)==30 and len(summary)==2
+          assert {r["condition"] for r in episodes}=={"untrained_on","trained_on","trained_off"}
+          assert manifest["train_first_seed"]+manifest["train_episodes"] <= manifest["test_first_seed"]
+          for r in pairs:
+              assert abs(float(r["trained_on"])-float(r["untrained_on"])-float(r["trained_minus_untrained"]))<1e-7
+          print("Held-out evaluation summaries:",summary)
+          PY
+      - name: Upload held-out evaluation data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-heldout-v3
+          path: artifacts/experiment001-heldout-v3
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Run learnable message-use E001
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --messageuse001 artifacts/experiment001-messageuse-v4
+      - name: Validate learned message-use experiment
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,csv
+          p=pathlib.Path("artifacts/experiment001-messageuse-v4")
+          m=json.loads((p/"manifest.json").read_text())
+          def load(n):
+              with (p/n).open(newline="") as f:return list(csv.DictReader(f))
+          episodes=load("episodes.csv");summary=load("summary.csv")
+          assert m["test_updates"]==0 and m["test_seeds"]==30
+          assert len(episodes)==90 and len(summary)==1
+          assert {r["condition"] for r in episodes}=={"untrained_on","trained_on","trained_off"}
+          assert sum(int(r["exposed_decisions"]) for r in episodes if r["condition"]=="trained_on")>0
+          print("Learnable message-use results:",summary)
+          for name in ("trained_on","untrained_on"):
+              group=[r for r in episodes if r["condition"]==name]
+              print(name,"exposures:",sum(int(r["exposed_decisions"]) for r in group),
+                    "trusted:",sum(int(r["trust_decisions"]) for r in group))
+          PY
+      - name: Upload message-use study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-messageuse-v4
+          path: artifacts/experiment001-messageuse-v4
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Run renewable commons learning controls
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons001 artifacts/commons-learning-v1
+      - name: Validate commons experiment and report behavior
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          root=pathlib.Path("artifacts/commons-learning-v1")
+          meta=json.loads((root/"manifest.json").read_text())
+          with (root/"episodes.csv").open(newline="") as f: rows=list(csv.DictReader(f))
+          with (root/"summary.csv").open(newline="") as f: summary=list(csv.DictReader(f))
+          assert meta["seeds"]==30 and len(rows)==120 and len(summary)==1
+          assert {r["condition"] for r in rows}=={"learner","frozen","greedy","scheduled_repair"}
+          for condition in ("learner","frozen","greedy","scheduled_repair"):
+              samples=[r for r in rows if r["condition"]==condition]
+              assert len(samples)==30
+              print(condition,"mean_return:",round(sum(float(r["collective_return"]) for r in samples)/30,3),
+                    "mean_repairs:",round(sum(int(r["repairs"]) for r in samples)/30,3),
+                    "mean_stock:",round(sum(int(r["final_stock"]) for r in samples)/30,3),
+                    "mean_survivors:",round(sum(int(r["alive"]) for r in samples)/30,3))
+          print("Commons paired learning effect:",summary[0])
+          PY
+      - name: Upload commons learning study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-learning-v1-30-seeds
+          path: artifacts/commons-learning-v1
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Evaluate intention-aware commons learning
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-intentions artifacts/commons-intentions
+      - name: Validate intention experiment and report outcomes
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          root=pathlib.Path("artifacts/commons-intentions")
+          m=json.loads((root/"manifest.json").read_text())
+          with (root/"episodes.csv").open(newline="") as f: data=list(csv.DictReader(f))
+          with (root/"summary.csv").open(newline="") as f: summary=list(csv.DictReader(f))
+          assert m["seeds"]==30 and len(data)==120 and len(summary)==1
+          expected={"learning_on","frozen_on","learning_off","scripted_on"}
+          assert {r["condition"] for r in data}==expected
+          for group in sorted(expected):
+              rows=[r for r in data if r["condition"]==group]
+              print(group,"mean_return",round(sum(float(x["return"]) for x in rows)/30,4),
+                    "repairs",round(sum(int(x["successful_repairs"]) for x in rows)/30,4),
+                    "intentions",sum(int(x["accepted_intentions"]) for x in rows),
+                    "survival",round(sum(int(x["survivors"]) for x in rows)/30,4))
+          print("Paired study:",summary)
+          PY
+      - name: Archive intention commons study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-intentions-study
+          path: artifacts/commons-intentions
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Run discounted commons policy held-out study
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-delayed artifacts/commons-delayed-v1
+      - name: Validate discounted held-out result
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          root=pathlib.Path("artifacts/commons-delayed-v1")
+          m=json.loads((root/"manifest.json").read_text())
+          def load(n):
+              with (root/n).open(newline="") as f:return list(csv.DictReader(f))
+          rows=load("episodes.csv");summary=load("summary.csv")
+          assert len(rows)==90 and len(summary)==1 and m["test_updates"]==0
+          assert m["train_start"]+m["train_episodes"]<=m["test_start"]
+          assert {x["condition"] for x in rows}=={"trained_on","untrained_on","trained_off"}
+          for label in ("trained_on","untrained_on","trained_off"):
+              values=[x for x in rows if x["condition"]==label]
+              print(label,"return",round(sum(float(x["collective_return"]) for x in values)/30,3),
+                    "repairs",round(sum(int(x["successful_repairs"]) for x in values)/30,3),
+                    "responded",sum(int(x["accepted_intentions"]) for x in values),
+                    "survivors",round(sum(int(x["survivors"]) for x in values)/30,3))
+          print("Frozen held-out comparison:",summary)
+          PY
+      - name: Upload discounted commons results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-delayed-heldout-v1
+          path: artifacts/commons-delayed-v1
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Execute matched immediate-versus-delayed commons control
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-matched artifacts/commons-matched
+      - name: Validate matched gamma experiment and print comparisons
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          root=pathlib.Path("artifacts/commons-matched")
+          def read(name):
+              with (root/name).open(newline="") as f: return list(csv.DictReader(f))
+          d=read("delayed-episodes.csv")
+          i=read("immediate-episodes.csv")
+          dm=json.loads((root/"delayed-manifest.json").read_text())
+          im=json.loads((root/"immediate-manifest.json").read_text())
+          assert dm["gamma"]==0.95 and im["gamma"]==0
+          for field in ("train_start","train_episodes","test_start","test_seeds","horizon","test_updates"):
+              assert dm[field]==im[field],field
+          assert len(d)==len(i)==90
+          assert {(r["seed"],r["condition"]) for r in d}=={(r["seed"],r["condition"]) for r in i}
+          assert len(read("delayed-summary.csv"))==len(read("immediate-summary.csv"))==1
+          by_d={(r["seed"],r["condition"]):r for r in d}
+          by_i={(r["seed"],r["condition"]):r for r in i}
+          differences=[]
+          for seed in range(dm["test_start"],dm["test_start"]+dm["test_seeds"]):
+              k=(str(seed),"trained_on")
+              differences.append(float(by_d[k]["collective_return"])-float(by_i[k]["collective_return"]))
+          assert len(differences)==30
+          for name,rows in (("delayed",d),("immediate",i)):
+              for condition in ("trained_on","untrained_on","trained_off"):
+                  selected=[r for r in rows if r["condition"]==condition]
+                  print(name,condition,"mean_return",round(sum(float(r["collective_return"]) for r in selected)/30,4),
+                    "mean_repairs",round(sum(int(r["successful_repairs"]) for r in selected)/30,4),
+                    "mean_survivors",round(sum(int(r["survivors"]) for r in selected)/30,4))
+          print("Paired delayed-minus-immediate trained ON mean",sum(differences)/len(differences))
+          PY
+      - name: Archive matched immediate and discounted runs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-matched-discount-control
+          path: artifacts/commons-matched
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Validate commons learning trajectories
+        run: |
+          python3 - <<'PY'
+          import csv,pathlib,statistics
+          root=pathlib.Path("artifacts/commons-matched")
+          for name in ("delayed","immediate"):
+              with (root/f"{name}-training.csv").open(newline="") as stream:
+                  records=list(csv.DictReader(stream))
+              assert len(records)==400
+              assert [int(x["episode"]) for x in records]==list(range(400))
+              assert len({int(x["seed"]) for x in records})==400
+              for begin,end in ((0,100),(100,200),(200,300),(300,400)):
+                  subset=records[begin:end]
+                  means={key:statistics.mean(float(x[key]) for x in subset)
+                         for key in ("collective_return","successful_repairs","survivors","accepted_intentions")}
+                  print(name,"training block",begin,end,means)
+          PY
+
+      - name: Execute independent commons learning restarts
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-restarts artifacts/commons-restarts
+      - name: Audit early checkpoints and independent restarts
+        run: |
+          python3 - <<'PY'
+          import csv, pathlib, statistics
+          p=pathlib.Path("artifacts")
+          def read(path):
+              with path.open(newline="") as stream:return list(csv.DictReader(stream))
+          checkpoints=read(p/"commons-matched"/"delayed-checkpoints.csv")
+          restarts=read(p/"commons-restarts"/"restarts.csv")
+          assert len(checkpoints)==8*30, len(checkpoints)
+          assert len(restarts)==5*30, len(restarts)
+          assert {int(x["checkpoint"]) for x in checkpoints}=={1,5,10,25,50,100,200,400}
+          assert len({int(x["train_seed"]) for x in restarts})==5
+          assert len({int(x["heldout_seed"]) for x in restarts})==30
+          for cp in sorted({int(x["checkpoint"]) for x in checkpoints}):
+              sample=[r for r in checkpoints if int(r["checkpoint"])==cp]
+              print("checkpoint",cp,"return",round(statistics.mean(float(x["collective_return"]) for x in sample),3),
+                    "repairs",round(statistics.mean(int(x["repairs"]) for x in sample),3),
+                    "survival",round(statistics.mean(int(x["survivors"]) for x in sample),3))
+          for r in range(5):
+              sample=[x for x in restarts if int(x["restart"])==r]
+              print("restart",r,"return",round(statistics.mean(float(x["collective_return"]) for x in sample),3),
+                    "repairs",round(statistics.mean(int(x["repairs"]) for x in sample),3),
+                    "survival",round(statistics.mean(int(x["survivors"]) for x in sample),3))
+          PY
+      - name: Archive commons checkpoint and restart diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-final-validation
+          path: |
+            artifacts/commons-matched/delayed-checkpoints.csv
+            artifacts/commons-restarts/restarts.csv
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Audit first-episode values and sender robustness
+        run: |
+          python3 - <<'PY'
+          import csv,pathlib,statistics
+          root=pathlib.Path("artifacts/commons-matched")
+          def load(n):
+              with (root/n).open(newline="") as f:return list(csv.DictReader(f))
+          q=load("first-episode-q.csv")
+          challenge=load("sender-challenges.csv")
+          assert len(q)==24 and len(challenge)==90
+          assert {x["sender_policy"] for x in challenge}=={"baseline_period4","period6","never_signal"}
+          for seat in range(1,4):
+              group=[r for r in q if int(r["seat"])==seat]
+              assert len(group)==8
+              print("seat",seat,"response-preferred states after 1 episode",
+                    [int(x["state"]) for x in group if x["preferred_action"]=="respond"])
+          for policy in ("baseline_period4","period6","never_signal"):
+              subset=[r for r in challenge if r["sender_policy"]==policy]
+              print("sender challenge",policy,"mean return",
+                  round(statistics.mean(float(r["collective_return"]) for r in subset),3),
+                  "repairs",round(statistics.mean(int(r["repairs"]) for r in subset),3),
+                  "survivors",round(statistics.mean(int(r["survivors"]) for r in subset),3))
+          PY
+      - name: Archive first episode and sender challenge
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-mechanism-audit
+          path: |
+            artifacts/commons-matched/first-episode-q.csv
+            artifacts/commons-matched/sender-challenges.csv
+          if-no-files-found: warn
+          retention-days: 60
+
+      - name: Analyze matched sender-rule delivery cadence
+        run: |
+          python3 - <<'PY'
+          import csv,pathlib,statistics
+          p=pathlib.Path("artifacts/commons-matched/delivery-challenges.csv")
+          with p.open(newline="") as file: rows=list(csv.DictReader(file))
+          assert len(rows)==120
+          assert {int(x["delivery_stride"]) for x in rows}=={1,2,3,4}
+          for stride in (1,2,3,4):
+              x=[r for r in rows if int(r["delivery_stride"])==stride]
+              assert len(x)==30
+              print("DELIVERY_STRIDE",stride,
+                    "return",round(statistics.mean(float(r["collective_return"]) for r in x),3),
+                    "repairs",round(statistics.mean(int(r["repairs"]) for r in x),3),
+                    "survivors",round(statistics.mean(int(r["survivors"]) for r in x),3),
+                    "responses",round(statistics.mean(int(r["responses"]) for r in x),3))
+          PY
+      - name: Archive controlled delivery experiment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-delivery-cadence
+          path: artifacts/commons-matched/delivery-challenges.csv
+          if-no-files-found: error
+          retention-days: 60
+
+      - name: Summarize exchange rate cooperation curves
+        run: |
+          python3 - <<'PY'
+          import csv,collections,statistics,pathlib
+          folder=pathlib.Path("artifacts/commons-matched")
+          with (folder/"exchange-timeseries.csv").open() as stream: rows=list(csv.DictReader(stream))
+          assert len(rows)==1200
+          groups=collections.defaultdict(list)
+          for row in rows: groups[(int(row["delivery_stride"]),int(row["window"]))].append(int(row["repairs"]))
+          with (folder/"exchange-curve.csv").open("w",newline="") as stream:
+              out=csv.writer(stream);out.writerow(["step","rate_100","rate_50","rate_33","rate_25"])
+              for window in range(10):
+                  values=[statistics.mean(groups[(stride,window)]) for stride in (1,2,3,4)]
+                  out.writerow([window*10+5,*values])
+                  print("EXCHANGE_CURVE",window*10+5,*[round(v,4) for v in values])
+          PY
+      - name: Archive cooperation curves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-exchange-curve
+          path: artifacts/commons-matched/exchange-*.csv
+          if-no-files-found: error
+
+      - name: Analyze randomized delivery reliability across time
+        run: |
+          python3 - <<'PY'
+          import csv,collections,statistics,pathlib
+          root=pathlib.Path("artifacts/commons-matched")
+          with (root/"probabilistic-exchange.csv").open(newline="") as stream:rows=list(csv.DictReader(stream))
+          assert len(rows)==2100
+          groups=collections.defaultdict(list)
+          seeds=collections.defaultdict(list)
+          for r in rows:
+              groups[(int(r["reception_probability"]),int(r["window"]))].append(int(r["repairs"]))
+              seeds[(int(r["reception_probability"]),int(r["seed"]))].append(r)
+          with (root/"probabilistic-exchange-curve.csv").open("w",newline="") as stream:
+              out=csv.writer(stream);out.writerow(["step","p25","p40","p50","p60","p75","p90","p100"])
+              for w in range(10):
+                  out.writerow([w*10+5,*[statistics.mean(groups[(p,w)]) for p in (25,40,50,60,75,90,100)]])
+          for p in (25,40,50,60,75,90,100):
+              sample=[v for (rate,_),v in seeds.items() if rate==p]
+              assert len(sample)==30
+              print("RANDOM_DELIVERY",p,
+                "mean_repairs",round(statistics.mean(sum(int(r["repairs"]) for r in episode) for episode in sample),3),
+                "mean_survivors",round(statistics.mean(int(episode[0]["survivors"]) for episode in sample),3),
+                "mean_return",round(statistics.mean(float(episode[0]["collective_return"]) for episode in sample),3))
+          PY
+      - name: Archive probabilistic exchange curves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-random-delivery-curve
+          path: artifacts/commons-matched/probabilistic-exchange*.csv
+          if-no-files-found: error
+
+      - name: Evaluate learned policies across train-test message reliabilities
+        run: |
+          python3 - <<'PY'
+          import csv,statistics,collections,pathlib
+          p=pathlib.Path("artifacts/commons-matched/reliability-matrix.csv")
+          with p.open(newline="") as f: rows=list(csv.DictReader(f))
+          assert len(rows)==1050
+          groups=collections.defaultdict(list)
+          for r in rows:
+              groups[(int(r["train_delivery"]),int(r["test_delivery"]))].append(r)
+          for train in (100,90,75,60,50):
+              for test in (25,40,50,60,75,90,100):
+                  subset=groups[(train,test)]
+                  assert len(subset)==30
+                  print("RELIABILITY_MATRIX",train,test,
+                        round(statistics.mean(float(r["return"]) for r in subset),3),
+                        round(statistics.mean(int(r["repairs"]) for r in subset),3),
+                        round(statistics.mean(int(r["survivors"]) for r in subset),3))
+          PY
+      - name: Archive robustness train-test matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-trained-reliability-matrix
+          path: artifacts/commons-matched/reliability-matrix.csv
+          if-no-files-found: error
+
+      - name: Export authoritative commons action replay
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-trace artifacts/commons-action-trace.csv
+      - name: Archive commons action replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-symbolic-action-trace
+          path: artifacts/commons-action-trace.csv
+          if-no-files-found: error
+
+      - name: Export learned follower action replay
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-learned-trace artifacts/commons-learned-action-trace.csv
+      - name: Archive learned follower action replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-learned-action-trace
+          path: artifacts/commons-learned-action-trace.csv
+          if-no-files-found: error
+
+      - name: Export paired learned Petri-dish replays
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-learned-pair artifacts/petri-replay
+      - name: Archive paired learned Petri-dish replays
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-petri-replays
+          path: artifacts/petri-replay/*.csv
+          if-no-files-found: error
+
+      - name: Check Petri dish viewer syntax and required visual elements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          page=Path("tools/commons-petri-viewer/index.html").read_text()
+          assert page.count('class="dish-frame"')==2
+          for feature in ('cell-shell','signal-ring','radialGradient','function renderDish','function parse','dish-full','dish-half'):
+              assert feature in page,feature
+          scripts=re.findall(r'<script[^>]*>(.*?)</script>',page,re.S)
+          assert len(scripts)==1
+          Path("/tmp/cells-petri-viewer.js").write_text(scripts[0])
+          PY
+          node --check /tmp/cells-petri-viewer.js
+
+      - name: Export biological automata machine microscope trace
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --cell-machine-trace artifacts/cell-machine-trace.csv
+      - name: Archive biological automata machine microscope trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cell-machine-microscope-trace
+          path: artifacts/cell-machine-trace.csv
+          if-no-files-found: error
+
+      - name: Export spatial multi-cell machine trace
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --cell-field-trace artifacts/spatial-cell-field.csv
+      - name: Archive spatial multi-cell microscope trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-cell-field
+          path: artifacts/spatial-cell-field.csv
+          if-no-files-found: error
+      - name: Check spatial microscope JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          page=Path("tools/spatial-microscope/index.html").read_text()
+          Path("/tmp/cells-spatial-microscope.js").write_text(re.search(r'<script>(.*?)</script>',page,re.S).group(1))
+          PY
+          node --check /tmp/cells-spatial-microscope.js

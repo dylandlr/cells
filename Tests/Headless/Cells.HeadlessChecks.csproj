@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="CellMachineChecks.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Automata/CellFieldV01.cs" Link="CellFieldV01.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Automata/CellMachineV01.cs" Link="CellMachineV01.cs" />
+    <Compile Include="CommonsActionTrace.cs" />
+    <Compile Include="Experiment001ValidityChecks.cs" />
+    <Compile Include="RenewableCommonsChecks.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/RenewableCommonsV0.cs" Link="RenewableCommonsV0.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/CommonsLearningV1.cs" Link="CommonsLearningV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/CommonsIntentionStudyV1.cs" Link="CommonsIntentionStudyV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/CommonsDelayedLearningV1.cs" Link="CommonsDelayedLearningV1.cs" />
+    <Compile Include="PlanarDragChecks.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs" Link="PlanarDragBalance.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingGameV1.cs" Link="SignalingGameV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Experiment001V1.cs" Link="Experiment001V1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/AdaptiveExperiment001V2.cs" Link="AdaptiveExperiment001V2.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/AdaptiveHeldOut001V3.cs" Link="AdaptiveHeldOut001V3.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/MessageUseExperiment001V4.cs" Link="MessageUseExperiment001V4.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingExperimentRunnerV1.cs" Link="SignalingExperimentRunnerV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Exp3EpisodeSelectorV1.cs" Link="Exp3EpisodeSelectorV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Exp3StrategyTrainingV1.cs" Link="Exp3StrategyTrainingV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/Exp3HeldOutEvaluationV1.cs" Link="Exp3HeldOutEvaluationV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/PairedAssayAnalysisV1.cs" Link="PairedAssayAnalysisV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/RestrictedDeviationStudyV1.cs" Link="RestrictedDeviationStudyV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/EmpiricalPayoffTensorV1.cs" Link="EmpiricalPayoffTensorV1.cs" />
+  </ItemGroup>
+</Project>

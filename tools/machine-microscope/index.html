@@ -1,0 +1,44 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cells / machine microscope</title><style>
+:root{color-scheme:dark;background:#07141e;color:#d9eaf0;font:14px system-ui,sans-serif}
+body{max-width:1250px;margin:auto;padding:20px}h1{font-size:24px;margin:0 0 5px}.muted{color:#9bb6c7}
+header,.controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+button,input{background:#183041;color:#e5f4f7;border:1px solid #456577;border-radius:6px;padding:8px;cursor:pointer}
+.layout{display:grid;grid-template-columns:minmax(350px,1fr) 300px;gap:12px}
+.panel{background:linear-gradient(145deg,#102837,#071924);border:1px solid #345568;border-radius:12px;padding:12px}
+canvas{width:100%;height:auto;display:block;border-radius:50%;aspect-ratio:1}
+.metric{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #294457}
+.label{letter-spacing:.09em;text-transform:uppercase;font-size:11px;color:#9bb6c7}
+@media(max-width:780px){.layout{grid-template-columns:1fr}}
+</style><header><div><h1>cells <span class="muted">/ machine microscope</span></h1><div class="muted">Functional cell prototype · measured energy and membrane state</div></div><span id="tick">No trace loaded</span></header>
+<div class="controls"><label>Cell machine trace <input type="file" id="file" accept=".csv"></label><button id="play" disabled>▶ Play</button><button id="step" disabled>Step</button><button id="reset" disabled>Reset</button><label>Tick <input id="scrub" type="range" min="0" max="0" value="0" disabled></label></div>
+<div class="layout"><div class="panel"><div class="label">PETRI DISH · STATIC PHYSICAL POSITION · SCHEMATIC PARTICLES</div><canvas id="dish" width="800" height="800"></canvas></div>
+<aside class="panel"><div class="label">CELL A0 / INSTALLED MODULES</div><div id="metrics"></div><p class="muted">S = saturated receptor, T = membrane transport, M = metabolic conversion, R = repair effector, C = fixed allocation controller.</p><p class="muted">Coordinates originate in trace. Intracellular module positions and nutrient points are diagrammatic illustrations, not particle simulation. No movement, reproduction or strategic learning is claimed in this prototype.</p></aside></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),ctx=$("dish").getContext("2d");
+let rows=[],cursor=0,timer=null;
+const keys=["tick","x","y","bath","nutrient","energy","membrane_integrity","sensor","transported","metabolized","repaired","waste"];
+function parse(csv){const lines=csv.trim().split(/\r?\n/);if(lines.shift()!==keys.join(","))throw Error("Invalid CellMachineV01 CSV");
+return lines.filter(Boolean).map(line=>{const items=line.split(",");if(items.length!==keys.length)throw Error("Invalid row");const r={};keys.forEach((k,i)=>r[k]=Number(items[i]));if(keys.some(k=>!Number.isFinite(r[k])))throw Error("Non-finite state");return r;});}
+function circ(x,y,r,stroke,fill,weight=2){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=weight;ctx.stroke()}}
+function text(t,x,y,color,size=18){ctx.fillStyle=color;ctx.font=size+"px ui-monospace,monospace";ctx.textAlign="center";ctx.fillText(t,x,y)}
+function render(){ctx.clearRect(0,0,800,800);const bg=ctx.createRadialGradient(355,315,25,400,400,375);bg.addColorStop(0,"#163949");bg.addColorStop(1,"#071622");circ(400,400,378,"#8cb6c9",bg,8);circ(400,400,368,"#3c6d82",null,2);
+if(!rows.length){text("Load a measured CellMachineV01 trace",400,400,"#aac7d6",22);return}
+const r=rows[cursor];const n=Math.min(180,Math.round(r.bath*3));
+for(let i=0;i<n;i++){const a=i*2.399963,radius=Math.sqrt((i+.5)/Math.max(n,1))*340;const x=400+radius*Math.cos(a),y=400+radius*Math.sin(a);circ(x,y,1.7,null,i%3===0?"#c5d79e":"#6ca2a9");}
+const x=400+(r.x-.5)*430,y=400+(r.y-.5)*430;
+const color=r.membrane_integrity>.65?"#7bdcc7":"#e4b77b";
+circ(x,y,93,color,"#0f393b",5);circ(x,y,85,"#6ab7aa",null,2);circ(x,y,26,"#87b6e2","#15334a",3);text("C",x,y+6,"#a4d2ea",19);
+const nodes=[["S",-43,-38,"#c6abf0"],["T",56,-31,"#8cdbba"],["M",38,45,"#ecc57d"],["R",-46,42,"#8cdbba"]];
+for(const [s,dx,dy,c] of nodes){circ(x+dx,y+dy,16,c,"#112c3d",2);text(s,x+dx,y+dy+5,c,16);}
+text("A0 · membrane "+(r.membrane_integrity*100).toFixed(0)+"%",400,687,"#d9eaf0",18);
+$("tick").textContent="TICK "+r.tick+" / "+rows.length;
+$("metrics").replaceChildren();for(const [name,value] of [["Bath reservoir",r.bath],["Internal nutrient",r.nutrient],["Energy",r.energy],["Membrane integrity",r.membrane_integrity],["Sensor response",r.sensor],["Measured uptake",r.transported],["Metabolized substrate",r.metabolized],["Repair expenditure",r.repaired],["Waste generated",r.waste]]){const d=document.createElement("div");d.className="metric";const a=document.createElement("span");a.textContent=name;const b=document.createElement("b");b.textContent=value.toFixed(3);d.append(a,b);$("metrics").append(d);}
+$("scrub").value=cursor;}
+function stop(){clearInterval(timer);timer=null;$("play").textContent="▶ Play"}
+function next(){if(cursor>=rows.length-1){stop();return;}cursor++;render()}
+$("file").addEventListener("change",async e=>{try{stop();rows=parse(await e.target.files[0].text());if(!rows.length)throw Error("Empty trace");cursor=0;$("scrub").max=rows.length-1;for(const id of ["play","step","reset","scrub"])$(id).disabled=false;render();}catch(err){alert(String(err));}});
+$("play").onclick=()=>{if(timer){stop();return;}$("play").textContent="Ⅱ Pause";timer=setInterval(next,160)};
+$("step").onclick=()=>{stop();next()};$("reset").onclick=()=>{stop();cursor=0;render()};$("scrub").oninput=e=>{stop();cursor=Number(e.target.value);render()};render();
+</script></html>

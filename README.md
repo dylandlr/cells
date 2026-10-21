@@ -1,17 +1,423 @@
 # cells
 
-**cells** is a Unity-based microscopic survival and evolutionary emergence simulator with a research-grade causal microscope, interpretable biological physics, and multi-agent/game-theoretic experiments.
+## Course progress report and compact evolutionary visualization
 
-## Design goals
+- [CSCE 631 progress report draft](docs/CSCE631_PROGRESS_REPORT_DRAFT.md) — verified experimental results, limitations, and remaining course milestones.
+- [Evolution Microscope](tools/evolution-microscope/README.md) — **deprecated, disconnected concept prototype; not a cells science demo.** It generates toy events independent of the actual game-theoretic learner and Unity biophysics. Do not use it as evidence of project behavior. Replace with a viewer of authoritative simulation state and recorded events.
 
-- Microscopy-inspired pixel rendering with granular anatomy, living membranes, cilia, vesicles and localized secretion.
-- Low-Reynolds-number swimmer physics, nutrients, toxins, diffusion, energy budgets and structural evolution.
-- Explicit separation of **organism sensors** (limited evolved receptors) from **human augmented microscopy** (colors, icons, inspectable substance properties).
-- Every consequential process has physical, interpretive and causal representations.
-- Three research pillars: game-theoretic learning; empirical analysis of cooperation and communication; genetic–strategic coevolution with action abstraction.
 
-## Status
+## Current research findings and next milestone
 
-Repository initialized. Previous Unity demonstration artifacts exist separately as **cells Unity Causal Microscope v0.3**; that prototype has not yet been Unity-Editor verified or migrated into this repository. Do not mistake target-footage renders for Unity captures. Code migration and Editor validation are next.
+The independently tested headless commons results and next research stages are consolidated in
+[Research Findings and Next Milestones](docs/RESEARCH_FINDINGS_AND_NEXT_MILESTONES.md).
+The highest-priority experiment is **training agents with unreliable message delivery**
+and comparing frozen policies across matched communication-reliability conditions.
+The results currently establish learned response to scripted coordination messages,
+**not** spontaneous learned signaling, evolutionary emergence, or Unity biophysical validity.
+The research and Unity test pipelines have independent acceptance gates.
 
-See [visual ontology](docs/VISUAL_ONTOLOGY.md) and [migration plan](docs/MIGRATION.md).
+
+A Unity microscopic chemistry and physiology sandbox with a human-facing causal microscope.
+
+## Run
+
+Open this folder in **Unity 6000.6.5f1 (Unity 6.6)**, open
+`Assets/CellsDemo/Scenes/MicroscopeCulture.unity`, and press Play. If the scene is absent,
+use **Cells > Create or open microscope culture**. This denser, adherent culture uses
+phase-contrast-inspired grayscale rendering, irregular contours and varied static
+intracellular texture. Every visible cell has metabolism, exchange and leakage.
+Local boundaries deform under contact and injury and relax when released. The centers
+remain anchored; there is no synchronized beating or scripted pulsing.
+
+The smaller two-organism experiment remains available in `ChemistryDemo.unity` and
+**Cells > Create or open chemistry demo**. Windows builds start in the culture view.
+
+- Click a cell or its named button to inspect energy, membrane integrity, and recent events.
+- Scroll over the world to zoom; F follows selection; Escape clears it.
+- Space or Pause stops simulation while inspection remains usable.
+- Food, Toxin, and Reagent buttons deposit measured quantities at the selected membrane region (or origin).
+- The region slider moves the pipette around the boundary; inspection reports local concentration, mean integrity and weakest-region integrity.
+- Repair spends the selected living cell's energy. A ruptured membrane cannot be repaired.
+- Toggle **Show false-color chemical concentrations** to inspect the underlying field.
+  It is hidden initially in the culture view; chemistry continues running.
+
+## Microscope presentation pass (unverified in Play Mode)
+
+The human-facing demo now starts at **0.25x wall-clock playback** so membrane deformation,
+flagellar motion, diffusion, injury, feeding, and signaling are easier to inspect instead of
+reading as a fast static blur. The microscope panel exposes 0.1x, 0.25x, 1x, and 4x playback
+buttons plus pause; these change presentation speed, not model units or assay definitions.
+Automated assay mode remains at 1x.
+
+The two free-swimming focal cells also have a stronger phase-contrast-inspired visual pass:
+a dark outer halo, point-filtered internal features, and deforming cytoplasmic granules that
+remain attached to the live soft-body geometry. These granules are explicitly visual texture,
+not new simulated organelles or material. This change is intended to move the look closer to
+the readable microscopic style of the project references while keeping physics-derived body
+motion authoritative.
+
+This pass is committed but still requires local Unity 6.6 Play Mode verification for appearance,
+frame pacing, and UI layout before recording footage.
+
+## Substrate reference audit — energy visibility
+
+Reference input: user-supplied `readme.txt`, identified as Substrate: Emergence
+v0.4.8-3 "Synthesis" alpha demo. Its **deprecated basics** describe nutrient
+capture, vacuole storage, ATP production, energy expenditure, starvation, and
+membrane area representing available cytoplasm. These are *documented design
+claims*, not extracted source code or proof that this exact behavior persists in
+the current Substrate executable. The supplied `Substrate-Emergence.exe`,
+`UnityPlayer.dll` and `globalgamemanagers` are compiled/build artifacts,
+not editable original game C# source.
+
+For cells, the existing `CellMetabolism.energy` reserve now changes the
+soft-body mesh cytoplasm shade: spending energy darkens the live microscope
+view and feeding restores its tone. The mesh reads the authoritative reserve,
+not a second animated energy variable. **This is a legibility visualization,
+not a claim that color, membrane area, biomass, or ATP are calibrated to real
+organisms.** The source reference influenced the observation goal, while
+the energy-to-color mapping is our own design.
+
+Editor regression tests were authored for spending, feeding, and death. No
+Unity Play Mode or Edit Mode run has been performed in this environment.
+
+## Nutrient-backed growth prototype (unverified in Unity)
+
+Cells now have an explicit structural biomass pool. Existing nutrient mass can be
+transferred from the intracellular reserve into structural biomass, with an energy
+cost and a configurable upper bound. The same nutrient cannot both increase
+biomass and be digested because assimilation reduces the common reserve first.
+The microscope mesh scales approximately with the square root of relative
+biomass as an **illustrative visual proxy**.
+
+**Important limitation:** collision, feeding pores, soft-body dynamics, and membrane
+exposure still use the original geometry. The visual scale now drives the soft-body's rest geometry, but feeding/capture
+and hydrodynamic parameter coupling remain unfinished. Do not use
+this prototype to claim experimentally calibrated growth or mass/geometry
+coupling. Biomass turnover, growth material released upon death, and division
+remain unimplemented. A subsequent version must couple the mass budget to the
+mechanical mesh and contact system before enabling evolution experiments.
+
+Source inspiration: the user-provided Substrate: Emergence alpha README
+describes nutrient capture, storage, energetic conversion, and division.
+Those are documented design notes, **not access to its original source code**.
+The biomass assimilation algorithm here is our independent implementation.
+
+Unity Editor tests have been written but **not run in Unity Play Mode/Edit Mode**.
+
+## Mechanical biomass coupling v1 (Unity validation pending)
+
+The soft-body's **rest contour and rest area** now derive from
+`CellBiomassGrowth.VisualRadiusScale`. The dynamic membrane solver relaxes
+toward the biomass-dependent contour over subsequent fixed physics steps.
+`SoftCellMeshRenderer2D` uses these authoritative solver vertices directly
+and no longer applies a second independent growth scale. Where a
+`SoftCellBody2D` is present, `CellExposureSystem.SurfacePosition`
+samples its actual deforming nodes rather than the old static sector radius.
+
+A regression test checks nutrient mass transfer, membrane expansion and
+correspondence between the actual mechanical node and mesh vertex. It
+has **not been run in Unity**.
+
+This is still a partial coupling: feeding/secretion pores retain fixed local
+positions, hydrodynamic drag/capture parameters are not recalculated from
+the growing contour, and adjacent-cell collision avoidance has not been
+validated. The 2D square-root-of-biomass length relationship is a convenient
+areal-density assumption, **not a calibrated biological growth law**.
+These gaps must be resolved before division/evolution experiments.
+
+Reference provenance: the provided Substrate: Emergence alpha readme reports
+nutrient storage, metabolic consumption, and mitosis. We independently
+implement those ideas; its original Unity source code has not been supplied.
+
+## Membrane-anchored exchange sites v1 (Unity validation pending)
+
+Nutrient uptake, toxin secretion, metabolic waste, and particulate feeding
+now use `MembraneAnchoredSite2D`: site transforms follow the actual
+`SoftCellBody2D` membrane sector when available, and use the legacy
+`MembraneIntegrity.SurfacePoint` otherwise. This removes fixed, floating
+ports as growing cells deform. The site's `FixedUpdate` order runs after
+the soft-body solver and before the chemical-exchange components; `LateUpdate`
+also resynchronizes presentation.
+
+Tests for an expanding cell and a legacy-cell fallback have been authored,
+but **are not yet executed in Unity**. The site currently follows a single
+sector without finite pore-width or regional transport geometry.
+Capture radius, feeding rates, effective organism drag, and cell-cell
+collision response do not yet scale with biomass, so the interaction
+model is not fully mechanically coupled.
+
+Provenance: Substrate: Emergence's supplied README documents membrane
+transport proteins, nutrient collection, energy conversion, and replication.
+That documentation is a design reference, not access to its original source.
+
+## Growth-dependent swimmer resistance (Unity validation pending)
+
+For the flagellar resistive-force balance, the body translation drag now scales
+linearly with the biomass-derived radius factor, and the body rotational drag
+scales with its cube. Larger cells thus resist the *same simulated appendage*
+more strongly. Both values enter the existing coupled 3-DOF mobility solver;
+ambient-flow entrainment is not modified.
+
+These scaling choices are effective-model assumptions reminiscent of 3D Stokes
+drag, **not calibrated to a 2D fluid solver or sourced from Substrate code**.
+The provided Substrate: Emergence README is used for its documented
+growth/metabolism behavior only. Real drag requires geometry, wall effects,
+viscosity, and experimental calibration. Tests for the parameter scaling were
+authored but not executed with the Unity Editor.
+
+Organism-organism collision handling and larger-body contact avoidance are
+still unresolved; do not treat this as a complete hydrodynamics model.
+
+## What is simulated
+
+Independent dissolved species diffuse with no-flux boundaries. Field storage is mass per
+voxel; microscope queries report mass per local area. First-order decay is explicitly
+accounted for. An illustrative local reaction, toxin + reagent -> neutralization product,
+conserves equal-mass reactants and creates their combined product mass. Suspended food is
+tracked separately as seeded Brownian particles; ingestion removes actual packets.
+Feeding moves material into an internal reserve; digestion releases a separate metabolic
+byproduct before supplying energy. Damaged membranes leak nutrient mass back into the field,
+including after death. Secretion costs, concentration-dependent exposure, local injury,
+rupture and energy depletion change authoritative simulation state.
+
+These are phenomenological models in arbitrary units, not calibrated molecular chemistry
+or validated biological toxicology. Cell centers remain stationary in this demo. Membrane injury is
+spatially sampled across 32 regions with state-driven visible openings; fluid flow through
+pores, full mechanical tearing, osmosis, evolution, and learned behavior remain future work.
+Nutrient leakage uses a well-mixed internal compartment and conservative surface transfers. Human substance names and colors are not organism sensor inputs.
+
+## Live motility diagnostics (experimental)
+
+The two swimming focal organisms have a measured-state overlay:
+green = simulated swimmer velocity, blue = local fluid advection,
+amber = signed appendage-induced angular velocity (tangential marker).
+These arrows are drawn in `LateUpdate` from physics state and never
+actuate the organism. They are initially enabled and can be disabled
+individually using the `SwimmerTelemetryOverlay` component checkboxes.
+
+The microscope's whole-field flow overlay still samples the fluid grid.
+The displayed swimmer vector is the model's current velocity before
+fluid advection; it is not a measured trajectory derivative. Chemistry
+steering may also turn the organism and is deliberately **not** shown by
+the amber marker.
+
+Visual appearance and performance have not yet been verified in Unity
+Play Mode; run the local scene and Unity tests before using any footage
+as research evidence.
+
+## Interrupted-assay cleanup (unverified)
+
+The Play Mode batch runner now uses iterator-finally cleanup and a
+component-disable safeguard to deactivate and destroy an in-progress
+world. If there are completed treatments but the batch is interrupted,
+it saves only those completed outcomes to a separate
+`chemotaxis-outcomes-v1-partial.csv` (or corresponding configured
+basename). Only a fully completed schedule produces the normal output
+CSV and `CELL_ASSAY_COMPLETE` log marker. Errors writing partial
+results are surfaced in the Unity Console; disabled-runner cleanup may
+still be subject to platform file I/O errors.
+
+No Unity Editor executable was available in the development container,
+so these lifecycle paths are not yet Play Mode tested. Test interruption
+after several completed trials, confirm no active prior-world objects
+remain, and verify partial rows are not mistaken for a complete batch.
+
+## Fixed-step assay synchronization hardening
+
+The trial recorder now increments an authoritative `RecordedSteps` counter in
+`FixedUpdate` and resets it at `BeginTrial`. The batch runner waits until the
+requested number of **recorded** steps, verifies an exact count at capture,
+and deactivates the completed root before deferred destruction so no
+additional physics ticks can leak into the next treatment.
+
+This addresses identified scheduling risks, but does not establish a passing
+Play Mode run. The batch runner still requires Unity execution to confirm
+coroutine ordering and evaluate scene lifecycle. The runner deliberately
+produces no empirical outcomes in this documentation.
+
+## Assay nutrient deposition audit (validation in progress)
+
+The isolated assay bootstrap now accumulates the **actual** nutrient
+mass returned by each `MultiChemicalField2D.Deposit` call into
+`AssayNutrientDeposited`. Its Edit Mode test asserts positive
+deposition that does not exceed the requested total budget.
+This detects basic failed/oversized deposits, but does not yet establish
+cross-seed equality or mass conservation after diffusion and uptake.
+The field-level comparisons and Play Mode execution remain pending.
+
+## Seed-paired assay improvements (experimental)
+
+In assay mode, nutrient locations now derive from the environment seed using
+five fixed-mass patches inside a bounded assay region. Trials with the same
+seed and different controllers see the same patch positions and total
+requested deposited nutrient mass; different seeds change the positions.
+The seed does not currently randomize toxin locations, physical coefficients,
+or initial organism phenotype.
+
+The planned controller execution order rotates `spatial -> temporal ->
+stochastic` by seed-block index; each controller still occurs exactly
+once per seed. This reduces simple order bias but does not substitute
+for rigorous randomized blocking. Nutrient deposits may be quantized by
+field discretization, so actual world mass should be audited before
+assuming exact mass equality.
+
+New Edit Mode tests inspect the patch generator and revised schedule.
+They are committed, **not yet run in Unity**. Batch-runner Play Mode
+execution and CSV inspection remain required.
+
+## Executable chemistry assay batch (Unity Play Mode; unverified)
+
+Create an empty Unity scene with one GameObject containing
+`ChemotaxisBatchRunner`. Leave `runOnStart=true` and configure
+`firstSeed`, `replicates`, and `horizonSeconds`. Play Mode
+constructs one fresh `ChemistryDemoBootstrap` per planned trial with
+`assayMode=true` and one focal swimmer. Each trial is run for a fixed
+number of physics steps, then its root is destroyed and a new world is
+built. When all trials complete, the runner writes
+`chemotaxis-outcomes-v1.csv` (or the requested basename) to
+`Application.persistentDataPath`. Look for `CELL_ASSAY_COMPLETE` in
+the Unity Console for the file location. Avoid placing a separate
+auto-building chemistry demo in the same scene.
+
+**Experimental limitations:** only stochastic tumble streams vary by
+seed at present; chemical deposition and starting position remain fixed.
+The three modes use the same prototype phenotype, but their turning and
+propulsion rules differ by design. Treatment order is fixed, not
+counterbalanced. This runner is meant to collect initial descriptive
+data; seed pairing does **not yet** imply diverse matched environmental
+replicates or calibrated causal estimates. The scene and tests have not
+been executed in Unity. Compare output only after validating that
+reset isolation, physics order, and mass/energy accounting hold in
+Play Mode.
+
+## Matched chemotaxis assay protocol v1
+
+`ChemotaxisAssayPlanV1.Build(firstSeed,replicates)` deterministically emits
+three treatments per seed: `spatial`, `temporal`, `stochastic`.
+The protocol CSV explicitly marks **fresh world reset required** on every
+trial. The separate outcome CSV schema captures elapsed time, path length,
+absorbed/digested nutrient mass, motor ATP, final energy, tumble count,
+and survival. Unexecuted plans produce **no fabricated outcome rows**.
+
+This is planning/export infrastructure, not an operational batch runner:
+Unity scene resets, identical genotype and location, treatments applied to
+one experimental focal organism, fixed observation horizon, treatment-order
+counterbalancing, per-run telemetry capture, and actual file writes are
+still to be integrated. Editor tests have been authored but not executed.
+No population claims or empirical win rates should be inferred.
+
+## Nutrient mass accounting for chemotaxis trials
+
+The cell chemical-exchange system now records cumulative mass withdrawn from
+the nutrient field and cumulative mass digested into the represented waste
+field. The trial recorder subtracts start-of-trial baselines and emits
+`nutrientAbsorbed` and `nutrientDigested` alongside nutrient exposure,
+path length, and energy use. Absorption and digestion are distinct quantities;
+neither should be inferred from local concentration readings.
+
+The current chemistry microscope logs two different organisms in a shared
+environment, so those logs are observational only—not a matched-control,
+multi-seed causal comparison. Nutrient mass-accounting tests have been
+authored but not executed in Unity. A separate experiment runner with
+environment resets and equal initial conditions remains necessary.
+
+## Chemotaxis trial telemetry (experimental)
+
+`ChemotaxisTrialRecorder` is attached to both focal chemistry-demo swimmers.
+It records actual post-clamp path length, time-integrated local nutrient
+concentration (exposure only, **not uptake**), total cellular energy change,
+authoritative cumulative flagellar motor ATP spend, tumble count, and life
+status. Log lines start with `CELL_TRIAL ` followed by a JSON snapshot,
+and are emitted every 0.2 simulated seconds by default.
+
+These logs are **not yet a controlled multi-controller experiment**:
+the two default swimmers have different phenotypes and start positions,
+and the present camera scene is not a matched-seed comparison protocol.
+A proper experiment needs matched environments and repeated randomized
+replicates with environment resets between treatments, including a baseline.
+
+The recorder tests are authored but have not been executed in Unity. CPU
+and log-volume impact need Play Mode profiling before scaling populations.
+
+## Motor ATP / thrust integration regression coverage
+
+`FlagellarMotorGatingTests` exercises the real actuator and energy reserve:
+normal running versus throttled tumble expenditure, return to running
+thrust, completely disabled motor behavior, and exhaustion-induced shutdown.
+These are authored Unity Editor tests, **not yet executed** in Unity 6.6.
+
+Before using experimental results, run Edit Mode tests and observe the
+chemistry microscope in Play Mode, checking for frame-order effects between
+motility motor commands, flagellar actuation, appendage geometry, and flow.
+Motor energy decreases on a tumble command applied by the next actuator tick;
+there is currently no validated wall-clock biological calibration.
+
+## Timed tumble motor gating (experimental)
+
+A tumble now starts a timed motor-state interval (default 0.22 s) that
+reduces behavioral motor activation (default multiplier 0.12), attenuates
+the requested swimming target, and consequently reduces actuator ATP
+consumption while the state is active. Each swimmer retains independently
+seeded stochastic tumble decisions; the state prevents additional tumble
+starts until the previous one completes.
+
+This is an intentionally simplified coupling: the controller chooses a new
+heading and the motor state throttles the flagellar beat; the simulation
+does **not** resolve bacterial flagellar bundle switching or a hydrodynamic
+tumble torque. Physics execution ordering means motor commands set during
+motility are applied on the following fixed step, while requested velocity
+attenuation begins immediately. The current controller also applies its
+existing heading turn law during the timed tumble.
+
+New editor tests cover timer/recovery semantics but are not verified in
+the Unity runtime yet. Benchmarks and calibration are still required.
+
+## Stochastic chemotaxis experiment (unvalidated)
+
+The two focal swimmers now default to a seeded run-and-tumble heading controller.
+It samples concentration only at the cell's current location, compares it against
+an exponentially adapting receptor baseline, and increases the instantaneous
+tumble hazard after unfavorable changes. Each decision uses
+`P(tumble)=1-exp(-hazard*dt)` and a seeded pseudorandom turn angle.
+Separate organism IDs derive distinct, reproducible seeds.
+
+The heading controller is not a mechanistic motor-switching model:
+tumble events do not yet modulate flagellar power, explicitly pause forward
+swimming, or instantiate a measured biological reorientation duration.
+Also, reproducibility is conditional on the same step sequence; cross-timestep
+trajectory invariance has not been demonstrated. Rate constants are exploratory
+and not calibrated to a named bacterial species. Unity Test Runner and actual
+Play Mode inspection remain pending.
+
+## Coupled flagellar mobility (experimental)
+
+Free-swimming organisms use a symmetric planar 3-DOF resistance matrix,
+derived from the current local segment geometry, to jointly solve
+translation (x/y) and rotation about z. A Cholesky-based solver rejects
+ill-conditioned or non-positive-definite matrices. Velocity and yaw remain
+bounded, with force/torque diagnostics tested independently from Unity.
+
+This model is a local resistive-force approximation, not a validated
+low-Reynolds-number Navier–Stokes / Stokes boundary solver. It does not
+currently account for near-wall hydrodynamic corrections, full
+body/appendage hydrodynamic interactions, or exact reciprocal coupling
+to the rendered fluid field. The same simulated organism may be steered
+by a separate chemical policy; its policy yaw is not a hydrodynamic torque.
+
+Unity Editor tests for the new solver have been authored but have not
+been executed in this environment. Run the Unity Test Runner before
+accepting the physics increment.
+
+## Provenance and validation
+
+Continues `feat/substance-ontology`, PR #1. The separately described **Causal Microscope
+v0.3 ZIP was not available in this workspace or the inspected local project/download
+locations**; this project develops the repository's existing code, and does not claim
+that archive was migrated.
+
+See [integration and test results](docs/INTEGRATION_STATUS.md),
+[model units](docs/CHEMISTRY_MODEL.md), and [test instructions](docs/UNITY_CI_SETUP.md).
+Actual Unity test reports and runtime imagery, if produced, are distinguished from mockups.
+The optional [camera recording workflow](tools/capture/README.md) produces real Unity
+frames with measured-state captions. It excludes the IMGUI panel and adds no beating.

@@ -1,0 +1,26 @@
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+*.csproj
+*.sln
+*.suo
+.vs/
+.idea/
+.DS_Store
+Artifacts/
+TestResults/
+
+# Locally generated simulation research datasets and Unity batch-test reports
+ExperimentRuns/
+UnityTestResults/
+
+# Python tooling and local trainer output
+__pycache__/
+*.pyc
+.venv/
+results/

@@ -1,0 +1,69 @@
+name: Membrane physics assay
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/substance-ontology]
+    paths:
+      - 'Assets/CellsDemo/Scripts/Physiology/**'
+      - 'Assets/CellsDemo/Editor/MembraneAssayBatchExport.cs'
+      - 'tools/capture/analyze_membrane_assay.py'
+      - 'tools/capture/analyze_membrane_convergence.py'
+      - 'tools/capture/analyze_membrane_comparison.py'
+      - '.github/workflows/membrane-assay.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  membrane-assay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Unity activation
+        shell: bash
+        run: |
+          if [ -z "$UNITY_LICENSE" ] && { [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; }; then
+            echo "::error::Unity activation is not configured; membrane physics was not executed. See docs/UNITY_CI_SETUP.md."
+            exit 1
+          fi
+      - name: Run Unity Editor research assay
+        uses: game-ci/unity-builder@v4
+        env:
+          CELLS_ASSAY_OUTPUT: artifacts/membrane-assay.json
+        with:
+          targetPlatform: StandaloneLinux64
+          buildMethod: Cells.EditorTools.MembraneAssayBatchExport.Export
+      - name: Validate trace and write CSV and Markdown summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s artifacts/membrane-assay.json
+          test -s artifacts/membrane-convergence.json
+          test -s artifacts/membrane-comparison.json
+          python3 tools/capture/analyze_membrane_assay.py artifacts/membrane-assay.json artifacts
+          python3 tools/capture/analyze_membrane_convergence.py artifacts/membrane-convergence.json artifacts
+          python3 tools/capture/analyze_membrane_comparison.py artifacts/membrane-comparison.json artifacts
+
+      - name: Publish membrane assay trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: membrane-physics-trace
+          path: |
+            artifacts/membrane-assay.json
+            artifacts/membrane-convergence.json
+            artifacts/membrane-convergence-summary.md
+            artifacts/membrane-comparison.json
+            artifacts/membrane-comparison.csv
+            artifacts/membrane-comparison-summary.md
+            artifacts/membrane-trace.csv
+            artifacts/membrane-summary.md
+          if-no-files-found: warn
+          retention-days: 30

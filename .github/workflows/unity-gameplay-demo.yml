@@ -1,0 +1,100 @@
+name: Unity Gameplay Demo
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/substance-ontology]
+    paths:
+      - 'Assets/CellsDemo/**'
+      - 'ProjectSettings/**'
+      - '.github/workflows/unity-gameplay-demo.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: Unity-Library-Linux64-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Unity-Library-Linux64-
+
+      - name: Verify Unity license configuration
+        shell: bash
+        run: |
+          if [ -z "$UNITY_LICENSE" ] && { [ -z "$UNITY_EMAIL" ] || [ -z "$UNITY_PASSWORD" ]; }; then
+            echo "::error::Unity activation is not configured. Add GameCI-compatible Unity license credentials to GitHub Actions secrets or use a licensed self-hosted runner."
+            exit 1
+          fi
+
+      - name: Build Linux player with Unity
+        uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: StandaloneLinux64
+          buildName: cells-ci
+
+      - name: Install virtual display and video encoder
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb ffmpeg libgl1 libasound2 libxcursor1 libxrandr2 libxi6
+
+      - name: Capture real rendered gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-demo
+          player="$(find build -type f -name cells-ci.x86_64 -print -quit)"
+          if [ -z "$player" ]; then
+            echo "Linux Unity executable missing; check build output."
+            find build -maxdepth 4 -type f | head -80
+            exit 1
+          fi
+          chmod +x "$player"
+          # Screenshot recording requires graphics initialization:
+          # do NOT pass -nographics or Unity batch mode to the PLAYER.
+          timeout 180s xvfb-run -a -s "-screen 0 1280x720x24" \
+            "$player" -screen-width 1280 -screen-height 720 -screen-fullscreen 0 \
+            -logFile "$PWD/ci-demo/player.log" --cells-capture || result=$?
+          if [ "${result:-0}" -ne 0 ] && [ "${result:-0}" -ne 124 ]; then
+            cat ci-demo/player.log || true
+            exit 1
+          fi
+          mapfile -t frames < <(find "$HOME/.config/unity3d" "$HOME/.local/share" -type f -path '*/cells-unity-demo/frame_*.png' 2>/dev/null | sort)
+          echo "Captured ${#frames[@]} frames"
+          if [ "${#frames[@]}" -lt 600 ]; then
+            echo "Expected 600 actual gameplay frames; capture is incomplete."
+            tail -100 ci-demo/player.log || true
+            exit 1
+          fi
+          frame_dir="$(dirname "${frames[0]}")"
+          ffmpeg -hide_banner -loglevel error -y -framerate 30 \
+            -i "$frame_dir/frame_%06d.png" -c:v libx264 -preset medium \
+            -pix_fmt yuv420p -crf 20 -movflags +faststart \
+            ci-demo/cells-unity-gameplay.mp4
+          cp "$frame_dir/frame_000000.png" ci-demo/first-frame.png
+          ls -lh ci-demo
+
+      - name: Upload gameplay video and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cells-unity-gameplay
+          path: ci-demo/
+          if-no-files-found: warn
+          retention-days: 14

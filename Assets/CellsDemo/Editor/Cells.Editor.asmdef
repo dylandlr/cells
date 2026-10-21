@@ -1,0 +1,5 @@
+{
+  "name": "Cells.Editor",
+  "references": ["Cells.Runtime"],
+  "includePlatforms": ["Editor"]
+}
