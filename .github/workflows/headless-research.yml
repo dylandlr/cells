@@ -553,3 +553,30 @@ jobs:
           name: commons-random-delivery-curve
           path: artifacts/commons-matched/probabilistic-exchange*.csv
           if-no-files-found: error
+
+      - name: Evaluate learned policies across train-test message reliabilities
+        run: |
+          python3 - <<'PY'
+          import csv,statistics,collections,pathlib
+          p=pathlib.Path("artifacts/commons-matched/reliability-matrix.csv")
+          with p.open(newline="") as f: rows=list(csv.DictReader(f))
+          assert len(rows)==1050
+          groups=collections.defaultdict(list)
+          for r in rows:
+              groups[(int(r["train_delivery"]),int(r["test_delivery"]))].append(r)
+          for train in (100,90,75,60,50):
+              for test in (25,40,50,60,75,90,100):
+                  subset=groups[(train,test)]
+                  assert len(subset)==30
+                  print("RELIABILITY_MATRIX",train,test,
+                        round(statistics.mean(float(r["return"]) for r in subset),3),
+                        round(statistics.mean(int(r["repairs"]) for r in subset),3),
+                        round(statistics.mean(int(r["survivors"]) for r in subset),3))
+          PY
+      - name: Archive robustness train-test matrix
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-trained-reliability-matrix
+          path: artifacts/commons-matched/reliability-matrix.csv
+          if-no-files-found: error
