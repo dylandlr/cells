@@ -58,7 +58,7 @@ namespace Cells.Experiments
         }
         public sealed class Output
         {
-            public string EpisodesCsv,SummaryCsv,ManifestJson;
+            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv;
         }
         public static Output Run(int trainStart=910000,int trainEpisodes=400,
             int testStart=1010000,int testSeeds=30,int horizon=100,
@@ -73,11 +73,17 @@ namespace Cells.Experiments
                 throw new ArgumentException("Invalid or overlapping seeds");
             var trained=new Policy[4];
             for(int i=1;i<4;i++)trained[i]=new Policy(true,useImmediateReward);
+            var trainingTrace=new StringBuilder("episode,seed,collective_return,successful_repairs,survivors,accepted_intentions\n");
             for(int episode=0;episode<trainEpisodes;episode++)
             {
                 var env=new RenewableCommonsV0(trainStart+episode,true);
                 var rng=Generators(trainStart+episode);
-                Simulate(env,trained,rng,horizon,true);
+                var trainingOutcome=Simulate(env,trained,rng,horizon,true);
+                trainingTrace.Append(episode).Append(',').Append(trainStart+episode)
+                    .Append(',').Append(F(trainingOutcome.Return))
+                    .Append(',').Append(trainingOutcome.Repairs)
+                    .Append(',').Append(trainingOutcome.Survivors)
+                    .Append(',').Append(trainingOutcome.Responses).Append('\n');
                 for(int i=1;i<4;i++)trained[i].Finish();
             }
             var frozen=new double[4][,];
@@ -106,7 +112,7 @@ namespace Cells.Experiments
                 paired.Add(new PairedAssayAnalysisV1.Record(seed,returns[0],returns[1]));
             }
             return new Output{
-                EpisodesCsv=csv.ToString(),
+                EpisodesCsv=csv.ToString(),TrainingCsv=trainingTrace.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
                     PairedAssayAnalysisV1.ToCsv(useImmediateReward?"immediate_trained_minus_untrained":"delayed_trained_minus_untrained",
                         PairedAssayAnalysisV1.EstimatePaired(paired)),
