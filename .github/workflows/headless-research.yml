@@ -600,3 +600,13 @@ jobs:
           name: commons-learned-action-trace
           path: artifacts/commons-learned-action-trace.csv
           if-no-files-found: error
+
+      - name: Export paired learned Petri-dish replays
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-learned-pair artifacts/petri-replay
+      - name: Archive paired learned Petri-dish replays
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-petri-replays
+          path: artifacts/petri-replay/*.csv
+          if-no-files-found: error
