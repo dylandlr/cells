@@ -59,6 +59,11 @@ internal static class RenewableCommonsChecks
             new RenewableCommonsV0.Act(7),new RenewableCommonsV0.Act(9),
             new RenewableCommonsV0.Act(9),new RenewableCommonsV0.Act(9)};
         var r1=on.Advance(send);var r2=off.Advance(send);
+        var sparse=new RenewableCommonsV0(88,true,2);
+        sparse.Advance(send);
+        Check(sparse.Observe(2).Heard[1]==0,"stride two suppresses step-one signal");
+        Check(sparse.SubstrateReserve==on.SubstrateReserve,
+            "delivery masking does not affect sender's fixed-action resource accounting");
         Check(on.Observe(2).Heard[1]==1 && off.Observe(2).Heard[1]==0,
             "one-step message-delivery ablation");
         Check(Math.Abs(r1.Rewards[0]-r2.Rewards[0])<1e-9,
