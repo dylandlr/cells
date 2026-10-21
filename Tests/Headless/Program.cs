@@ -28,6 +28,17 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--commons-delayed")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --commons-delayed <output-dir>");
+            var result=CommonsDelayedLearningV1.Run();
+            Directory.CreateDirectory(args[1]);
+            File.WriteAllText(Path.Combine(args[1],"episodes.csv"),result.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"summary.csv"),result.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"manifest.json"),result.ManifestJson);
+            Console.WriteLine("Commons delayed learner exported.");
+            return;
+        }
         if(args.Length>0 && args[0]=="--commons-intentions")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-intentions <output-dir>");
