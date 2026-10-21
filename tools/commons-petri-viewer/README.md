@@ -1,5 +1,7 @@
 # Petri Dish Replay Viewer v0.1
 
+> **Next-generation system design:** [Biological Automata & Microscope v0.2](../../docs/BIOLOGICAL_AUTOMATA_MICROSCOPE_V02.md). This document describes a future integrated machine-level simulator and visual instrument. The present viewer is still a *categorical commons replay*, not that new spatial/biophysical simulator.
+
 This is an **actual replay viewer** driven by existing `RenewableCommonsV0` results, not a separate toy simulation.
 
 ## Launch
