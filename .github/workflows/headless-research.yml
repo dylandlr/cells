@@ -307,3 +307,34 @@ jobs:
           path: artifacts/commons-intentions
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Run discounted commons policy held-out study
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-delayed artifacts/commons-delayed-v1
+      - name: Validate discounted held-out result
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          root=pathlib.Path("artifacts/commons-delayed-v1")
+          m=json.loads((root/"manifest.json").read_text())
+          def load(n):
+              with (root/n).open(newline="") as f:return list(csv.DictReader(f))
+          rows=load("episodes.csv");summary=load("summary.csv")
+          assert len(rows)==90 and len(summary)==1 and m["test_updates"]==0
+          assert m["train_start"]+m["train_episodes"]<=m["test_start"]
+          assert {x["condition"] for x in rows}=={"trained_on","untrained_on","trained_off"}
+          for label in ("trained_on","untrained_on","trained_off"):
+              values=[x for x in rows if x["condition"]==label]
+              print(label,"return",round(sum(float(x["collective_return"]) for x in values)/30,3),
+                    "repairs",round(sum(int(x["successful_repairs"]) for x in values)/30,3),
+                    "responded",sum(int(x["accepted_intentions"]) for x in values),
+                    "survivors",round(sum(int(x["survivors"]) for x in values)/30,3))
+          print("Frozen held-out comparison:",summary)
+          PY
+      - name: Upload discounted commons results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-delayed-heldout-v1
+          path: artifacts/commons-delayed-v1
+          if-no-files-found: warn
+          retention-days: 60
