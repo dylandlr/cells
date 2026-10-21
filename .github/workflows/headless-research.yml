@@ -625,3 +625,13 @@ jobs:
           Path("/tmp/cells-petri-viewer.js").write_text(scripts[0])
           PY
           node --check /tmp/cells-petri-viewer.js
+
+      - name: Export biological automata machine microscope trace
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --cell-machine-trace artifacts/cell-machine-trace.csv
+      - name: Archive biological automata machine microscope trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cell-machine-microscope-trace
+          path: artifacts/cell-machine-trace.csv
+          if-no-files-found: error
