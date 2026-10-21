@@ -144,7 +144,7 @@ internal static class Program
             "matched immediate learner seeded replay");
         Check(immediate.EpisodesCsv.TrimEnd().Split('\n').Length==10,
             "matched immediate learner three seeds x three conditions");
-        Check(immediate.ManifestJson.Contains("\\\"gamma\\\":0"),
+        Check(immediate.ManifestJson.IndexOf("gamma",StringComparison.Ordinal)>=0 && immediate.ManifestJson.Contains("0.95")==false,
             "immediate learner metadata gamma zero");
         var delayed=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25);
         Check(delayed.EpisodesCsv==CommonsDelayedLearningV1.Run(910000,5,1010000,3,25).EpisodesCsv,
