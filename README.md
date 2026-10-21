@@ -1,5 +1,11 @@
 # cells
 
+## Course progress report and compact evolutionary visualization
+
+- [CSCE 631 progress report draft](docs/CSCE631_PROGRESS_REPORT_DRAFT.md) — verified experimental results, limitations, and remaining course milestones.
+- [Evolution Microscope](tools/evolution-microscope/README.md) — dependency-free symbolic seeded toy prototype; open [index.html](tools/evolution-microscope/index.html) locally to inspect uptake, reproduction, mutation and mortality. This toy is **not** the calibrated biology simulator or the research commons environment; browser validation is still required.
+
+
 ## Current research findings and next milestone
 
 The independently tested headless commons results and next research stages are consolidated in
