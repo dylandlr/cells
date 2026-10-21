@@ -61,6 +61,8 @@ internal static class Program
             File.WriteAllText(Path.Combine(args[1],"delayed-episodes.csv"),delayedReport.EpisodesCsv);
             File.WriteAllText(Path.Combine(args[1],"delayed-training.csv"),delayedReport.TrainingCsv);
             File.WriteAllText(Path.Combine(args[1],"delayed-checkpoints.csv"),delayedReport.CheckpointsCsv);
+            File.WriteAllText(Path.Combine(args[1],"first-episode-q.csv"),delayedReport.FirstEpisodeQCsv);
+            File.WriteAllText(Path.Combine(args[1],"sender-challenges.csv"),delayedReport.SenderChallengesCsv);
             File.WriteAllText(Path.Combine(args[1],"immediate-training.csv"),immediateReport.TrainingCsv);
             File.WriteAllText(Path.Combine(args[1],"immediate-episodes.csv"),immediateReport.EpisodesCsv);
             File.WriteAllText(Path.Combine(args[1],"delayed-summary.csv"),delayedReport.SummaryCsv);
@@ -175,6 +177,8 @@ internal static class Program
         Check(immediate.ManifestJson.IndexOf("gamma",StringComparison.Ordinal)>=0 && immediate.ManifestJson.Contains("0.95")==false,
             "immediate learner metadata gamma zero");
         var delayed=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25);
+        Check(delayed.FirstEpisodeQCsv.TrimEnd().Split('\n').Length==25,"three follower eight-state first-episode q snapshots");
+        Check(delayed.SenderChallengesCsv.TrimEnd().Split('\n').Length==10,"three challenge sender schedules by seed");
         Check(delayed.CheckpointsCsv.TrimEnd().Split('\n').Length==7,
             "early/final checkpoints have three evaluation seeds");
         Check(delayed.EpisodesCsv==CommonsDelayedLearningV1.Run(910000,5,1010000,3,25).EpisodesCsv,
