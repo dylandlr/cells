@@ -28,6 +28,16 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--commons-learned-pair")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --commons-learned-pair <output-dir>");
+            Directory.CreateDirectory(args[1]);
+            File.WriteAllText(Path.Combine(args[1],"full.csv"),
+                CommonsDelayedLearningV1.TrainedReplayCsv());
+            File.WriteAllText(Path.Combine(args[1],"half.csv"),
+                CommonsDelayedLearningV1.TrainedReplayCsv(deliveryProbability:0.5));
+            return;
+        }
         if(args.Length>0 && args[0]=="--commons-learned-trace")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-learned-trace <output.csv>");
