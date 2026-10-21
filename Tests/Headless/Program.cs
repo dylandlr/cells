@@ -28,6 +28,12 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--commons-learned-trace")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --commons-learned-trace <output.csv>");
+            File.WriteAllText(args[1],CommonsDelayedLearningV1.TrainedReplayCsv());
+            return;
+        }
         if(args.Length>0 && args[0]=="--commons-trace")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-trace <output.csv>");
@@ -342,6 +348,12 @@ internal static class Program
             Check(gain[i] >= 0 && !double.IsNaN(gain[i]),
                 "nonnegative finite restricted deviation gain");
 
+        var learnedReplay=CommonsDelayedLearningV1.TrainedReplayCsv(910000,3,1010000,12);
+        Check(learnedReplay==CommonsDelayedLearningV1.TrainedReplayCsv(910000,3,1010000,12),
+            "learned trace seeded reproducibility");
+        Check(learnedReplay.Contains(",observation,") &&
+              learnedReplay.Contains("frozen-learned-follower"),
+            "learned trace includes actual observations and actions");
         var replayA=CommonsActionTrace.Generate(42,12);
         Check(replayA==CommonsActionTrace.Generate(42,12),"trace deterministic replay");
         Check(replayA.Contains(",repair-success,") || replayA.Contains(",restore-attempt,"),"trace includes restoration decisions");
