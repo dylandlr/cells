@@ -58,7 +58,7 @@ namespace Cells.Experiments
         }
         public sealed class Output
         {
-            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv;
+            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv,DeliveryChallengesCsv;
         }
         public static Output Run(int trainStart=910000,int trainEpisodes=400,
             int testStart=1010000,int testSeeds=30,int horizon=100,
@@ -123,6 +123,7 @@ namespace Cells.Experiments
             var csv=new StringBuilder("seed,condition,collective_return,successful_repairs,accepted_intentions,survivors,remaining_reserve\n");
             var paired=new List<PairedAssayAnalysisV1.Record>();
             var challenges=new StringBuilder("seed,sender_policy,collective_return,repairs,survivors,responses\n");
+            var deliveries=new StringBuilder("seed,delivery_stride,collective_return,repairs,survivors,responses\n");
             for(int n=0;n<testSeeds;n++)
             {
                 int seed=testStart+n;
@@ -143,6 +144,17 @@ namespace Cells.Experiments
                         .Append(env.SubstrateReserve).Append('\n');
                 }
                 paired.Add(new PairedAssayAnalysisV1.Record(seed,returns[0],returns[1]));
+                foreach(int stride in new[]{1,2,3})
+                {
+                    var followers=new Policy[4];
+                    for(int seat=1;seat<4;seat++)followers[seat]=new Policy(frozen[seat]);
+                    var env=new RenewableCommonsV0(seed,true,stride);
+                    var measured=Simulate(env,followers,Generators(seed),horizon,false);
+                    deliveries.Append(seed).Append(',').Append(stride).Append(',')
+                        .Append(F(measured.Return)).Append(',').Append(measured.Repairs)
+                        .Append(',').Append(measured.Survivors).Append(',')
+                        .Append(measured.Responses).Append('\n');
+                }
                 foreach(int period in new[]{4,6,0})
                 {
                     var controllers=new Policy[4];
@@ -158,6 +170,7 @@ namespace Cells.Experiments
                 EpisodesCsv=csv.ToString(),TrainingCsv=trainingTrace.ToString(),
                 CheckpointsCsv=checkpoints.ToString(),
                 FirstEpisodeQCsv=firstQ.ToString(),SenderChallengesCsv=challenges.ToString(),
+                DeliveryChallengesCsv=deliveries.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
                     PairedAssayAnalysisV1.ToCsv(useImmediateReward?"immediate_trained_minus_untrained":"delayed_trained_minus_untrained",
                         PairedAssayAnalysisV1.EstimatePaired(paired)),
