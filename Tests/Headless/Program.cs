@@ -28,6 +28,13 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--cell-machine-trace")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --cell-machine-trace <output.csv>");
+            File.WriteAllText(args[1],Cells.Automata.CellMachineV01.Trace());
+            return;
+        }
+        CellMachineChecks.Run();
         if(args.Length>0 && args[0]=="--commons-learned-pair")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-learned-pair <output-dir>");
