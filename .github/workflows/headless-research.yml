@@ -399,3 +399,41 @@ jobs:
                          for key in ("collective_return","successful_repairs","survivors","accepted_intentions")}
                   print(name,"training block",begin,end,means)
           PY
+
+      - name: Execute independent commons learning restarts
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-restarts artifacts/commons-restarts
+      - name: Audit early checkpoints and independent restarts
+        run: |
+          python3 - <<'PY'
+          import csv, pathlib, statistics
+          p=pathlib.Path("artifacts")
+          def read(path):
+              with path.open(newline="") as stream:return list(csv.DictReader(stream))
+          checkpoints=read(p/"commons-matched"/"delayed-checkpoints.csv")
+          restarts=read(p/"commons-restarts"/"restarts.csv")
+          assert len(checkpoints)==8*30, len(checkpoints)
+          assert len(restarts)==5*30, len(restarts)
+          assert {int(x["checkpoint"]) for x in checkpoints}=={1,5,10,25,50,100,200,400}
+          assert len({int(x["train_seed"]) for x in restarts})==5
+          assert len({int(x["heldout_seed"]) for x in restarts})==30
+          for cp in sorted({int(x["checkpoint"]) for x in checkpoints}):
+              sample=[r for r in checkpoints if int(r["checkpoint"])==cp]
+              print("checkpoint",cp,"return",round(statistics.mean(float(x["collective_return"]) for x in sample),3),
+                    "repairs",round(statistics.mean(int(x["repairs"]) for x in sample),3),
+                    "survival",round(statistics.mean(int(x["survivors"]) for x in sample),3))
+          for r in range(5):
+              sample=[x for x in restarts if int(x["restart"])==r]
+              print("restart",r,"return",round(statistics.mean(float(x["collective_return"]) for x in sample),3),
+                    "repairs",round(statistics.mean(int(x["repairs"]) for x in sample),3),
+                    "survival",round(statistics.mean(int(x["survivors"]) for x in sample),3))
+          PY
+      - name: Archive commons checkpoint and restart diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-final-validation
+          path: |
+            artifacts/commons-matched/delayed-checkpoints.csv
+            artifacts/commons-restarts/restarts.csv
+          if-no-files-found: warn
+          retention-days: 60
