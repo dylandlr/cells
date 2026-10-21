@@ -13,3 +13,29 @@ The environment and sender policy are otherwise identical at the beginning of ea
 The sender is scripted; policy response is not the discovery of a communication protocol. Delivery perturbation tests reliability of established followers under partial reception, not learned choice by senders. Results should be measured for return, repairs, survival and actual responded invitations. A robust policy should not depend on an exact message cadence unless that dependence is a testable property of the experimental ecology.
 
 See the headless CI step **Analyze matched sender-rule delivery cadence** and the `commons-delivery-cadence` artifact.
+
+## Verified outcome — broadcast-event filtered treatment
+
+GitHub Actions: https://github.com/dylandlr/cells/actions/runs/39522024830
+
+The .NET research suite passed **4,672 assertions**. The measured
+frozen-policy outcomes over 30 matched test seeds were:
+
+| Broadcast reception rule | Mean return | Repairs/episode | Survivors/episode | Responses/episode |
+|---|---:|---:|---:|---:|
+| Every broadcast | +70.383 | 22.800 | 4.000 | 26.633 |
+| Every second broadcast event | -18.967 | 2.300 | 0.367 | 2.600 |
+| Every third broadcast event | -19.953 | 0.967 | 0.200 | 1.167 |
+
+The initially tested step-index mask was invalid as a clean cadence
+intervention because it phase-locked against periodic sender actions.
+That candidate's outputs are superseded by these broadcast-event
+results. Even without phase-locking, cooperation mostly collapses
+when reception is subsampled. The learned responder is therefore not
+robust to dropped invitation events.
+
+These are descriptive exploratory comparisons under one trained policy
+and one simulator; the same 30 worlds were used for all conditions.
+The sender's rule and signaling cost are fixed, but later sender
+actions may vary indirectly with feedback from followers.
+
