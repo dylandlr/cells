@@ -15,6 +15,7 @@
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/RenewableCommonsV0.cs" Link="RenewableCommonsV0.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/CommonsLearningV1.cs" Link="CommonsLearningV1.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/CommonsIntentionStudyV1.cs" Link="CommonsIntentionStudyV1.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/CommonsDelayedLearningV1.cs" Link="CommonsDelayedLearningV1.cs" />
     <Compile Include="PlanarDragChecks.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs" Link="PlanarDragBalance.cs" />
     <Compile Include="../../Assets/CellsDemo/Scripts/Experiments/SignalingGameV1.cs" Link="SignalingGameV1.cs" />
