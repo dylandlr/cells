@@ -58,7 +58,7 @@ namespace Cells.Experiments
         }
         public sealed class Output
         {
-            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv;
+            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv;
         }
         public static Output Run(int trainStart=910000,int trainEpisodes=400,
             int testStart=1010000,int testSeeds=30,int horizon=100,
@@ -75,6 +75,7 @@ namespace Cells.Experiments
             for(int i=1;i<4;i++)trained[i]=new Policy(true,useImmediateReward);
             var trainingTrace=new StringBuilder("episode,seed,collective_return,successful_repairs,survivors,accepted_intentions\n");
             var checkpoints=new StringBuilder("checkpoint,seed,collective_return,repairs,survivors,responses\n");
+            var firstQ=new StringBuilder("seat,state,harvest_q,respond_q,preferred_action\n");
             for(int episode=0;episode<trainEpisodes;episode++)
             {
                 var env=new RenewableCommonsV0(trainStart+episode,true);
@@ -86,6 +87,17 @@ namespace Cells.Experiments
                     .Append(',').Append(trainingOutcome.Survivors)
                     .Append(',').Append(trainingOutcome.Responses).Append('\n');
                 for(int i=1;i<4;i++)trained[i].Finish();
+                if(episode==0)
+                    for(int seat=1;seat<4;seat++)
+                    {
+                        var table=trained[seat].Snapshot();
+                        for(int state=0;state<8;state++)
+                            firstQ.Append(seat).Append(',').Append(state)
+                                .Append(',').Append(F(table[state,0]))
+                                .Append(',').Append(F(table[state,1]))
+                                .Append(',').Append(table[state,1]>table[state,0]?"respond":"harvest")
+                                .Append('\n');
+                    }
                 int completed=episode+1;
                 if(completed==1 || completed==5 || completed==10 || completed==25 ||
                    completed==50 || completed==100 || completed==200 || completed==trainEpisodes)
@@ -110,6 +122,7 @@ namespace Cells.Experiments
             for(int i=1;i<4;i++)frozen[i]=trained[i].Snapshot();
             var csv=new StringBuilder("seed,condition,collective_return,successful_repairs,accepted_intentions,survivors,remaining_reserve\n");
             var paired=new List<PairedAssayAnalysisV1.Record>();
+            var challenges=new StringBuilder("seed,sender_policy,collective_return,repairs,survivors,responses\n");
             for(int n=0;n<testSeeds;n++)
             {
                 int seed=testStart+n;
@@ -130,10 +143,21 @@ namespace Cells.Experiments
                         .Append(env.SubstrateReserve).Append('\n');
                 }
                 paired.Add(new PairedAssayAnalysisV1.Record(seed,returns[0],returns[1]));
+                foreach(int period in new[]{4,6,0})
+                {
+                    var controllers=new Policy[4];
+                    for(int seat=1;seat<4;seat++)controllers[seat]=new Policy(frozen[seat]);
+                    var result=Simulate(new RenewableCommonsV0(seed,true),controllers,
+                        Generators(seed),horizon,false,period);
+                    challenges.Append(seed).Append(',').Append(period==0?"never_signal":period==4?"baseline_period4":"period6")
+                        .Append(',').Append(F(result.Return)).Append(',').Append(result.Repairs)
+                        .Append(',').Append(result.Survivors).Append(',').Append(result.Responses).Append('\n');
+                }
             }
             return new Output{
                 EpisodesCsv=csv.ToString(),TrainingCsv=trainingTrace.ToString(),
                 CheckpointsCsv=checkpoints.ToString(),
+                FirstEpisodeQCsv=firstQ.ToString(),SenderChallengesCsv=challenges.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
                     PairedAssayAnalysisV1.ToCsv(useImmediateReward?"immediate_trained_minus_untrained":"delayed_trained_minus_untrained",
                         PairedAssayAnalysisV1.EstimatePaired(paired)),
@@ -155,7 +179,7 @@ namespace Cells.Experiments
             return r;
         }
         private static Outcome Simulate(RenewableCommonsV0 env,Policy[] agents,
-            Random[] rng,int horizon,bool training)
+            Random[] rng,int horizon,bool training,int senderPeriod=4)
         {
             int repairs=0;
             var responsesBefore=new int[4];
@@ -165,7 +189,7 @@ namespace Cells.Experiments
                 var actions=new RenewableCommonsV0.Act[4];
                 var lead=env.Observe(0);
                 actions[0]=new RenewableCommonsV0.Act(!lead.Alive?9:
-                    t%4==0&&lead.LocalStock<=2?6+lead.Location:
+                    senderPeriod>0&&t%senderPeriod==0&&lead.LocalStock<=2?6+lead.Location:
                     lead.LocalStock<=2?3+lead.Location:lead.Location);
                 bool[] acted=new bool[4];
                 for(int i=1;i<4;i++)
