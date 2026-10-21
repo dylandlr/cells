@@ -590,3 +590,13 @@ jobs:
           name: commons-symbolic-action-trace
           path: artifacts/commons-action-trace.csv
           if-no-files-found: error
+
+      - name: Export learned follower action replay
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-learned-trace artifacts/commons-learned-action-trace.csv
+      - name: Archive learned follower action replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-learned-action-trace
+          path: artifacts/commons-learned-action-trace.csv
+          if-no-files-found: error
