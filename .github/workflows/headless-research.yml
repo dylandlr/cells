@@ -381,3 +381,21 @@ jobs:
           path: artifacts/commons-matched
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Validate commons learning trajectories
+        run: |
+          python3 - <<'PY'
+          import csv,pathlib,statistics
+          root=pathlib.Path("artifacts/commons-matched")
+          for name in ("delayed","immediate"):
+              with (root/f"{name}-training.csv").open(newline="") as stream:
+                  records=list(csv.DictReader(stream))
+              assert len(records)==400
+              assert [int(x["episode"]) for x in records]==list(range(400))
+              assert len({int(x["seed"]) for x in records})==400
+              for begin,end in ((0,100),(100,200),(200,300),(300,400)):
+                  subset=records[begin:end]
+                  means={key:statistics.mean(float(x[key]) for x in subset)
+                         for key in ("collective_return","successful_repairs","survivors","accepted_intentions")}
+                  print(name,"training block",begin,end,means)
+          PY
