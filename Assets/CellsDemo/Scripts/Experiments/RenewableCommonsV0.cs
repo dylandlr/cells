@@ -52,14 +52,19 @@ namespace Cells.Experiments
         private readonly Random environment;
         private readonly bool delivery;
         private readonly int deliveryStride;
+        private readonly double receptionProbability;
+        private readonly Random receptionRandom;
         private int broadcastEvents;
         private bool latestBroadcastVisible;
         private int step;
         public int Step=>step;
-        public RenewableCommonsV0(int seed,bool deliverMessages=true,int messageDeliveryStride=1)
+        public RenewableCommonsV0(int seed,bool deliverMessages=true,int messageDeliveryStride=1,double messageReceptionProbability=1.0)
         {
             if(messageDeliveryStride<1)throw new ArgumentOutOfRangeException("messageDeliveryStride");
+            if(double.IsNaN(messageReceptionProbability)||messageReceptionProbability<0||messageReceptionProbability>1)throw new ArgumentOutOfRangeException("messageReceptionProbability");
             deliveryStride=messageDeliveryStride;
+            receptionProbability=messageReceptionProbability;
+            receptionRandom=new Random(unchecked(seed*48611+19237));
             environment=new Random(seed);
             delivery=deliverMessages;
             for(int p=0;p<Patches;p++)
@@ -143,7 +148,7 @@ namespace Cells.Experiments
             if(broadcastCount>0)
             {
                 broadcastEvents++;
-                latestBroadcastVisible=broadcastEvents%deliveryStride==0;
+                latestBroadcastVisible=broadcastEvents%deliveryStride==0 && receptionRandom.NextDouble()<receptionProbability;
             }
             else latestBroadcastVisible=false;
             Array.Copy(nextMessages,messages,Patches);
