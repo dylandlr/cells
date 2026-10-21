@@ -28,6 +28,21 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--commons-matched")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --commons-matched <output-dir>");
+            Directory.CreateDirectory(args[1]);
+            var delayedReport=CommonsDelayedLearningV1.Run();
+            var immediateReport=CommonsDelayedLearningV1.Run(useImmediateReward:true);
+            File.WriteAllText(Path.Combine(args[1],"delayed-episodes.csv"),delayedReport.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"immediate-episodes.csv"),immediateReport.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"delayed-summary.csv"),delayedReport.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"immediate-summary.csv"),immediateReport.SummaryCsv);
+            File.WriteAllText(Path.Combine(args[1],"delayed-manifest.json"),delayedReport.ManifestJson);
+            File.WriteAllText(Path.Combine(args[1],"immediate-manifest.json"),immediateReport.ManifestJson);
+            Console.WriteLine("Matched discount-factor comparison exported.");
+            return;
+        }
         if(args.Length>0 && args[0]=="--commons-delayed")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-delayed <output-dir>");
@@ -123,6 +138,14 @@ internal static class Program
         passed += PlanarDragChecks.Run();
         passed += Experiment001ValidityChecks.Run();
         passed += RenewableCommonsChecks.Run();
+        var immediate=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25,true);
+        var immediateAgain=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25,true);
+        Check(immediate.EpisodesCsv==immediateAgain.EpisodesCsv,
+            "matched immediate learner seeded replay");
+        Check(immediate.EpisodesCsv.TrimEnd().Split('\n').Length==10,
+            "matched immediate learner three seeds x three conditions");
+        Check(immediate.ManifestJson.Contains("\\\"gamma\\\":0"),
+            "immediate learner metadata gamma zero");
         var delayed=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25);
         Check(delayed.EpisodesCsv==CommonsDelayedLearningV1.Run(910000,5,1010000,3,25).EpisodesCsv,
             "delayed learner reproducible frozen test");
