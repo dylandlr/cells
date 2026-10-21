@@ -610,3 +610,18 @@ jobs:
           name: commons-petri-replays
           path: artifacts/petri-replay/*.csv
           if-no-files-found: error
+
+      - name: Check Petri dish viewer syntax and required visual elements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          page=Path("tools/commons-petri-viewer/index.html").read_text()
+          assert page.count('class="dish-frame"')==2
+          for feature in ('cell-shell','signal-ring','radialGradient','function renderDish','function parse','dish-full','dish-half'):
+              assert feature in page,feature
+          scripts=re.findall(r'<script[^>]*>(.*?)</script>',page,re.S)
+          assert len(scripts)==1
+          Path("/tmp/cells-petri-viewer.js").write_text(scripts[0])
+          PY
+          node --check /tmp/cells-petri-viewer.js
