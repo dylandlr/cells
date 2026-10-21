@@ -175,7 +175,7 @@ internal static class Program
         Check(immediate.ManifestJson.IndexOf("gamma",StringComparison.Ordinal)>=0 && immediate.ManifestJson.Contains("0.95")==false,
             "immediate learner metadata gamma zero");
         var delayed=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25);
-        Check(delayed.CheckpointsCsv.TrimEnd().Split('\n').Length==10,
+        Check(delayed.CheckpointsCsv.TrimEnd().Split('\n').Length==7,
             "early/final checkpoints have three evaluation seeds");
         Check(delayed.EpisodesCsv==CommonsDelayedLearningV1.Run(910000,5,1010000,3,25).EpisodesCsv,
             "delayed learner reproducible frozen test");
