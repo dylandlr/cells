@@ -113,7 +113,7 @@ namespace Cells.Experiments
                 ManifestJson="{\"schema\":\"cells.commons-delayed-v1\",\"train_start\":"+
                     trainStart+",\"train_episodes\":"+trainEpisodes+
                     ",\"test_start\":"+testStart+",\"test_seeds\":"+testSeeds+
-                    ",\"gamma\":0.95,\"test_updates\":0,\"horizon\":"+horizon+"}"
+                    ",\"gamma\":"+(useImmediateReward?"0":"0.95")+",\"test_updates\":0,\"horizon\":"+horizon+"}"
             };
         }
         private sealed class Outcome
