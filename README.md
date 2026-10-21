@@ -3,7 +3,7 @@
 ## Course progress report and compact evolutionary visualization
 
 - [CSCE 631 progress report draft](docs/CSCE631_PROGRESS_REPORT_DRAFT.md) — verified experimental results, limitations, and remaining course milestones.
-- [Evolution Microscope](tools/evolution-microscope/README.md) — dependency-free symbolic seeded toy prototype; open [index.html](tools/evolution-microscope/index.html) locally to inspect uptake, reproduction, mutation and mortality. This toy is **not** the calibrated biology simulator or the research commons environment; browser validation is still required.
+- [Evolution Microscope](tools/evolution-microscope/README.md) — **deprecated, disconnected concept prototype; not a cells science demo.** It generates toy events independent of the actual game-theoretic learner and Unity biophysics. Do not use it as evidence of project behavior. Replace with a viewer of authoritative simulation state and recorded events.
 
 
 ## Current research findings and next milestone
