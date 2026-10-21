@@ -112,6 +112,13 @@ internal static class Program
         passed += PlanarDragChecks.Run();
         passed += Experiment001ValidityChecks.Run();
         passed += RenewableCommonsChecks.Run();
+        var delayed=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25);
+        Check(delayed.EpisodesCsv==CommonsDelayedLearningV1.Run(910000,5,1010000,3,25).EpisodesCsv,
+            "delayed learner reproducible frozen test");
+        Check(delayed.EpisodesCsv.TrimEnd().Split('\n').Length==10,
+            "delayed learner 3 seeds x 3 controls");
+        Throws<ArgumentException>(()=>CommonsDelayedLearningV1.Run(910000,5,910002,3,25),
+            "delayed learner rejects overlapping seeds");
         var intentions=CommonsIntentionStudyV1.Run(810000,3,20);
         Check(intentions.EpisodesCsv==CommonsIntentionStudyV1.Run(810000,3,20).EpisodesCsv,
             "commons intention seeded replay");
