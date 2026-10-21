@@ -1,5 +1,16 @@
 # cells
 
+## Current research findings and next milestone
+
+The independently tested headless commons results and next research stages are consolidated in
+[Research Findings and Next Milestones](docs/RESEARCH_FINDINGS_AND_NEXT_MILESTONES.md).
+The highest-priority experiment is **training agents with unreliable message delivery**
+and comparing frozen policies across matched communication-reliability conditions.
+The results currently establish learned response to scripted coordination messages,
+**not** spontaneous learned signaling, evolutionary emergence, or Unity biophysical validity.
+The research and Unity test pipelines have independent acceptance gates.
+
+
 A Unity microscopic chemistry and physiology sandbox with a human-facing causal microscope.
 
 ## Run
