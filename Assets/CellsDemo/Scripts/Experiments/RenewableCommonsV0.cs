@@ -52,6 +52,8 @@ namespace Cells.Experiments
         private readonly Random environment;
         private readonly bool delivery;
         private readonly int deliveryStride;
+        private int broadcastEvents;
+        private bool latestBroadcastVisible;
         private int step;
         public int Step=>step;
         public RenewableCommonsV0(int seed,bool deliverMessages=true,int messageDeliveryStride=1)
@@ -75,7 +77,7 @@ namespace Cells.Experiments
                 Step=step,Seat=seat,Location=where,
                 LocalStock=stocks[where],LocalHazard=hazard[where],
                 Energy=energy[seat],Alive=alive[seat],
-                Heard=delivery && step%deliveryStride==0?(int[])messages.Clone():new int[Patches]
+                Heard=delivery && latestBroadcastVisible?(int[])messages.Clone():new int[Patches]
             };
         }
         public StepLog Advance(Act[] acts)
@@ -136,6 +138,14 @@ namespace Cells.Experiments
             int deaths=0;
             for(int i=0;i<Players;i++)
                 if(alive[i]&&energy[i]<=0){alive[i]=false;deaths++;}
+            int broadcastCount=0;
+            for(int p=0;p<Patches;p++)broadcastCount+=nextMessages[p];
+            if(broadcastCount>0)
+            {
+                broadcastEvents++;
+                latestBroadcastVisible=broadcastEvents%deliveryStride==0;
+            }
+            else latestBroadcastVisible=false;
             Array.Copy(nextMessages,messages,Patches);
             // Slow stochastic replenishment, independent of actions.
             for(int p=0;p<Patches;p++)
