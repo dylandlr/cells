@@ -35,6 +35,8 @@ internal static class Program
             var delayedReport=CommonsDelayedLearningV1.Run();
             var immediateReport=CommonsDelayedLearningV1.Run(useImmediateReward:true);
             File.WriteAllText(Path.Combine(args[1],"delayed-episodes.csv"),delayedReport.EpisodesCsv);
+            File.WriteAllText(Path.Combine(args[1],"delayed-training.csv"),delayedReport.TrainingCsv);
+            File.WriteAllText(Path.Combine(args[1],"immediate-training.csv"),immediateReport.TrainingCsv);
             File.WriteAllText(Path.Combine(args[1],"immediate-episodes.csv"),immediateReport.EpisodesCsv);
             File.WriteAllText(Path.Combine(args[1],"delayed-summary.csv"),delayedReport.SummaryCsv);
             File.WriteAllText(Path.Combine(args[1],"immediate-summary.csv"),immediateReport.SummaryCsv);
@@ -140,6 +142,7 @@ internal static class Program
         passed += RenewableCommonsChecks.Run();
         var immediate=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25,true);
         var immediateAgain=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25,true);
+        Check(immediate.TrainingCsv==immediateAgain.TrainingCsv,"immediate learning trace reproducible");
         Check(immediate.EpisodesCsv==immediateAgain.EpisodesCsv,
             "matched immediate learner seeded replay");
         Check(immediate.EpisodesCsv.TrimEnd().Split('\n').Length==10,
