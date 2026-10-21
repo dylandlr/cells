@@ -521,3 +521,35 @@ jobs:
           name: commons-exchange-curve
           path: artifacts/commons-matched/exchange-*.csv
           if-no-files-found: error
+
+      - name: Analyze randomized delivery reliability across time
+        run: |
+          python3 - <<'PY'
+          import csv,collections,statistics,pathlib
+          root=pathlib.Path("artifacts/commons-matched")
+          with (root/"probabilistic-exchange.csv").open(newline="") as stream:rows=list(csv.DictReader(stream))
+          assert len(rows)==2100
+          groups=collections.defaultdict(list)
+          seeds=collections.defaultdict(list)
+          for r in rows:
+              groups[(int(r["reception_probability"]),int(r["window"]))].append(int(r["repairs"]))
+              seeds[(int(r["reception_probability"]),int(r["seed"]))].append(r)
+          with (root/"probabilistic-exchange-curve.csv").open("w",newline="") as stream:
+              out=csv.writer(stream);out.writerow(["step","p25","p40","p50","p60","p75","p90","p100"])
+              for w in range(10):
+                  out.writerow([w*10+5,*[statistics.mean(groups[(p,w)]) for p in (25,40,50,60,75,90,100)]])
+          for p in (25,40,50,60,75,90,100):
+              sample=[v for (rate,_),v in seeds.items() if rate==p]
+              assert len(sample)==30
+              print("RANDOM_DELIVERY",p,
+                "mean_repairs",round(statistics.mean(sum(int(r["repairs"]) for r in episode) for episode in sample),3),
+                "mean_survivors",round(statistics.mean(int(episode[0]["survivors"]) for episode in sample),3),
+                "mean_return",round(statistics.mean(float(episode[0]["collective_return"]) for episode in sample),3))
+          PY
+      - name: Archive probabilistic exchange curves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-random-delivery-curve
+          path: artifacts/commons-matched/probabilistic-exchange*.csv
+          if-no-files-found: error
