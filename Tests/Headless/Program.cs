@@ -184,7 +184,6 @@ internal static class Program
             "four rates x three seeds x three time windows");
         Check(delayed.DeliveryChallengesCsv.TrimEnd().Split('\n').Length==13,
             "four rates x three seeds");
-        //"controlled delivery cadence x seeds");
         Check(delayed.SenderChallengesCsv.TrimEnd().Split('\n').Length==10,"three challenge sender schedules by seed");
         Check(delayed.CheckpointsCsv.TrimEnd().Split('\n').Length==7,
             "early/final checkpoints have three evaluation seeds");
