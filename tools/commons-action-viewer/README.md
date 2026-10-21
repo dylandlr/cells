@@ -22,6 +22,8 @@ Alternatively, download `commons-action-trace.csv` from the GitHub Actions artif
 
 Open `tools/commons-action-viewer/index.html` in a browser and select the exported CSV. Step through or play the recorded events.
 
+The symbols and evidence constraints are defined in [cells Scientific Iconography Standard v0.1](../../docs/CELLS_ICONOGRAPHY_STANDARD_V01.md). Controller role badges are inferred from the trace exporter: [S] scripted sender, [L] frozen learned follower in the learned trace only. The viewer displays a received invitation only when its observation row says it was heard.
+
 ## Display vocabulary
 
 | Symbol | Recorded event |
