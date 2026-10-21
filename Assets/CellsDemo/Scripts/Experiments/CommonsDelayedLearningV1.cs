@@ -58,7 +58,7 @@ namespace Cells.Experiments
         }
         public sealed class Output
         {
-            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv,DeliveryChallengesCsv,ExchangeTimeSeriesCsv,ProbabilisticExchangeCsv;
+            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv,DeliveryChallengesCsv,ExchangeTimeSeriesCsv,ProbabilisticExchangeCsv,ReliabilityMatrixCsv;
         }
         public static Output Run(int trainStart=910000,int trainEpisodes=400,
             int testStart=1010000,int testSeeds=30,int horizon=100,
@@ -71,11 +71,42 @@ namespace Cells.Experiments
                 ((long)trainStart<testStart+(long)testSeeds &&
                  (long)testStart<trainStart+(long)trainEpisodes))
                 throw new ArgumentException("Invalid or overlapping seeds");
+            // Train once per treatment using the same world seeds and
+            // independent communication RNG; evaluate all on common held-out seeds.
+            foreach(int trainRate in new[]{100,90,75,60,50})
+            {
+                var cohort=new Policy[4];
+                for(int seat=1;seat<4;seat++)cohort[seat]=new Policy(true);
+                for(int ep=0;ep<trainEpisodes;ep++)
+                {
+                    int seed=trainStart+ep;
+                    Simulate(new RenewableCommonsV0(seed,true,1,trainRate/100.0),
+                        cohort,Generators(seed),horizon,true);
+                    for(int seat=1;seat<4;seat++)cohort[seat].Finish();
+                }
+                var snapshots=new double[4][,];
+                for(int seat=1;seat<4;seat++)snapshots[seat]=cohort[seat].Snapshot();
+                foreach(int testRate in new[]{25,40,50,60,75,90,100})
+                    for(int n=0;n<testSeeds;n++)
+                    {
+                        int seed=testStart+n;
+                        var frozenCohort=new Policy[4];
+                        for(int seat=1;seat<4;seat++)frozenCohort[seat]=new Policy(snapshots[seat]);
+                        var measurement=Simulate(new RenewableCommonsV0(seed,true,1,testRate/100.0),
+                            frozenCohort,Generators(seed),horizon,false);
+                        reliability.Append(trainRate).Append(',').Append(testRate)
+                            .Append(',').Append(seed).Append(',').Append(F(measurement.Return))
+                            .Append(',').Append(measurement.Repairs).Append(',')
+                            .Append(measurement.Survivors).Append(',')
+                            .Append(measurement.Responses).Append('\n');
+                    }
+            }
             var trained=new Policy[4];
             for(int i=1;i<4;i++)trained[i]=new Policy(true,useImmediateReward);
             var trainingTrace=new StringBuilder("episode,seed,collective_return,successful_repairs,survivors,accepted_intentions\n");
             var checkpoints=new StringBuilder("checkpoint,seed,collective_return,repairs,survivors,responses\n");
             var firstQ=new StringBuilder("seat,state,harvest_q,respond_q,preferred_action\n");
+            var reliability=new StringBuilder("train_delivery,test_delivery,seed,return,repairs,survivors,responses\n");
             for(int episode=0;episode<trainEpisodes;episode++)
             {
                 var env=new RenewableCommonsV0(trainStart+episode,true);
@@ -189,6 +220,7 @@ namespace Cells.Experiments
             }
             return new Output{
                 EpisodesCsv=csv.ToString(),TrainingCsv=trainingTrace.ToString(),
+                ReliabilityMatrixCsv=reliability.ToString(),
                 CheckpointsCsv=checkpoints.ToString(),
                 FirstEpisodeQCsv=firstQ.ToString(),SenderChallengesCsv=challenges.ToString(),
                 DeliveryChallengesCsv=deliveries.ToString(),ExchangeTimeSeriesCsv=timeseries.ToString(),ProbabilisticExchangeCsv=probabilistic.ToString(),
