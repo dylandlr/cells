@@ -18,3 +18,9 @@ TestResults/
 # Locally generated simulation research datasets and Unity batch-test reports
 ExperimentRuns/
 UnityTestResults/
+
+# Python tooling and local trainer output
+__pycache__/
+*.pyc
+.venv/
+results/

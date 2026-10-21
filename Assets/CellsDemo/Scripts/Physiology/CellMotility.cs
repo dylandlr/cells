@@ -148,7 +148,10 @@ namespace Cells.Physiology
                 : Mathf.MoveTowardsAngle(currentAngle, desiredAngle, angularSpeedDegrees * dt);
             // Flagellar deformation can also create a bounded reaction yaw. Keep the
             // chemotactic controller and the physical appendage contribution explicit.
-            if (hydrodynamics)
+            bool physicalMotorAvailable = flagellum && flagellum.isActiveAndEnabled
+                && hydrodynamics && hydrodynamics.isActiveAndEnabled
+                && flagellum.ActualActivation > 0f;
+            if (hydrodynamics && (!externalMotorControl || physicalMotorAvailable))
                 nextAngle += hydrodynamics.LocalAngularVelocityDegrees * dt;
             transform.rotation = Quaternion.Euler(0f, 0f, nextAngle);
 
@@ -167,7 +170,7 @@ namespace Cells.Physiology
             if (externalMotorControl)
             {
                 // Require both physical components; never use the fallback free motor.
-                Velocity = flagellum && hydrodynamics && flagellum.ActualActivation > 0f
+                Velocity = physicalMotorAvailable
                     ? targetVelocity : Vector2.zero;
             }
             else if (hydrodynamics)

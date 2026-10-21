@@ -51,12 +51,18 @@ namespace Cells.Physiology
         }
 
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
+        void OnDisable() => ResetHistory();
 
         public void Tick(float dt)
         {
             if (!tail) tail = GetComponent<SoftFlagellum2D>();
             if (!motor) motor = GetComponent<CellFlagellarActuator>();
-            if (!tail || !tail.Initialized || dt <= 0f || !float.IsFinite(dt)) return;
+            if (!tail || !tail.isActiveAndEnabled || !tail.Initialized || !motor
+                || !motor.isActiveAndEnabled || dt <= 0f || !float.IsFinite(dt))
+            {
+                ResetHistory();
+                return;
+            }
             if (!hasHistory)
             {
                 for (int i=0; i<previous.Length; i++) previous[i]=tail.Node(i);

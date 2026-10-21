@@ -43,6 +43,31 @@ namespace Cells.Tests
         }
 
         [Test]
+        public void PolicyHandoffRestoresMotorStateAcrossRepeatedEnableCycles()
+        {
+            cell = new GameObject("policy handoff");
+            var motor = cell.AddComponent<CellFlagellarActuator>();
+            motor.motorActivation = .6f;
+            motor.behavioralMotorMultiplier = .12f;
+            var port = cell.AddComponent<CellMotorPolicyPort>();
+            Assert.AreEqual(1f, motor.behavioralMotorMultiplier);
+            port.ApplyMotorAction(.9f);
+            port.enabled = false;
+            Assert.AreEqual(.6f, motor.motorActivation);
+            Assert.AreEqual(.12f, motor.behavioralMotorMultiplier);
+            // Disabled policies must not overwrite the restored controller's command.
+            port.ApplyMotorAction(0f);
+            Assert.AreEqual(.6f, motor.motorActivation);
+            motor.motorActivation = .4f;
+            motor.behavioralMotorMultiplier = .3f;
+            port.enabled = true;
+            Assert.AreEqual(0f, motor.motorActivation);
+            port.enabled = false;
+            Assert.AreEqual(.4f, motor.motorActivation);
+            Assert.AreEqual(.3f, motor.behavioralMotorMultiplier);
+        }
+
+        [Test]
         public void ObservationsAreFiniteAndDisablingRestoresBaseline()
         {
             cell = new GameObject("policy");

@@ -29,6 +29,11 @@ namespace Cells.Physiology
 
         void Awake() { if (!metabolism) metabolism = GetComponent<CellMetabolism>(); }
         void FixedUpdate() => Tick(Time.fixedDeltaTime);
+        void OnDisable()
+        {
+            ActualActivation = 0f;
+            EffectiveThrust = 0f;
+        }
 
         public void Tick(float dt)
         {

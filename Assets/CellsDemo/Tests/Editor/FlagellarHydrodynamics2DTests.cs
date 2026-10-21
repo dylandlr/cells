@@ -145,6 +145,29 @@ namespace Cells.Tests
                 $"atp_used={initialEnergy-motor.metabolism.energy:R}");
         }
 
+        [TestCase("motor")]
+        [TestCase("tail")]
+        [TestCase("hydrodynamics")]
+        public void DisablingPhysicalComponentClearsCachedPropulsion(string component)
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                motor.Tick(.02f); tail.Tick(.02f); hydro.Tick(.02f);
+            }
+            Assert.Greater(motor.ActualActivation, 0f);
+            if (component == "motor") motor.enabled = false;
+            else if (component == "tail") tail.enabled = false;
+            else hydro.enabled = false;
+            if (hydro.enabled) hydro.Tick(.02f);
+            Assert.AreEqual(Vector2.zero, hydro.LocalSwimmingVelocity);
+            Assert.AreEqual(0f, hydro.LocalAngularVelocityDegrees);
+            if (component == "motor")
+            {
+                Assert.AreEqual(0f, motor.ActualActivation);
+                Assert.AreEqual(0f, motor.EffectiveThrust);
+            }
+        }
+
         [Test]
         public void DisabledMotorStopsVelocityEvenWithExistingTailHistory()
         {

@@ -5,6 +5,7 @@ namespace Cells.Physiology
 {
     /// <summary>Package-independent v1 policy boundary: local observations and one motor action.
     /// Submit before the actuator's -60 execution order. No policy owns position or rotation.</summary>
+    [DisallowMultipleComponent]
     [RequireComponent(typeof(CellMotility), typeof(CellFlagellarActuator))]
     public sealed class CellMotorPolicyPort : MonoBehaviour
     {
@@ -14,6 +15,7 @@ namespace Cells.Physiology
         CellFlagellarActuator motor;
         CellMetabolism metabolism;
         float previousActivation;
+        float previousBehavioralMultiplier;
         bool previousControl;
 
         void OnEnable()
@@ -23,6 +25,7 @@ namespace Cells.Physiology
             metabolism = GetComponent<CellMetabolism>();
             previousControl = motility.externalMotorControl;
             previousActivation = motor.motorActivation;
+            previousBehavioralMultiplier = motor.behavioralMotorMultiplier;
             motility.externalMotorControl = true;
             motor.motorActivation = 0f;
             motor.behavioralMotorMultiplier = 1f;
@@ -31,7 +34,11 @@ namespace Cells.Physiology
         void OnDisable()
         {
             if (motility) motility.externalMotorControl = previousControl;
-            if (motor) motor.motorActivation = previousActivation;
+            if (motor)
+            {
+                motor.motorActivation = previousActivation;
+                motor.behavioralMotorMultiplier = previousBehavioralMultiplier;
+            }
         }
 
         /// <summary>One continuous action in [0,1]. Nonfinite output fails closed.</summary>

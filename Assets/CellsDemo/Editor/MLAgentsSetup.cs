@@ -42,8 +42,13 @@ namespace Cells.Editor
             File.Copy(source, folder + "/CellForagingAgent.cs", true);
             File.WriteAllText(folder + "/Cells.MLAgents.asmdef",
                 "{\"name\":\"Cells.MLAgents\",\"references\":[\"Cells.Runtime\",\"Unity.ML-Agents\"]}");
+            Directory.CreateDirectory(folder + "/Editor");
+            File.Copy(Path.Combine(root, "Integrations/MLAgents/MLTrainingSceneSetup.cs.txt"),
+                folder + "/Editor/MLTrainingSceneSetup.cs", true);
+            File.WriteAllText(folder + "/Editor/Cells.MLAgents.Editor.asmdef",
+                "{\"name\":\"Cells.MLAgents.Editor\",\"references\":[\"Cells.MLAgents\",\"Cells.Runtime\",\"Unity.ML-Agents\"],\"includePlatforms\":[\"Editor\"]}");
             AssetDatabase.Refresh();
-            Debug.Log("Adapter enabled. Follow Integrations/MLAgents/README.md to configure the training scene.");
+            Debug.Log("Adapter enabled. After compilation use Cells/ML Agents/3 Create or open training scene.");
         }
     }
 }
