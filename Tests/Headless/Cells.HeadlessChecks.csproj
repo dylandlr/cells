@@ -10,6 +10,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
+    <Compile Include="CellMachineChecks.cs" />
+    <Compile Include="../../Assets/CellsDemo/Scripts/Automata/CellMachineV01.cs" Link="CellMachineV01.cs" />
     <Compile Include="CommonsActionTrace.cs" />
     <Compile Include="Experiment001ValidityChecks.cs" />
     <Compile Include="RenewableCommonsChecks.cs" />
