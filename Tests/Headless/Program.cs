@@ -28,6 +28,12 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--cell-field-trace")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --cell-field-trace <output.csv>");
+            File.WriteAllText(args[1],Cells.Automata.CellFieldV01.Trace());
+            return;
+        }
         if(args.Length>0 && args[0]=="--cell-machine-trace")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --cell-machine-trace <output.csv>");
@@ -35,6 +41,7 @@ internal static class Program
             return;
         }
         CellMachineChecks.Run();
+        Check(Cells.Automata.CellFieldV01.Trace(12)==Cells.Automata.CellFieldV01.Trace(12),"spatial field deterministic replay");
         if(args.Length>0 && args[0]=="--commons-learned-pair")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-learned-pair <output-dir>");
