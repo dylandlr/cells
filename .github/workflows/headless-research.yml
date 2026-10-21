@@ -478,9 +478,9 @@ jobs:
           import csv,pathlib,statistics
           p=pathlib.Path("artifacts/commons-matched/delivery-challenges.csv")
           with p.open(newline="") as file: rows=list(csv.DictReader(file))
-          assert len(rows)==90
-          assert {int(x["delivery_stride"]) for x in rows}=={1,2,3}
-          for stride in (1,2,3):
+          assert len(rows)==120
+          assert {int(x["delivery_stride"]) for x in rows}=={1,2,3,4}
+          for stride in (1,2,3,4):
               x=[r for r in rows if int(r["delivery_stride"])==stride]
               assert len(x)==30
               print("DELIVERY_STRIDE",stride,
