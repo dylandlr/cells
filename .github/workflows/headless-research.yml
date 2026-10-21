@@ -497,3 +497,27 @@ jobs:
           path: artifacts/commons-matched/delivery-challenges.csv
           if-no-files-found: error
           retention-days: 60
+
+      - name: Summarize exchange rate cooperation curves
+        run: |
+          python3 - <<'PY'
+          import csv,collections,statistics,pathlib
+          folder=pathlib.Path("artifacts/commons-matched")
+          with (folder/"exchange-timeseries.csv").open() as stream: rows=list(csv.DictReader(stream))
+          assert len(rows)==1200
+          groups=collections.defaultdict(list)
+          for row in rows: groups[(int(row["delivery_stride"]),int(row["window"]))].append(int(row["repairs"]))
+          with (folder/"exchange-curve.csv").open("w",newline="") as stream:
+              out=csv.writer(stream);out.writerow(["step","rate_100","rate_50","rate_33","rate_25"])
+              for window in range(10):
+                  values=[statistics.mean(groups[(stride,window)]) for stride in (1,2,3,4)]
+                  out.writerow([window*10+5,*values])
+                  print("EXCHANGE_CURVE",window*10+5,*[round(v,4) for v in values])
+          PY
+      - name: Archive cooperation curves
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-exchange-curve
+          path: artifacts/commons-matched/exchange-*.csv
+          if-no-files-found: error
