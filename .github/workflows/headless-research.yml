@@ -635,3 +635,22 @@ jobs:
           name: cell-machine-microscope-trace
           path: artifacts/cell-machine-trace.csv
           if-no-files-found: error
+
+      - name: Export spatial multi-cell machine trace
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --cell-field-trace artifacts/spatial-cell-field.csv
+      - name: Archive spatial multi-cell microscope trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-cell-field
+          path: artifacts/spatial-cell-field.csv
+          if-no-files-found: error
+      - name: Check spatial microscope JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          page=Path("tools/spatial-microscope/index.html").read_text()
+          Path("/tmp/cells-spatial-microscope.js").write_text(re.search(r'<script>(.*?)</script>',page,re.S).group(1))
+          PY
+          node --check /tmp/cells-spatial-microscope.js
