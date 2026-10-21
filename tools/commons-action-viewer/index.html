@@ -14,20 +14,20 @@ b{color:#98ecbf}.num{font-size:23px;color:#bcf7d7}
 @media(max-width:660px){#world{grid-template-columns:1fr}#cards{grid-template-columns:repeat(2,1fr)}}
 </style>
 <h1>◉ cells / action microscope</h1>
-<p><strong>Actual headless commons event replay.</strong> Load a CSV exported from <code>--commons-trace</code>. No animations or state changes are invented by the viewer. This particular export uses an explicitly scripted demonstration policy, not the learned follower.</p>
+<p><strong>Actual headless commons event replay.</strong> Load a CSV exported from <code>--commons-trace</code>. No animations or state changes are invented by the viewer. Use the learned-policy trace export to inspect frozen trained followers and their received invitations; the sender remains scripted.</p>
 <div class="controls"><label>Trace CSV <input type="file" id="file" accept=".csv,text/csv"></label><button id="prev" disabled>◀</button><button id="next" disabled>▶ Next step</button><button id="play" disabled>Play</button><span id="clock">No trace</span></div>
 <div id="world"></div><div id="cards"></div><h3>Action symbols and recorded events</h3><div id="events">Load an exported CSV to inspect the authoritative simulation actions.</div>
 <small>⚑ signal sent · ↘ harvest attempt · ♻ restoration attempt · ✓ completed restoration · × death · ◇ rest · ▤ observed stock change. A stock difference may reflect harvesting, restoration and stochastic background replenishment; it is not by itself an attribution of cause.</small>
 <script>
 "use strict";
 let records=[],steps=[],cursor=-1,interval=null;
-const $=id=>document.getElementById(id),codes={"signal":"⚑","harvest":"↘","restore-attempt":"♻","repair-success":"✓","death":"×","rest":"◇","stock":"▤"};
+const $=id=>document.getElementById(id),codes={"signal":"⚑","harvest":"↘","restore-attempt":"♻","repair-success":"✓","death":"×","rest":"◇","stock":"▤","observation":"◉"};
 function parse(csv){const lines=csv.trim().split(/\r?\n/);if(lines[0]!=="tick,kind,agent,patch,amount,energy,stock,detail")throw Error("Expected the commons trace CSV schema");return lines.slice(1).filter(Boolean).map(line=>{const parts=line.split(",");if(parts.length!==8)throw Error("Invalid trace row");return {tick:+parts[0],kind:parts[1],agent:+parts[2],patch:+parts[3],amount:+parts[4],energy:+parts[5],stock:+parts[6],detail:parts[7]};});}
 function el(tag,cls,text){const item=document.createElement(tag);if(cls)item.className=cls;if(text!==undefined)item.textContent=text;return item;}
 function show(){if(cursor<0)return;const tick=steps[cursor],now=records.filter(x=>x.tick===tick);
 const all=records.filter(x=>x.tick<=tick);const patchStocks=[null,null,null],agents=[null,null,null,null];
-for(const event of all){if(event.kind==="stock")patchStocks[event.patch]=event.stock;if(event.agent>=0&&event.agent<4)agents[event.agent]=event;}
-$("world").replaceChildren();for(let i=0;i<3;i++){const panel=el("div","patch");panel.append(el("div","", "▤ PATCH "+i),el("div","num",patchStocks[i]===null?"?":String(patchStocks[i])+" units"));const relevant=now.filter(x=>x.patch===i&&x.kind!=="stock");panel.append(el("small","",relevant.map(x=>(codes[x.kind]||"·")+" "+(x.agent<0?"WORLD":"A"+x.agent)+" "+x.kind).join(" · ")||"No new actions recorded"));$("world").append(panel);}
+for(const event of all){if(event.kind==="stock")patchStocks[event.patch]=event.stock;if(event.agent>=0&&event.agent<4&&event.kind!=="observation")agents[event.agent]=event;}
+$("world").replaceChildren();for(let i=0;i<3;i++){const panel=el("div","patch");panel.append(el("div","", "▤ PATCH "+i),el("div","num",patchStocks[i]===null?"?":String(patchStocks[i])+" units"));const relevant=now.filter(x=>x.patch===i&&x.kind!=="stock"&&x.kind!=="observation");panel.append(el("small","",relevant.map(x=>(codes[x.kind]||"·")+" "+(x.agent<0?"WORLD":"A"+x.agent)+" "+x.kind).join(" · ")||"No new actions recorded"));$("world").append(panel);}
 $("cards").replaceChildren();for(let i=0;i<4;i++){const card=el("div","card");card.append(el("b","", "● AGENT "+i),el("p","",agents[i]?"energy "+agents[i].energy.toFixed(2):"not observed"),el("small","",agents[i]?(codes[agents[i].kind]||"·")+" "+agents[i].kind:"no event"));$("cards").append(card);}
 $("events").replaceChildren();for(const e of now){$("events").append(el("div","event",(codes[e.kind]||"·")+" "+(e.agent>=0?"A"+e.agent:"WORLD")+" "+e.kind+(e.patch>=0?" @ patch "+e.patch:"")+" | "+e.detail+" | Δ "+e.amount.toFixed(2)));}
 $("clock").textContent="step "+tick+" · "+(cursor+1)+"/"+steps.length;
