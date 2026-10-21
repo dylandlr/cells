@@ -28,6 +28,30 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--commons-restarts")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --commons-restarts <output-dir>");
+            Directory.CreateDirectory(args[1]);
+            var data=new System.Text.StringBuilder("restart,train_seed,heldout_seed,collective_return,repairs,survivors\n");
+            int[] starts={910000,1110000,1210000,1310000,1410000};
+            for(int r=0;r<starts.Length;r++)
+            {
+                var result=CommonsDelayedLearningV1.Run(starts[r],400,1010000,30,100);
+                var lines=result.EpisodesCsv.TrimEnd().Split('\n');
+                for(int i=1;i<lines.Length;i++)
+                {
+                    var cells=lines[i].Split(',');
+                    if(cells[1]!="trained_on")continue;
+                    data.Append(r).Append(',').Append(starts[r]).Append(',')
+                        .Append(cells[0]).Append(',').Append(cells[2])
+                        .Append(',').Append(cells[3]).Append(',')
+                        .Append(cells[5]).Append('\n');
+                }
+            }
+            File.WriteAllText(Path.Combine(args[1],"restarts.csv"),data.ToString());
+            Console.WriteLine("Independent training-start comparisons exported.");
+            return;
+        }
         if(args.Length>0 && args[0]=="--commons-matched")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-matched <output-dir>");
@@ -36,6 +60,7 @@ internal static class Program
             var immediateReport=CommonsDelayedLearningV1.Run(useImmediateReward:true);
             File.WriteAllText(Path.Combine(args[1],"delayed-episodes.csv"),delayedReport.EpisodesCsv);
             File.WriteAllText(Path.Combine(args[1],"delayed-training.csv"),delayedReport.TrainingCsv);
+            File.WriteAllText(Path.Combine(args[1],"delayed-checkpoints.csv"),delayedReport.CheckpointsCsv);
             File.WriteAllText(Path.Combine(args[1],"immediate-training.csv"),immediateReport.TrainingCsv);
             File.WriteAllText(Path.Combine(args[1],"immediate-episodes.csv"),immediateReport.EpisodesCsv);
             File.WriteAllText(Path.Combine(args[1],"delayed-summary.csv"),delayedReport.SummaryCsv);
@@ -150,6 +175,8 @@ internal static class Program
         Check(immediate.ManifestJson.IndexOf("gamma",StringComparison.Ordinal)>=0 && immediate.ManifestJson.Contains("0.95")==false,
             "immediate learner metadata gamma zero");
         var delayed=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25);
+        Check(delayed.CheckpointsCsv.TrimEnd().Split('\n').Length==10,
+            "early/final checkpoints have three evaluation seeds");
         Check(delayed.EpisodesCsv==CommonsDelayedLearningV1.Run(910000,5,1010000,3,25).EpisodesCsv,
             "delayed learner reproducible frozen test");
         Check(delayed.EpisodesCsv.TrimEnd().Split('\n').Length==10,
