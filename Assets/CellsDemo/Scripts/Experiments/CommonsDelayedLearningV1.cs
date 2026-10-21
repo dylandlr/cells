@@ -14,11 +14,12 @@ namespace Cells.Experiments
         {
             private readonly double[,] q=new double[8,2];
             private readonly bool update;
+            private readonly bool immediate;
             private readonly List<int> states=new List<int>();
             private readonly List<int> choices=new List<int>();
             private readonly List<double> rewards=new List<double>();
             public int Responses {get;private set;}
-            public Policy(bool train){update=train;}
+            public Policy(bool train,bool useImmediate=false){update=train;immediate=useImmediate;}
             public Policy(double[,] snapshot)
             {
                 update=false;
@@ -47,7 +48,7 @@ namespace Cells.Experiments
                     double future=0;
                     for(int t=rewards.Count-1;t>=0;t--)
                     {
-                        future=rewards[t]+.95*future;
+                        future=immediate?rewards[t]:rewards[t]+.95*future;
                         int s=states[t],a=choices[t];
                         q[s,a]+=.08*(future-q[s,a]);
                     }
@@ -60,7 +61,8 @@ namespace Cells.Experiments
             public string EpisodesCsv,SummaryCsv,ManifestJson;
         }
         public static Output Run(int trainStart=910000,int trainEpisodes=400,
-            int testStart=1010000,int testSeeds=30,int horizon=100)
+            int testStart=1010000,int testSeeds=30,int horizon=100,
+            bool useImmediateReward=false)
         {
             if(trainStart<0||testStart<0||trainEpisodes<1||trainEpisodes>5000||
                 testSeeds<2||testSeeds>1000||horizon<1||horizon>1000||
@@ -70,7 +72,7 @@ namespace Cells.Experiments
                  (long)testStart<trainStart+(long)trainEpisodes))
                 throw new ArgumentException("Invalid or overlapping seeds");
             var trained=new Policy[4];
-            for(int i=1;i<4;i++)trained[i]=new Policy(true);
+            for(int i=1;i<4;i++)trained[i]=new Policy(true,useImmediateReward);
             for(int episode=0;episode<trainEpisodes;episode++)
             {
                 var env=new RenewableCommonsV0(trainStart+episode,true);
@@ -106,7 +108,7 @@ namespace Cells.Experiments
             return new Output{
                 EpisodesCsv=csv.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
-                    PairedAssayAnalysisV1.ToCsv("delayed_trained_minus_untrained",
+                    PairedAssayAnalysisV1.ToCsv(useImmediateReward?"immediate_trained_minus_untrained":"delayed_trained_minus_untrained",
                         PairedAssayAnalysisV1.EstimatePaired(paired)),
                 ManifestJson="{\"schema\":\"cells.commons-delayed-v1\",\"train_start\":"+
                     trainStart+",\"train_episodes\":"+trainEpisodes+
