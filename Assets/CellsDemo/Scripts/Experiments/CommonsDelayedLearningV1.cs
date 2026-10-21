@@ -71,6 +71,7 @@ namespace Cells.Experiments
                 ((long)trainStart<testStart+(long)testSeeds &&
                  (long)testStart<trainStart+(long)trainEpisodes))
                 throw new ArgumentException("Invalid or overlapping seeds");
+            var reliability=new StringBuilder("train_delivery,test_delivery,seed,return,repairs,survivors,responses\n");
             // Train once per treatment using the same world seeds and
             // independent communication RNG; evaluate all on common held-out seeds.
             foreach(int trainRate in new[]{100,90,75,60,50})
@@ -106,7 +107,6 @@ namespace Cells.Experiments
             var trainingTrace=new StringBuilder("episode,seed,collective_return,successful_repairs,survivors,accepted_intentions\n");
             var checkpoints=new StringBuilder("checkpoint,seed,collective_return,repairs,survivors,responses\n");
             var firstQ=new StringBuilder("seat,state,harvest_q,respond_q,preferred_action\n");
-            var reliability=new StringBuilder("train_delivery,test_delivery,seed,return,repairs,survivors,responses\n");
             for(int episode=0;episode<trainEpisodes;episode++)
             {
                 var env=new RenewableCommonsV0(trainStart+episode,true);
