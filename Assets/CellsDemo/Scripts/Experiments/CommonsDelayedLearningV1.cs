@@ -58,7 +58,7 @@ namespace Cells.Experiments
         }
         public sealed class Output
         {
-            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv,DeliveryChallengesCsv;
+            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv,DeliveryChallengesCsv,ExchangeTimeSeriesCsv;
         }
         public static Output Run(int trainStart=910000,int trainEpisodes=400,
             int testStart=1010000,int testSeeds=30,int horizon=100,
@@ -124,6 +124,7 @@ namespace Cells.Experiments
             var paired=new List<PairedAssayAnalysisV1.Record>();
             var challenges=new StringBuilder("seed,sender_policy,collective_return,repairs,survivors,responses\n");
             var deliveries=new StringBuilder("seed,delivery_stride,collective_return,repairs,survivors,responses\n");
+            var timeseries=new StringBuilder("seed,delivery_stride,window,repairs\n");
             for(int n=0;n<testSeeds;n++)
             {
                 int seed=testStart+n;
@@ -144,12 +145,17 @@ namespace Cells.Experiments
                         .Append(env.SubstrateReserve).Append('\n');
                 }
                 paired.Add(new PairedAssayAnalysisV1.Record(seed,returns[0],returns[1]));
-                foreach(int stride in new[]{1,2,3})
+                foreach(int stride in new[]{1,2,3,4})
                 {
                     var followers=new Policy[4];
                     for(int seat=1;seat<4;seat++)followers[seat]=new Policy(frozen[seat]);
                     var env=new RenewableCommonsV0(seed,true,stride);
-                    var measured=Simulate(env,followers,Generators(seed),horizon,false);
+                    var windows=new int[(horizon+9)/10];
+                    var measured=Simulate(env,followers,Generators(seed),horizon,false,4,
+                        (step,repairs)=>windows[step/10]+=repairs);
+                    for(int w=0;w<windows.Length;w++)
+                        timeseries.Append(seed).Append(',').Append(stride).Append(',')
+                            .Append(w).Append(',').Append(windows[w]).Append('\n');
                     deliveries.Append(seed).Append(',').Append(stride).Append(',')
                         .Append(F(measured.Return)).Append(',').Append(measured.Repairs)
                         .Append(',').Append(measured.Survivors).Append(',')
@@ -170,7 +176,7 @@ namespace Cells.Experiments
                 EpisodesCsv=csv.ToString(),TrainingCsv=trainingTrace.ToString(),
                 CheckpointsCsv=checkpoints.ToString(),
                 FirstEpisodeQCsv=firstQ.ToString(),SenderChallengesCsv=challenges.ToString(),
-                DeliveryChallengesCsv=deliveries.ToString(),
+                DeliveryChallengesCsv=deliveries.ToString(),ExchangeTimeSeriesCsv=timeseries.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
                     PairedAssayAnalysisV1.ToCsv(useImmediateReward?"immediate_trained_minus_untrained":"delayed_trained_minus_untrained",
                         PairedAssayAnalysisV1.EstimatePaired(paired)),
@@ -192,7 +198,7 @@ namespace Cells.Experiments
             return r;
         }
         private static Outcome Simulate(RenewableCommonsV0 env,Policy[] agents,
-            Random[] rng,int horizon,bool training,int senderPeriod=4)
+            Random[] rng,int horizon,bool training,int senderPeriod=4,Action<int,int> onRepairs=null)
         {
             int repairs=0;
             var responsesBefore=new int[4];
@@ -214,6 +220,7 @@ namespace Cells.Experiments
                 }
                 var log=env.Advance(actions);
                 repairs+=log.SuccessfulRepairs;
+                if(onRepairs!=null)onRepairs(t,log.SuccessfulRepairs);
                 if(training)
                     for(int i=1;i<4;i++)if(acted[i])agents[i].Reward(log.Rewards[i]);
             }
