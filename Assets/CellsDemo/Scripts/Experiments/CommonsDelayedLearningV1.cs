@@ -58,7 +58,7 @@ namespace Cells.Experiments
         }
         public sealed class Output
         {
-            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv,DeliveryChallengesCsv,ExchangeTimeSeriesCsv;
+            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv,DeliveryChallengesCsv,ExchangeTimeSeriesCsv,ProbabilisticExchangeCsv;
         }
         public static Output Run(int trainStart=910000,int trainEpisodes=400,
             int testStart=1010000,int testSeeds=30,int horizon=100,
@@ -125,6 +125,7 @@ namespace Cells.Experiments
             var challenges=new StringBuilder("seed,sender_policy,collective_return,repairs,survivors,responses\n");
             var deliveries=new StringBuilder("seed,delivery_stride,collective_return,repairs,survivors,responses\n");
             var timeseries=new StringBuilder("seed,delivery_stride,window,repairs\n");
+            var probabilistic=new StringBuilder("seed,reception_probability,window,repairs,survivors,collective_return\n");
             for(int n=0;n<testSeeds;n++)
             {
                 int seed=testStart+n;
@@ -161,6 +162,20 @@ namespace Cells.Experiments
                         .Append(',').Append(measured.Survivors).Append(',')
                         .Append(measured.Responses).Append('\n');
                 }
+                foreach(int rate in new[]{25,40,50,60,75,90,100})
+                {
+                    var followers=new Policy[4];
+                    for(int seat=1;seat<4;seat++)followers[seat]=new Policy(frozen[seat]);
+                    var world=new RenewableCommonsV0(seed,true,1,rate/100.0);
+                    var windows=new int[(horizon+9)/10];
+                    var result=Simulate(world,followers,Generators(seed),horizon,false,4,
+                        (time,count)=>windows[time/10]+=count);
+                    for(int w=0;w<windows.Length;w++)
+                        probabilistic.Append(seed).Append(',').Append(rate).Append(',')
+                            .Append(w).Append(',').Append(windows[w]).Append(',')
+                            .Append(result.Survivors).Append(',')
+                            .Append(F(result.Return)).Append('\n');
+                }
                 foreach(int period in new[]{4,6,0})
                 {
                     var controllers=new Policy[4];
@@ -176,7 +191,7 @@ namespace Cells.Experiments
                 EpisodesCsv=csv.ToString(),TrainingCsv=trainingTrace.ToString(),
                 CheckpointsCsv=checkpoints.ToString(),
                 FirstEpisodeQCsv=firstQ.ToString(),SenderChallengesCsv=challenges.ToString(),
-                DeliveryChallengesCsv=deliveries.ToString(),ExchangeTimeSeriesCsv=timeseries.ToString(),
+                DeliveryChallengesCsv=deliveries.ToString(),ExchangeTimeSeriesCsv=timeseries.ToString(),ProbabilisticExchangeCsv=probabilistic.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
                     PairedAssayAnalysisV1.ToCsv(useImmediateReward?"immediate_trained_minus_untrained":"delayed_trained_minus_untrained",
                         PairedAssayAnalysisV1.EstimatePaired(paired)),
