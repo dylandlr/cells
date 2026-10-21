@@ -580,3 +580,13 @@ jobs:
           name: commons-trained-reliability-matrix
           path: artifacts/commons-matched/reliability-matrix.csv
           if-no-files-found: error
+
+      - name: Export authoritative commons action replay
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-trace artifacts/commons-action-trace.csv
+      - name: Archive commons action replay
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-symbolic-action-trace
+          path: artifacts/commons-action-trace.csv
+          if-no-files-found: error
