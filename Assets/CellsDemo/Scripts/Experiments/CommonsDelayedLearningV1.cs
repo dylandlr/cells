@@ -56,6 +56,77 @@ namespace Cells.Experiments
                 states.Clear();choices.Clear();rewards.Clear();
             }
         }
+        // Export a replay of the SAME follower policy used in held-out studies.
+        // Training/replay RNG and Q update schedule match Run().
+        public static string TrainedReplayCsv(int trainStart=910000,int trainEpisodes=400,
+            int testSeed=1010000,int horizon=100,double deliveryProbability=1.0)
+        {
+            if(trainEpisodes<1||trainEpisodes>5000||horizon<1||horizon>1000||
+               deliveryProbability<0||deliveryProbability>1||
+               (long)trainStart+trainEpisodes>int.MaxValue||
+               (long)trainStart<testSeed+1L && (long)testSeed<trainStart+trainEpisodes)
+                throw new ArgumentException("Invalid replay parameters");
+            var trained=new Policy[4];
+            for(int i=1;i<4;i++)trained[i]=new Policy(true);
+            for(int ep=0;ep<trainEpisodes;ep++)
+            {
+                int seed=trainStart+ep;
+                Simulate(new RenewableCommonsV0(seed,true),trained,Generators(seed),horizon,true);
+                for(int i=1;i<4;i++)trained[i].Finish();
+            }
+            var frozen=new Policy[4];
+            for(int i=1;i<4;i++)frozen[i]=new Policy(trained[i].Snapshot());
+            var env=new RenewableCommonsV0(testSeed,true,1,deliveryProbability);
+            var rng=Generators(testSeed);
+            var csv=new StringBuilder("tick,kind,agent,patch,amount,energy,stock,detail\n");
+            for(int tick=0;tick<horizon;tick++)
+            {
+                var actions=new RenewableCommonsV0.Act[4];
+                var observations=new RenewableCommonsV0.View[4];
+                for(int i=0;i<4;i++)observations[i]=env.Observe(i);
+                var leader=observations[0];
+                actions[0]=new RenewableCommonsV0.Act(!leader.Alive?9:
+                    tick%4==0&&leader.LocalStock<=2?6+leader.Location:
+                    leader.LocalStock<=2?3+leader.Location:leader.Location);
+                for(int i=1;i<4;i++)
+                {
+                    var view=observations[i];
+                    int heard=-1;
+                    for(int p=0;p<3;p++)if(view.Heard[p]>0){heard=p;break;}
+                    AddReplay(csv,tick,"observation",i,heard,view.LocalStock,
+                        view.Energy,view.LocalStock,"heard="+heard+";location="+view.Location);
+                    actions[i]=new RenewableCommonsV0.Act(view.Alive?frozen[i].Decide(view,rng[i]):9);
+                }
+                var log=env.Advance(actions);
+                var stocks=env.Stocks();
+                for(int i=0;i<4;i++)
+                {
+                    int code=actions[i].Code, patch=code<9?code%3:-1;
+                    string label=code<3?"harvest":code<6?"restore-attempt":code<9?"signal":"rest";
+                    AddReplay(csv,tick,label,i,patch,log.Rewards[i],env.Observe(i).Energy,
+                        patch>=0?stocks[patch]:-1,i==0?"scripted-sender":"frozen-learned-follower");
+                    if(observations[i].Alive&&!env.Observe(i).Alive)
+                        AddReplay(csv,tick,"death",i,observations[i].Location,0,
+                            env.Observe(i).Energy,-1,"energy-depleted");
+                }
+                for(int p=0;p<3;p++)
+                    AddReplay(csv,tick,"stock",-1,p,stocks[p]-log.StocksBefore[p],0,
+                        stocks[p],"post-step-observation");
+                if(log.SuccessfulRepairs>0)
+                    AddReplay(csv,tick,"repair-success",-1,-1,log.SuccessfulRepairs,0,
+                        env.SubstrateReserve,"joint-restoration-events");
+            }
+            return csv.ToString();
+        }
+        private static void AddReplay(StringBuilder csv,int tick,string kind,int agent,
+            int patch,double amount,double energy,int stock,string detail)
+        {
+            csv.Append(tick).Append(',').Append(kind).Append(',').Append(agent)
+                .Append(',').Append(patch).Append(',')
+                .Append(amount.ToString("R",CultureInfo.InvariantCulture)).Append(',')
+                .Append(energy.ToString("R",CultureInfo.InvariantCulture)).Append(',')
+                .Append(stock).Append(',').Append(detail).Append('\n');
+        }
         public sealed class Output
         {
             public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv,FirstEpisodeQCsv,SenderChallengesCsv,DeliveryChallengesCsv,ExchangeTimeSeriesCsv,ProbabilisticExchangeCsv,ReliabilityMatrixCsv;
