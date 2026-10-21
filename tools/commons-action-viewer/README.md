@@ -10,6 +10,14 @@ From the repository root (requires .NET 8):
 dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj -- --commons-trace commons-action-trace.csv
 ```
 
+For a **frozen learned follower replay**, use:
+
+```bash
+dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj -- --commons-learned-trace commons-learned-action-trace.csv
+```
+
+The learned trace is generated with the same 400-episode discounted-return follower learning schedule as the matched evaluation, and a scripted sender. Each follower observation (`◉`) includes its actual heard invitation, location and local stock before the action. The action rows identify the frozen learned followers; realized rewards and resource events come from `RenewableCommonsV0.Advance`. The viewer has not been checked in a real graphical browser during this run.
+
 Alternatively, download `commons-action-trace.csv` from the GitHub Actions artifact named `commons-symbolic-action-trace` in a successful **Headless research checks** run.
 
 Open `tools/commons-action-viewer/index.html` in a browser and select the exported CSV. Step through or play the recorded events.
@@ -32,7 +40,7 @@ The trace is derived directly from `RenewableCommonsV0.Advance()` and `Observe()
 
 ### Scientific boundaries
 
-- The current exported demonstration uses a **transparent scripted action policy**. It does not display learned policy internals; the trained-policy capture adapter is a separate next step.
+- The `--commons-trace` command uses fully scripted agents; `--commons-learned-trace` uses frozen trained followers with a scripted sender. We show the observations and resulting action choices but not yet exact Q-table values for each choice.
 - This commons environment has discrete patches, not simulated continuous 2D motion. Patch cards are scientifically more faithful than arbitrary moving dots.
 - The stock change is *net* post-step difference, not isolated nutrient uptake; stochastic replenishment also occurs.
 - The renderer does not calculate or invent world transitions. It only replays input rows, and has no ability to evolve or modify world state.
