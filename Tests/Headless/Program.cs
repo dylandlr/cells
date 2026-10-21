@@ -28,6 +28,12 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length>0 && args[0]=="--commons-trace")
+        {
+            if(args.Length!=2)throw new ArgumentException("Usage: --commons-trace <output.csv>");
+            File.WriteAllText(args[1],CommonsActionTrace.Generate());
+            return;
+        }
         if(args.Length>0 && args[0]=="--commons-restarts")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-restarts <output-dir>");
@@ -336,6 +342,10 @@ internal static class Program
             Check(gain[i] >= 0 && !double.IsNaN(gain[i]),
                 "nonnegative finite restricted deviation gain");
 
+        var replayA=CommonsActionTrace.Generate(42,12);
+        Check(replayA==CommonsActionTrace.Generate(42,12),"trace deterministic replay");
+        Check(replayA.Contains(",repair-success,") || replayA.Contains(",restore-attempt,"),"trace includes restoration decisions");
+        Check(replayA.TrimEnd().Split('\n').Length>12,"trace has observed events");
         Console.WriteLine("PASS: " + passed + " headless assertions.");
         Console.WriteLine("This does not verify Unity, physical chemistry, or scientific hypotheses.");
     }
