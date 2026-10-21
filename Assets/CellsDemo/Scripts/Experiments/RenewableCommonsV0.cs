@@ -51,10 +51,13 @@ namespace Cells.Experiments
         private readonly int[] messages=new int[Patches];
         private readonly Random environment;
         private readonly bool delivery;
+        private readonly int deliveryStride;
         private int step;
         public int Step=>step;
-        public RenewableCommonsV0(int seed,bool deliverMessages=true)
+        public RenewableCommonsV0(int seed,bool deliverMessages=true,int messageDeliveryStride=1)
         {
+            if(messageDeliveryStride<1)throw new ArgumentOutOfRangeException("messageDeliveryStride");
+            deliveryStride=messageDeliveryStride;
             environment=new Random(seed);
             delivery=deliverMessages;
             for(int p=0;p<Patches;p++)
@@ -72,7 +75,7 @@ namespace Cells.Experiments
                 Step=step,Seat=seat,Location=where,
                 LocalStock=stocks[where],LocalHazard=hazard[where],
                 Energy=energy[seat],Alive=alive[seat],
-                Heard=delivery?(int[])messages.Clone():new int[Patches]
+                Heard=delivery && step%deliveryStride==0?(int[])messages.Clone():new int[Patches]
             };
         }
         public StepLog Advance(Act[] acts)
