@@ -59,6 +59,12 @@ internal static class RenewableCommonsChecks
             new RenewableCommonsV0.Act(7),new RenewableCommonsV0.Act(9),
             new RenewableCommonsV0.Act(9),new RenewableCommonsV0.Act(9)};
         var r1=on.Advance(send);var r2=off.Advance(send);
+        var never=new RenewableCommonsV0(88,true,1,0);
+        never.Advance(send);
+        Check(never.Observe(2).Heard[1]==0,"zero probability blocks all signals");
+        var always=new RenewableCommonsV0(88,true,1,1);
+        always.Advance(send);
+        Check(always.Observe(2).Heard[1]==1,"unit probability delivers all messages");
         var sparse=new RenewableCommonsV0(88,true,2);
         sparse.Advance(send);
         Check(sparse.Observe(2).Heard[1]==0,"stride two suppresses step-one signal");
