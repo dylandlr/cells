@@ -137,6 +137,8 @@ namespace Cells.Experiments
             Random[] rng,int horizon,bool training)
         {
             int repairs=0;
+            var responsesBefore=new int[4];
+            for(int i=1;i<4;i++)responsesBefore[i]=agents[i].Responses;
             for(int t=0;t<horizon;t++)
             {
                 var actions=new RenewableCommonsV0.Act[4];
@@ -162,7 +164,7 @@ namespace Cells.Experiments
             for(int i=0;i<4;i++)
             {
                 if(env.Observe(i).Alive)outcome.Survivors++;
-                if(i>0)outcome.Responses+=agents[i].Responses;
+                if(i>0)outcome.Responses+=agents[i].Responses-responsesBefore[i];
             }
             return outcome;
         }
