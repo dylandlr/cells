@@ -58,7 +58,7 @@ namespace Cells.Experiments
         }
         public sealed class Output
         {
-            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv;
+            public string EpisodesCsv,SummaryCsv,ManifestJson,TrainingCsv,CheckpointsCsv;
         }
         public static Output Run(int trainStart=910000,int trainEpisodes=400,
             int testStart=1010000,int testSeeds=30,int horizon=100,
@@ -74,6 +74,7 @@ namespace Cells.Experiments
             var trained=new Policy[4];
             for(int i=1;i<4;i++)trained[i]=new Policy(true,useImmediateReward);
             var trainingTrace=new StringBuilder("episode,seed,collective_return,successful_repairs,survivors,accepted_intentions\n");
+            var checkpoints=new StringBuilder("checkpoint,seed,collective_return,repairs,survivors,responses\n");
             for(int episode=0;episode<trainEpisodes;episode++)
             {
                 var env=new RenewableCommonsV0(trainStart+episode,true);
@@ -85,6 +86,25 @@ namespace Cells.Experiments
                     .Append(',').Append(trainingOutcome.Survivors)
                     .Append(',').Append(trainingOutcome.Responses).Append('\n');
                 for(int i=1;i<4;i++)trained[i].Finish();
+                int completed=episode+1;
+                if(completed==1 || completed==5 || completed==10 || completed==25 ||
+                   completed==50 || completed==100 || completed==200 || completed==trainEpisodes)
+                {
+                    var saved=new double[4][,];
+                    for(int i=1;i<4;i++)saved[i]=trained[i].Snapshot();
+                    for(int n=0;n<testSeeds;n++)
+                    {
+                        int seed=testStart+n;
+                        var frozenPolicies=new Policy[4];
+                        for(int i=1;i<4;i++)frozenPolicies[i]=new Policy(saved[i]);
+                        var evaluation=Simulate(new RenewableCommonsV0(seed,true),
+                            frozenPolicies,Generators(seed),horizon,false);
+                        checkpoints.Append(completed).Append(',').Append(seed).Append(',')
+                            .Append(F(evaluation.Return)).Append(',').Append(evaluation.Repairs)
+                            .Append(',').Append(evaluation.Survivors).Append(',')
+                            .Append(evaluation.Responses).Append('\n');
+                    }
+                }
             }
             var frozen=new double[4][,];
             for(int i=1;i<4;i++)frozen[i]=trained[i].Snapshot();
@@ -113,6 +133,7 @@ namespace Cells.Experiments
             }
             return new Output{
                 EpisodesCsv=csv.ToString(),TrainingCsv=trainingTrace.ToString(),
+                CheckpointsCsv=checkpoints.ToString(),
                 SummaryCsv=PairedAssayAnalysisV1.Header+
                     PairedAssayAnalysisV1.ToCsv(useImmediateReward?"immediate_trained_minus_untrained":"delayed_trained_minus_untrained",
                         PairedAssayAnalysisV1.EstimatePaired(paired)),
