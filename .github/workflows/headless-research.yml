@@ -471,3 +471,29 @@ jobs:
             artifacts/commons-matched/sender-challenges.csv
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Analyze matched sender-rule delivery cadence
+        run: |
+          python3 - <<'PY'
+          import csv,pathlib,statistics
+          p=pathlib.Path("artifacts/commons-matched/delivery-challenges.csv")
+          with p.open(newline="") as file: rows=list(csv.DictReader(file))
+          assert len(rows)==90
+          assert {int(x["delivery_stride"]) for x in rows}=={1,2,3}
+          for stride in (1,2,3):
+              x=[r for r in rows if int(r["delivery_stride"])==stride]
+              assert len(x)==30
+              print("DELIVERY_STRIDE",stride,
+                    "return",round(statistics.mean(float(r["collective_return"]) for r in x),3),
+                    "repairs",round(statistics.mean(int(r["repairs"]) for r in x),3),
+                    "survivors",round(statistics.mean(int(r["survivors"]) for r in x),3),
+                    "responses",round(statistics.mean(int(r["responses"]) for r in x),3))
+          PY
+      - name: Archive controlled delivery experiment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-delivery-cadence
+          path: artifacts/commons-matched/delivery-challenges.csv
+          if-no-files-found: error
+          retention-days: 60
