@@ -65,6 +65,7 @@ internal static class Program
             File.WriteAllText(Path.Combine(args[1],"sender-challenges.csv"),delayedReport.SenderChallengesCsv);
             File.WriteAllText(Path.Combine(args[1],"delivery-challenges.csv"),delayedReport.DeliveryChallengesCsv);
             File.WriteAllText(Path.Combine(args[1],"exchange-timeseries.csv"),delayedReport.ExchangeTimeSeriesCsv);
+            File.WriteAllText(Path.Combine(args[1],"probabilistic-exchange.csv"),delayedReport.ProbabilisticExchangeCsv);
             File.WriteAllText(Path.Combine(args[1],"immediate-training.csv"),immediateReport.TrainingCsv);
             File.WriteAllText(Path.Combine(args[1],"immediate-episodes.csv"),immediateReport.EpisodesCsv);
             File.WriteAllText(Path.Combine(args[1],"delayed-summary.csv"),delayedReport.SummaryCsv);
@@ -180,6 +181,8 @@ internal static class Program
             "immediate learner metadata gamma zero");
         var delayed=CommonsDelayedLearningV1.Run(910000,5,1010000,3,25);
         Check(delayed.FirstEpisodeQCsv.TrimEnd().Split('\n').Length==25,"three follower eight-state first-episode q snapshots");
+        Check(delayed.ProbabilisticExchangeCsv.TrimEnd().Split('\n').Length==64,
+            "probability x seeds x windows");
         Check(delayed.ExchangeTimeSeriesCsv.TrimEnd().Split('\n').Length==37,
             "four rates x three seeds x three time windows");
         Check(delayed.DeliveryChallengesCsv.TrimEnd().Split('\n').Length==13,
