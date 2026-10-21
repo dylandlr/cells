@@ -338,3 +338,46 @@ jobs:
           path: artifacts/commons-delayed-v1
           if-no-files-found: warn
           retention-days: 60
+
+      - name: Execute matched immediate-versus-delayed commons control
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --commons-matched artifacts/commons-matched
+      - name: Validate matched gamma experiment and print comparisons
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib
+          root=pathlib.Path("artifacts/commons-matched")
+          def read(name):
+              with (root/name).open(newline="") as f: return list(csv.DictReader(f))
+          d=read("delayed-episodes.csv")
+          i=read("immediate-episodes.csv")
+          dm=json.loads((root/"delayed-manifest.json").read_text())
+          im=json.loads((root/"immediate-manifest.json").read_text())
+          assert dm["gamma"]==0.95 and im["gamma"]==0
+          for field in ("train_start","train_episodes","test_start","test_seeds","horizon","test_updates"):
+              assert dm[field]==im[field],field
+          assert len(d)==len(i)==90
+          assert {(r["seed"],r["condition"]) for r in d}=={(r["seed"],r["condition"]) for r in i}
+          assert len(read("delayed-summary.csv"))==len(read("immediate-summary.csv"))==1
+          by_d={(r["seed"],r["condition"]):r for r in d}
+          by_i={(r["seed"],r["condition"]):r for r in i}
+          differences=[]
+          for seed in range(dm["test_start"],dm["test_start"]+dm["test_seeds"]):
+              k=(str(seed),"trained_on")
+              differences.append(float(by_d[k]["collective_return"])-float(by_i[k]["collective_return"]))
+          assert len(differences)==30
+          for name,rows in (("delayed",d),("immediate",i)):
+              for condition in ("trained_on","untrained_on","trained_off"):
+                  selected=[r for r in rows if r["condition"]==condition]
+                  print(name,condition,"mean_return",round(sum(float(r["collective_return"]) for r in selected)/30,4),
+                    "mean_repairs",round(sum(int(r["successful_repairs"]) for r in selected)/30,4),
+                    "mean_survivors",round(sum(int(r["survivors"]) for r in selected)/30,4))
+          print("Paired delayed-minus-immediate trained ON mean",sum(differences)/len(differences))
+          PY
+      - name: Archive matched immediate and discounted runs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: commons-matched-discount-control
+          path: artifacts/commons-matched
+          if-no-files-found: warn
+          retention-days: 60
