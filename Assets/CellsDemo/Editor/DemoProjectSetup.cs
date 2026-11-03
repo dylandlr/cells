@@ -12,6 +12,34 @@ namespace Cells.Editor
         public const string ScenePath = "Assets/CellsDemo/Scenes/ChemistryDemo.unity";
         public const string CultureScenePath = "Assets/CellsDemo/Scenes/MicroscopeCulture.unity";
 
+        // Focused playable milestone; keeps the existing culture build available.
+        public static void BuildPlayableDemo()
+        {
+            const string demoPath = "Assets/CellsDemo/Scenes/PlayableDemo.unity";
+            Directory.CreateDirectory("Assets/CellsDemo/Scenes");
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var demo = new GameObject("Cells playable demo").AddComponent<ChemistryDemoBootstrap>();
+            demo.cultureView = false;
+            demo.initialToxin = 0f; // User can dose toxin through the microscope.
+            demo.seed = 631;
+            demo.enableExperimentalDivision = false;
+            EditorSceneManager.SaveScene(scene, demoPath);
+            AssetDatabase.SaveAssets();
+            string output = System.Environment.GetEnvironmentVariable("CELLS_DEMO_OUTPUT");
+            if (string.IsNullOrWhiteSpace(output)) output = "Build/PlayableDemo/Cells.exe";
+            Directory.CreateDirectory(Path.GetDirectoryName(output));
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = new[] { demoPath },
+                locationPathName = output,
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.Development
+            });
+            if (report.summary.result != BuildResult.Succeeded)
+                throw new System.Exception("Cells playable demo build failed: " + report.summary.result);
+            Debug.Log("CELLS_PLAYABLE_BUILD_OK: " + report.summary.totalSize + " bytes");
+        }
+
         public static void BuildWindows()
         {
             CreateScene();
