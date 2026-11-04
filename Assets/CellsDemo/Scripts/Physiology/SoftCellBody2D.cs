@@ -43,6 +43,7 @@ namespace Cells.Physiology
         public float LastContactMagnitude { get; private set; }
         Vector2 core, previousCore, coreVelocity;
         float restArea;
+        CellDevelopment development;
         bool initialized;
         public bool Initialized => initialized;
         public Vector2 Core => core;
@@ -70,6 +71,7 @@ namespace Cells.Physiology
             if (!membrane) membrane = GetComponent<MembraneIntegrity>();
             if (!flagellum) flagellum = GetComponent<CellFlagellarActuator>();
             if (!growth) growth = GetComponent<CellBiomassGrowth>();
+            development = GetComponent<CellDevelopment>();
             if (fluid == null) fluid = GetComponentInParent<FluidGrid2D>();
             for (int i=0;i<Nodes;i++)
             {
@@ -113,10 +115,19 @@ namespace Cells.Physiology
         void UpdateGrowthRestShape()
         {
             float scale=growth ? growth.VisualRadiusScale : 1f;
+            float baselineArea = 0f;
+            for (int i=0;i<Nodes;i++)
+            {
+                Vector2 a = membrane ? membrane.SurfacePoint(i,restRadius) : MembraneIntegrity.DirectionOf(i)*restRadius;
+                Vector2 b = membrane ? membrane.SurfacePoint((i+1)%Nodes,restRadius) : MembraneIntegrity.DirectionOf((i+1)%Nodes)*restRadius;
+                baselineArea += Vector3.Cross(a,b).z;
+            }
+            baselineArea = Mathf.Abs(baselineArea)*.5f*scale*scale;
             for(int i=0;i<Nodes;i++)
             {
                 Vector2 shape=(membrane ? membrane.SurfacePoint(i,restRadius)
                     : MembraneIntegrity.DirectionOf(i)*restRadius)*scale;
+                if (development && growth) shape *= development.RadiusFactor(i, growth.structuralBiomass);
                 if(divisionConstriction>0f)
                 {
                     float band=Mathf.Max(.03f,constrictionBand)*Mathf.Max(.1f,restRadius*scale);
@@ -129,6 +140,14 @@ namespace Cells.Physiology
             for(int i=0;i<Nodes;i++)
                 area+=Vector3.Cross(rest[i],rest[(i+1)%Nodes]).z;
             restArea=Mathf.Abs(area)*.5f;
+            // Changing allocation changes shape, never grants extra enclosed area.
+            // Keep the existing division constriction contract unchanged.
+            if (development && divisionConstriction <= 0f && restArea > 1e-8f)
+            {
+                float correction = Mathf.Sqrt(baselineArea/restArea);
+                for (int i=0;i<Nodes;i++) rest[i] *= correction;
+                restArea = baselineArea;
+            }
         }
 
         // Strain is an observable diagnostic derived from actual deformed edges.

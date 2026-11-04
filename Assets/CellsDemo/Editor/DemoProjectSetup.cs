@@ -23,6 +23,7 @@ namespace Cells.Editor
             demo.initialToxin = 0f; // User can dose toxin through the microscope.
             demo.seed = 631;
             demo.enableExperimentalDivision = false;
+            demo.enableDevelopmentalGrowth = true;
             EditorSceneManager.SaveScene(scene, demoPath);
             AssetDatabase.SaveAssets();
             string output = System.Environment.GetEnvironmentVariable("CELLS_DEMO_OUTPUT");

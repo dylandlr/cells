@@ -14,6 +14,9 @@ namespace Cells.Physiology
         [Range(.05f, 3f)] public float sensorGain = 1f;
         [Range(.05f, 3f)] public float motorInvestment = 1f;
 
+        [Range(0f, 1f)] public float developmentBias;
+        public float developmentAxis; // Radians in the cell local frame.
+
         public OrganismGenome Copy() => (OrganismGenome)MemberwiseClone();
 
         // A zero mutation probability provides an exact-copy control.

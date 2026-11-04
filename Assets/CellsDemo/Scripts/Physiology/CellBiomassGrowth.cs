@@ -52,6 +52,8 @@ namespace Cells.Physiology
             nutrientReserve -= request;
             structuralBiomass += request;
             CumulativeAssimilated += request;
+            var development = GetComponent<CellDevelopment>();
+            if (development) development.Allocate(request);
             return request;
         }
     }

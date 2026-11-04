@@ -17,6 +17,7 @@ namespace Cells.Demo
         public bool autoBuild = true;
         public bool cultureView;
         public bool assayMode;
+        public bool enableDevelopmentalGrowth;
         public bool enableExperimentalDivision; // Off in ordinary gameplay and assays.
         public int NextExperimentalOrganismId = 10000;
         public CellMotility AssaySwimmer { get; private set; }
@@ -220,7 +221,7 @@ namespace Cells.Demo
             var go = Child(label);
             go.transform.position = position;
             var metabolism = go.AddComponent<CellMetabolism>();
-            metabolism.energy = secretor ? 10f : 2f;
+            metabolism.energy = enableDevelopmentalGrowth ? 8f : (secretor ? 10f : 2f);
             var growth = go.AddComponent<CellBiomassGrowth>();
             growth.metabolism = metabolism;
             growth.structuralBiomass = 1f;
@@ -231,6 +232,12 @@ namespace Cells.Demo
             // Founder phenotype: inherited parameters are expressed into actual physiology.
             var phenotype = go.AddComponent<OrganismPhenotype>();
             phenotype.genome = new OrganismGenome();
+            if (enableDevelopmentalGrowth && motile && !assayMode && !enableExperimentalDivision)
+            {
+                go.AddComponent<CellDevelopment>();
+                phenotype.genome.developmentBias = secretor ? .15f : .9f;
+                phenotype.genome.developmentAxis = 0f;
+            }
             phenotype.genome.sensorGain = secretor ? .65f : 1.15f;
             phenotype.genome.motorInvestment = secretor ? .8f : .92f;
             var membrane = go.AddComponent<MembraneIntegrity>();
