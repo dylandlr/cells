@@ -8,7 +8,7 @@ namespace Cells.Tests.Editor
         [Test]
         public void FreshTrialsProduceThreeIndependentFiniteReports()
         {
-            var report=MembraneConvergenceSweep2D.Run(duration=.4f);
+            var report=MembraneConvergenceSweep2D.Run(duration:.4f);
             Assert.AreEqual(3,report.trials.Count);
             Assert.AreEqual(.02f,report.trials[0].timestep,1e-6f);
             Assert.AreEqual(.01f,report.trials[1].timestep,1e-6f);

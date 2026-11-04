@@ -17,7 +17,7 @@ namespace Cells.Tests.Editor
                 body.Initialize();
                 body.divisionConstriction=.17f;
                 var report=MembraneConstrictionAssay2D.Run(
-                    body,duration=2f,timestep=.02f,neckThreshold=.7f,sampleEvery=5);
+                    body,duration:2f,timestep:.02f,neckThreshold:.7f,sampleEvery:5);
                 Assert.AreEqual(100,report.steps);
                 Assert.AreEqual(21,report.samples.Count);
                 Assert.AreEqual(.17f,body.divisionConstriction,1e-6f);

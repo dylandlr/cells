@@ -23,7 +23,13 @@ function Run-Unity([string]$Label, [string[]]$Extra) {
     }
     $process.WaitForExit()
     $process.Refresh()
-    if ($process.ExitCode -ne 0) { throw "$Label failed with exit $($process.ExitCode). Review $log" }
+    if ($process.ExitCode -ne 0) {
+        if (Test-Path $log) {
+            Write-Host "Unity failure details (last 100 log lines):"
+            Get-Content $log -Tail 100 | ForEach-Object { Write-Host $_ }
+        }
+        throw "$Label failed with exit $($process.ExitCode). Review $log"
+    }
 }
 $results = @()
 foreach ($mode in @('EditMode', 'PlayMode')) {
