@@ -106,6 +106,12 @@ namespace Cells.EditorTools
             EditorUtility.RevealInFinder(folder);
         }
 
+        // Paired totals accumulate in double precision; keep that precision in CSV.
+        private static string N(double value)
+        {
+            return value.ToString("R", CultureInfo.InvariantCulture);
+        }
+
         private static string N(float value)
         {
             return value.ToString("R", CultureInfo.InvariantCulture);
