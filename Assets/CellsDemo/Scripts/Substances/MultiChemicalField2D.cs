@@ -157,10 +157,12 @@ namespace Cells.Substances
             int count = Mathf.Max(1, Mathf.CeilToInt(maxOutflow * dt /
                 (cellSize * Mathf.Max(.05f, advectionCfl))));
             float step = dt / count;
-            foreach (var pair in concentrations)
+            // Replacing an existing value invalidates Dictionary enumeration on Mono.
+            var ids = new System.Collections.Generic.List<string>(concentrations.Keys);
+            foreach (string id in ids)
             {
-                float[] src = pair.Value;
-                float[] dst = buffers[pair.Key];
+                float[] src = concentrations[id];
+                float[] dst = buffers[id];
                 for (int pass = 0; pass < count; pass++)
                 {
                     Array.Copy(src, dst, src.Length);
@@ -189,8 +191,8 @@ namespace Cells.Substances
                     }
                     var tmp = src; src = dst; dst = tmp;
                 }
-                concentrations[pair.Key] = src;
-                buffers[pair.Key] = dst;
+                concentrations[id] = src;
+                buffers[id] = dst;
             }
         }
 

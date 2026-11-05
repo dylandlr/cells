@@ -4,6 +4,7 @@ using Cells.Physiology;
 
 namespace Cells.Tests
 {
+    // PlayMode is required: these assertions exercise OnEnable/OnDisable handoffs.
     public sealed class CellMotorPolicyPortTests
     {
         GameObject cell;

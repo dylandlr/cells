@@ -41,11 +41,15 @@ namespace Cells.Tests
         [Test]
         public void NoDiffusionPreventsLongRangeTransmission()
         {
+            // Isolate transport: mobile nutrient-seeking receivers can enter the
+            // emitting voxel even when signal diffusion is zero.
             var isolated = PhysicalSignalAssayV1.RunCalibrated(
-                631, true, true, .0001f, 0f, 0f);
+                631, true, true, .0001f, 0f, 0f, allowReceiverMovement: false);
             Assert.Greater(isolated.SignalMassEmitted, 0f);
             for (int seat = 1; seat < PhysicalSignalAssayV1.Agents; seat++)
             {
+                Assert.AreEqual(0f, isolated.CumulativeMovementDistance[seat]);
+                Assert.Greater(isolated.FinalSourceDistance[seat], .5f);
                 Assert.AreEqual(0, isolated.Receptions[seat]);
                 Assert.AreEqual(0, isolated.ResponseEnabledSteps[seat]);
                 Assert.AreEqual(0, isolated.SignalInfluencedMoves[seat]);

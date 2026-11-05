@@ -60,9 +60,11 @@ namespace Cells.Experiments
         /// <summary>
         /// Parameterized sensitivity probe. Concentration thresholds and transport
         /// rates are simulation units, not biologically calibrated measurements.
+        /// Disable receiver movement to isolate transport from direct source contact.
         /// </summary>
         public static Result RunCalibrated(int seed, bool enableSignaling, bool enableResponse,
-            float detectionThreshold, float signalDiffusivity, float signalDecayRate)
+            float detectionThreshold, float signalDiffusivity, float signalDecayRate,
+            bool allowReceiverMovement = true)
         {
             if (!MultiChemicalField2D.Finite(detectionThreshold) || detectionThreshold <= 0f ||
                 !MultiChemicalField2D.Finite(signalDiffusivity) || signalDiffusivity < 0f ||
@@ -192,7 +194,7 @@ namespace Cells.Experiments
                         Vector2 signalSteering = policyFollowing
                             ? receptor[i].ReadGradient() * .5f : Vector2.zero;
                         Vector2 gradient = foodGrad + signalSteering;
-                        if (gradient.sqrMagnitude > 1e-9f)
+                        if (allowReceiverMovement && gradient.sqrMagnitude > 1e-9f)
                         {
                             Vector2 shift = gradient.normalized * .025f;
                             float cost = shift.magnitude * .05f;

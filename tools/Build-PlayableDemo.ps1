@@ -28,6 +28,17 @@ function Run-Unity([string]$Label, [string[]]$Extra) {
             Write-Host "Unity failure details (last 100 log lines):"
             Get-Content $log -Tail 100 | ForEach-Object { Write-Host $_ }
         }
+        $reportPath = Join-Path $run "$Label.xml"
+        if (Test-Path $reportPath) {
+            try {
+                [xml]$report = Get-Content $reportPath -Raw
+                foreach ($test in $report.SelectNodes("//test-case[@result='Failed']")) {
+                    Write-Host "`nFAILED TEST: $($test.fullname)"
+                    Write-Host $test.failure.message.InnerText
+                    Write-Host $test.failure.'stack-trace'.InnerText
+                }
+            } catch { Write-Host "Could not read test failure report: $_" }
+        }
         throw "$Label failed with exit $($process.ExitCode). Review $log"
     }
 }

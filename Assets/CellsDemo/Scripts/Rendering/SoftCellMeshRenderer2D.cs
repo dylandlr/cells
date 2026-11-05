@@ -55,8 +55,12 @@ namespace Cells.Rendering
         readonly float[] granuleAngles = new float[12];
         readonly float[] granuleRadii = new float[12];
 
-        void Awake()
+        void Awake() => UpdateGeometry();
+
+        // Explicit rendering is also supported by editor previews and EditMode tests.
+        void EnsureResources()
         {
+            if (mesh) return;
             if(!body) body=GetComponent<SoftCellBody2D>();
             if(!membrane) membrane=GetComponent<MembraneIntegrity>();
             if(!metabolism) metabolism=GetComponent<CellMetabolism>();
@@ -131,7 +135,6 @@ namespace Cells.Rendering
                 float size=.025f+(float)random.NextDouble()*.030f;
                 grain.transform.localScale=new Vector3(size,size,1f);
             }
-            UpdateGeometry();
         }
 
         static Sprite MakeOrganelleSprite()
@@ -154,6 +157,7 @@ namespace Cells.Rendering
         void LateUpdate()=>UpdateGeometry();
         public void UpdateGeometry()
         {
+            EnsureResources();
             if(!body || !body.Initialized || !mesh)return;
             // The soft-body solver now owns biomass-dependent geometric expansion.
             const float size=1f;
@@ -235,12 +239,18 @@ namespace Cells.Rendering
                 granules[i].localPosition=new Vector3(p.x*size,p.y*size,-.012f);
             }
         }
+        static void ReleaseResource(Object resource)
+        {
+            if (Application.isPlaying) Destroy(resource);
+            else DestroyImmediate(resource);
+        }
+
         void OnDestroy()
         {
-            if(mesh)Destroy(mesh);
-            if(material)Destroy(material);
-            if(organelleSprite)Destroy(organelleSprite);
-            if(organelleTexture)Destroy(organelleTexture);
+            if(mesh)ReleaseResource(mesh);
+            if(material)ReleaseResource(material);
+            if(organelleSprite)ReleaseResource(organelleSprite);
+            if(organelleTexture)ReleaseResource(organelleTexture);
 
         }
     }

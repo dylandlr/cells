@@ -23,6 +23,12 @@ namespace Cells.Tests.Editor
                 Assert.IsTrue(renderer.LastBoundaryTriangulationSucceeded);
                 Assert.Greater(renderer.BoundaryTriangulationSuccesses,0);
                 Assert.AreEqual(SoftCellBody2D.Nodes-2,renderer.RenderTriangleCount);
+                var mesh = go.GetComponentInChildren<MeshFilter>().sharedMesh;
+                int childCount = go.transform.childCount;
+                renderer.UpdateGeometry();
+                Assert.AreSame(mesh, go.GetComponentInChildren<MeshFilter>().sharedMesh);
+                Assert.AreEqual(childCount, go.transform.childCount,
+                    "Repeated updates must reuse rendering resources.");
                 renderer.useBoundaryTriangulation=false;
                 renderer.UpdateGeometry();
                 Assert.IsFalse(renderer.LastBoundaryTriangulationSucceeded);

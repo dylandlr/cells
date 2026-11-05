@@ -46,7 +46,10 @@ namespace Cells.Tests
             metabolism.energy = .051f;
             float reserve = 5f;
             float used = growth.AssimilateFrom(ref reserve, 3f);
-            Assert.LessOrEqual(used, .101f + 1e-5f);
+            // .051 energy minus .0001 survival reserve buys .1018 mass at .5/unit.
+            Assert.That(used, Is.EqualTo(.1018f).Within(1e-5f));
+            Assert.That(metabolism.energy + used * growth.growthEnergyPerMass,
+                Is.EqualTo(.051f).Within(1e-5f));
             Assert.LessOrEqual(growth.structuralBiomass, 1.2f);
             Assert.GreaterOrEqual(reserve, 0f);
             Assert.Greater(metabolism.energy, 0f);

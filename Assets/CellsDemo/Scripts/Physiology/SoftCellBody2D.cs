@@ -172,6 +172,7 @@ namespace Cells.Physiology
         {
             float damp=Mathf.Exp(-dragRate*dt);
             previousCore=core;
+            coreVelocity*=damp;
             core+=coreVelocity*dt;
             for(int i=0;i<Nodes;i++)
             {
@@ -235,9 +236,14 @@ namespace Cells.Physiology
                     positions[i]+=fromCore.normalized*pressure*areaCompliance*.025f;
                 }
                 // The core is a dynamic interior mesh node, connected through
-                // radial constraints and damped toward the membrane centroid.
+                // radial constraints. Subtract their rest offsets so asymmetric
+                // injury or morphology cannot turn a shape offset into translation.
                 Vector2 centroid=Vector2.zero;
-                for(int i=0;i<Nodes;i++)centroid+=positions[i];
+                for(int i=0;i<Nodes;i++)
+                {
+                    float integrity=membrane ? membrane.GetIntegrity(i):1f;
+                    centroid+=positions[i]-rest[i]*(.84f+.16f*integrity);
+                }
                 core=Vector2.Lerp(core,centroid/Nodes,.12f);
             }
             coreVelocity=(core-previousCore)/dt;

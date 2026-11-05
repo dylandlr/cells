@@ -141,7 +141,8 @@ namespace Cells.Tests
             var filter=cell.GetComponentInChildren<MeshFilter>();
             Assert.NotNull(filter);
             Assert.AreEqual(SoftCellBody2D.Nodes+1,filter.sharedMesh.vertexCount);
-            Assert.AreEqual(SoftCellBody2D.Nodes*3,filter.sharedMesh.triangles.Length);
+            Assert.IsTrue(meshRenderer.LastBoundaryTriangulationSucceeded);
+            Assert.AreEqual((SoftCellBody2D.Nodes-2)*3,filter.sharedMesh.triangles.Length);
         }
     }
 }
