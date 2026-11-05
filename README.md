@@ -1,5 +1,7 @@
 # cells
 
+- [Course-aligned agent architecture](docs/COURSE_ALIGNED_AGENT_ARCHITECTURE.md) — proposal-grounded strategic controllers, shared biomechanics, and evaluation contracts.
+
 ## Course progress report and compact evolutionary visualization
 
 - [CSCE 631 progress report draft](docs/CSCE631_PROGRESS_REPORT_DRAFT.md) — verified experimental results, limitations, and remaining course milestones.
