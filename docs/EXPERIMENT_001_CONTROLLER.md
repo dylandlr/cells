@@ -53,3 +53,5 @@ python -m unittest discover -s Tests/Headless -p 'test_strategic_session.py'
 Set `CELLS_DOTNET` if dotnet is not on PATH. Checks cover complete episodes, atomic rejection,
 partial-observation fields, replay, seat-order invariance and costly delivery ablation.
 The transport is for the symbolic resource game; it is not a biomechanical or chemotaxis result.
+
+OpenAI pilot integration: see [LLM quickstart](EXPERIMENT_001_LLM_QUICKSTART.md).

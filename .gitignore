@@ -28,3 +28,7 @@ results/
 # Headless .NET build output
 Tests/Headless/bin/
 artifacts/
+
+# Local credentials
+.env
+.env.*
