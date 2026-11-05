@@ -39,11 +39,11 @@ The run used a modified source checkout, explicitly recorded in verification.jso
 | Item | Status / next action |
 | --- | --- |
 | Paired environment, explicit costs, communication ablation, scripted baseline | Executed baseline above |
-| Direct LLM decisions | Not run; requires bounded observation/action adapter, frozen prompt/model/budget, and real response logs |
+| Direct LLM decisions | Not run; controller transport implemented (see EXPERIMENT_001_CONTROLLER.md); still needs isolated model calls, frozen prompt/model/budget, and real response logs |
 | Four LLM-authored frozen policies | Existing library is scripted; establish actual generation provenance before labeling LLM-authored |
 | EXP3 and random selection | Existing implementations available; align them to the same frozen policy library and communication arms |
 | Empirical payoff/deviation analysis | Existing utilities available; run on the final frozen controller profiles, not mixed study variants |
 | Composite-action ablation | Not present in baseline; define matched primitive/composite opportunities before pilot |
 | Survival/integrity utility | Not modeled by this smallest environment; disclose reduced endpoint and reconcile with proposal rather than silently claim equivalence |
 
-Next work is the strategic controller adapter and provenance, followed by a small development pilot. Freeze the full study before drawing untouched evaluation seeds. Prior baseline seeds are now development evidence and must not become an allegedly unseen test set for controllers tuned after inspecting these results.
+The strategic controller transport is implemented and integration-tested; see [controller protocol](EXPERIMENT_001_CONTROLLER.md). Next work is model-call isolation, provenance and a small development pilot. Freeze the full study before drawing untouched evaluation seeds. Prior baseline seeds are now development evidence and must not become an allegedly unseen test set for controllers tuned after inspecting these results.

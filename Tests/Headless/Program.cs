@@ -28,6 +28,14 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if (args.Length > 0 && args[0] == "--strategic-session")
+        {
+            if (args.Length != 3 || !int.TryParse(args[1], out int seed) ||
+                (args[2] != "on" && args[2] != "off"))
+                throw new ArgumentException("Usage: --strategic-session <seed> <on|off>");
+            StrategicSession.Run(seed, args[2] == "on", Console.In, Console.Out);
+            return;
+        }
         if(args.Length == 1 && args[0] == "--experiment001-checks")
         {
             Experiment001ValidityChecks.Run();
