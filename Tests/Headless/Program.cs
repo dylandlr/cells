@@ -28,6 +28,11 @@ internal static class Program
 
     private static void Main(string[] args)
     {
+        if(args.Length == 1 && args[0] == "--experiment001-checks")
+        {
+            Experiment001ValidityChecks.Run();
+            return;
+        }
         if(args.Length>0 && args[0]=="--cell-field-trace")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --cell-field-trace <output.csv>");
@@ -40,8 +45,6 @@ internal static class Program
             File.WriteAllText(args[1],Cells.Automata.CellMachineV01.Trace());
             return;
         }
-        CellMachineChecks.Run();
-        Check(Cells.Automata.CellFieldV01.Trace(12)==Cells.Automata.CellFieldV01.Trace(12),"spatial field deterministic replay");
         if(args.Length>0 && args[0]=="--commons-learned-pair")
         {
             if(args.Length!=2)throw new ArgumentException("Usage: --commons-learned-pair <output-dir>");
@@ -203,6 +206,8 @@ internal static class Program
             Console.WriteLine("Experiment 001 pilot exported: "+count+" paired seeds to "+args[1]);
             return;
         }
+        CellMachineChecks.Run();
+        Check(Cells.Automata.CellFieldV01.Trace(12)==Cells.Automata.CellFieldV01.Trace(12),"spatial field deterministic replay");
         Console.WriteLine("cells: headless research verification (Unity-independent)");
         passed += PlanarDragChecks.Run();
         passed += Experiment001ValidityChecks.Run();

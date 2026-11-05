@@ -1,0 +1,2 @@
+metric,paired_seeds,mean_on_minus_off,sample_sd,standard_error,bootstrap95_low,bootstrap95_high
+delivery_on_minus_off,30,-240.35333333333293,132.62863562785256,24.2145651681694,-285.47616666666613,-192.9971666666663

@@ -1,6 +1,8 @@
 # Course-aligned cellular agents
 
-Design decision: 2026-11-05. Proposed architecture, not an executed experiment.
+Design decision: 2026-11-05. Proposed long-term architecture, not an executed experiment.
+
+**Superseded priority:** The professor feedback supplied November 5 makes the headless Experiment 001 the only required progress-report deliverable. Unity, genome compilation, genetics and spectator work are outside the critical path. See EXPERIMENT_001_SCOPE_FREEZE.md.
 
 ## Source authority
 

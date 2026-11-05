@@ -1,5 +1,7 @@
 # cells
 
+- [Experiment 001 scope freeze and executed baseline](docs/EXPERIMENT_001_SCOPE_FREEZE.md) — current progress-report priority following instructor feedback.
+
 - [Course-aligned agent architecture](docs/COURSE_ALIGNED_AGENT_ARCHITECTURE.md) — proposal-grounded strategic controllers, shared biomechanics, and evaluation contracts.
 
 ## Course progress report and compact evolutionary visualization
