@@ -1,0 +1,66 @@
+name: Experiment 001 expanded evaluation
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/substance-ontology]
+    paths:
+      - 'Assets/CellsDemo/Scripts/Experiments/Experiment001V1.cs'
+      - 'Assets/CellsDemo/Scripts/Experiments/SignalingGameV1.cs'
+      - 'Assets/CellsDemo/Scripts/Experiments/PairedAssayAnalysisV1.cs'
+      - 'Tests/Headless/**'
+      - 'tools/capture/analyze_experiment001_trajectories.py'
+      - '.github/workflows/experiment001-evaluation.yml'
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet build Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release
+      - name: Execute 100 paired seeds (follow-up to exploratory five-seed pilot)
+        run: dotnet run --project Tests/Headless/Cells.HeadlessChecks.csproj --configuration Release --no-build -- --experiment001 artifacts/experiment001-expanded 110000 100
+      - name: Validate cardinality, pairing and reward accounting
+        run: |
+          python3 - <<'PY'
+          import csv,json,pathlib,math
+          root=pathlib.Path("artifacts/experiment001-expanded")
+          manifest=json.loads((root/"manifest.json").read_text())
+          def load(name):
+              with (root/name).open(newline="") as f:return list(csv.DictReader(f))
+          episodes,agents,steps,pairs,summary=(load(name) for name in ("episodes.csv","agents.csv","steps.csv","paired.csv","summary.csv"))
+          assert (manifest["first_seed"],manifest["seeds"],manifest["horizon"]) == (110000,100,80)
+          assert tuple(map(len,(episodes,agents,steps,pairs,summary)))==(200,800,64000,100,1)
+          by_episode={(int(r["seed"]),r["delivery"]):r for r in episodes}
+          assert len(by_episode)==200
+          for row in pairs:
+              seed=int(row["seed"])
+              off=float(by_episode[seed,"off"]["collective_return"])
+              on=float(by_episode[seed,"on"]["collective_return"])
+              assert abs(float(row["on_minus_off"])-(on-off))<1e-7
+          by_step={}
+          for row in steps:
+              key=(int(row["seed"]),row["delivery"])
+              by_step[key]=by_step.get(key,0.0)+float(row["reward"])
+              assert math.isfinite(float(row["reward"]))
+              if row["delivery"]=="off":assert int(row["received_signals"])==0
+          assert len(by_step)==200
+          for key,value in by_step.items():
+              assert abs(value-float(by_episode[key]["collective_return"]))<1e-6
+          print("Experiment 001 expanded validation passed:",len(pairs),"paired seeds")
+          print("Summary:",summary[0])
+          PY
+      - name: Analyze paired trajectories
+        run: python3 tools/capture/analyze_experiment001_trajectories.py artifacts/experiment001-expanded/steps.csv artifacts/experiment001-expanded
+      - name: Upload expanded study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiment001-expanded-100-seeds
+          path: artifacts/experiment001-expanded
+          if-no-files-found: warn
+          retention-days: 60

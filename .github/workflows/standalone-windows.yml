@@ -1,0 +1,104 @@
+name: Standalone playable Windows prototype
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/substance-ontology]
+    paths:
+      - 'Standalone/Cells/**'
+      - '.github/workflows/standalone-windows.yml'
+  pull_request:
+    paths:
+      - 'Standalone/Cells/**'
+      - '.github/workflows/standalone-windows.yml'
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Publish self-contained win-x64 single-file application
+        shell: pwsh
+        run: >
+          dotnet publish Standalone/Cells/Cells.csproj
+          --configuration Release --runtime win-x64 --self-contained true
+          -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          --output publish/cells-windows
+      - name: Verify compiled executable is present
+        shell: pwsh
+        run: |
+          if (-not (Test-Path publish/cells-windows/Cells.exe)) {
+            throw "Windows executable missing"
+          }
+          $size = (Get-Item publish/cells-windows/Cells.exe).Length
+          if ($size -lt 1000000) { throw "Executable unexpectedly small: $size" }
+      - name: Execute deterministic Windows smoke test
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path publish/cells-windows/Cells.exe).Path
+          $process = Start-Process -FilePath $exe -ArgumentList "--smoke-test" -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Native Windows smoke test failed: $($process.ExitCode)" }
+      - name: Generate reproducible SHA-256 file
+        shell: pwsh
+        run: |
+          $exe = "publish/cells-windows/Cells.exe"
+          $hash = (Get-FileHash -Path $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  Cells.exe" | Set-Content -Path publish/cells-windows/SHA256SUMS.txt -Encoding ascii
+          Write-Host "Windows executable SHA256=$hash"
+      - name: Scan executable with Microsoft Defender when available
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $report = 'publish/cells-windows/SECURITY-SCAN.txt'
+          $exe = (Resolve-Path 'publish/cells-windows/Cells.exe').Path
+          $scanStarted = Get-Date
+          try {
+            $status = Get-MpComputerStatus -ErrorAction Stop
+            if (-not $status -or -not $status.AntivirusEnabled) {
+              "INCONCLUSIVE: Defender antivirus is not available or enabled on the hosted runner." | Set-Content $report
+              Write-Warning (Get-Content $report)
+            } else {
+              Start-MpScan -ScanType CustomScan -ScanPath $exe -ErrorAction Stop
+              $detections = @(Get-MpThreatDetection -ErrorAction Stop | Where-Object {
+                $_.InitialDetectionTime -ge $scanStarted -and
+                (($_.Resources -join ' ') -like '*Cells.exe*')
+              })
+              if ($detections.Count -gt 0) {
+                "DETECTED: Defender reported $($detections.Count) detection(s) for Cells.exe." | Set-Content $report
+                throw "Defender detected a threat. Do not publish this executable."
+              }
+              "NO DETECTIONS: Defender custom scan on Windows hosted runner. Engine=$($status.AMEngineVersion), signatures=$($status.AntivirusSignatureVersion), scanned_at=$($scanStarted.ToUniversalTime().ToString('o')). Not a security guarantee or Chrome verdict." | Set-Content $report
+              Write-Host (Get-Content $report)
+            }
+          } catch {
+            if (Test-Path $report) {
+              if ((Get-Content $report -Raw) -match '^DETECTED:') { throw }
+            }
+            "INCONCLUSIVE: Defender scan not completed: $($_.Exception.Message)" | Set-Content $report
+            Write-Warning (Get-Content $report)
+          }
+      - name: Attest Windows binary build provenance
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: publish/cells-windows/Cells.exe
+      - name: Include usage notes
+        shell: pwsh
+        run: Copy-Item Standalone/README.txt publish/cells-windows/README.txt
+      - name: Upload playable Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: cells-standalone-windows-x64
+          path: publish/cells-windows/
+          if-no-files-found: error
+          retention-days: 30

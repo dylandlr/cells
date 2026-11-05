@@ -1,0 +1,4 @@
+Unity 6000.6.5f1 PlayMode Camera.Render sequence. 600 frames at 30 fps, 1920x1080; seed 631.
+Source: deformable phase-contrast culture revision based on 8807c08; capture harness in tools/capture. All simulation systems active; initial toxin set to zero.
+Scripted pipette: 2 mass toxin at 4 s; 3 mass reagent at 10 s at Grazer sector 0.
+Camera fixed; deformable grayscale culture with chemical overlays hidden; no beating; microscope IMGUI excluded. Stats are sampled from live state. Scene imagery rendered by Unity; captions added after capture. This is simulated microscopy, not biological footage.

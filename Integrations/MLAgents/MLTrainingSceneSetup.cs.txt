@@ -1,0 +1,96 @@
+using System.IO;
+using System.Linq;
+using UnityEditor.Build.Reporting;
+using UnityEngine.SceneManagement;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Unity.MLAgents;
+using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Policies;
+
+namespace Cells.Learning.Editor
+{
+    public static class MLTrainingSceneSetup
+    {
+        public const string ScenePath = "Assets/CellsMLAgents/Scenes/MotorTraining.unity";
+
+        public const string WindowsBuildPath = "Build/MLTraining/CellsTraining.exe";
+
+        [MenuItem("Cells/ML Agents/4 Build Windows training player")]
+        public static void BuildWindows()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new System.InvalidOperationException("Exit Play Mode before building.");
+            if (!BuildPipeline.IsBuildTargetSupported(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64))
+                throw new System.InvalidOperationException("Install Windows Build Support for this Unity Editor first.");
+            CreateScene();
+            var scene = SceneManager.GetActiveScene();
+            if (scene.path != ScenePath || scene.isDirty)
+                throw new System.InvalidOperationException("Training scene was not opened and saved; build canceled.");
+            var agents = scene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<CellForagingAgent>(true)).ToArray();
+            if (agents.Length != 1 || !agents[0].isActiveAndEnabled)
+                throw new System.InvalidOperationException("Training scene must contain exactly one active CellForagingAgent.");
+            agents[0].ValidateConfiguration();
+            var behavior = agents[0].GetComponent<BehaviorParameters>();
+            var modelProperty = new SerializedObject(behavior).FindProperty("m_Model");
+            if (modelProperty == null)
+                throw new System.InvalidOperationException("Unsupported ML-Agents model serialization; check pinned package version.");
+            if (behavior.BehaviorType != BehaviorType.Default || modelProperty.objectReferenceValue != null)
+                throw new System.InvalidOperationException("Training build requires Default behavior with no assigned inference model.");
+            if (scene.GetRootGameObjects().Any(root =>
+                root.GetComponentsInChildren<Cells.Demo.ChemistryDemoBootstrap>(true).Length > 0 ||
+                root.GetComponentsInChildren<Cells.Demo.ChemotaxisBatchRunner>(true).Length > 0))
+                throw new System.InvalidOperationException("Remove demo/batch runner objects; the training agent owns its world.");
+            Directory.CreateDirectory(Path.GetDirectoryName(WindowsBuildPath));
+            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions {
+                scenes = new[] { ScenePath },
+                locationPathName = WindowsBuildPath,
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.Development
+            });
+            if (report.summary.result != BuildResult.Succeeded)
+                throw new System.InvalidOperationException("Training build failed: " + report.summary.result);
+            Debug.Log("CELLS_ML_BUILD_OK " + Path.GetFullPath(WindowsBuildPath));
+        }
+
+        [MenuItem("Cells/ML Agents/3 Create or open training scene")]
+        public static void CreateScene()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new System.InvalidOperationException("Exit Play Mode before creating the training scene.");
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+            if (File.Exists(ScenePath))
+            {
+                EditorSceneManager.OpenScene(ScenePath);
+                return;
+            }
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            var root = new GameObject("Cells motor training agent");
+            root.SetActive(false);
+            var behavior = root.AddComponent<BehaviorParameters>();
+            behavior.BehaviorName = "CellsMotorV1";
+            behavior.BehaviorType = BehaviorType.Default;
+            behavior.BrainParameters.VectorObservationSize = 5;
+            behavior.BrainParameters.NumStackedVectorObservations = 4;
+            behavior.BrainParameters.ActionSpec = ActionSpec.MakeContinuous(1);
+            root.AddComponent<CellForagingAgent>();
+            var decisions = root.AddComponent<DecisionRequester>();
+            decisions.DecisionPeriod = 5;
+            decisions.TakeActionsBetweenDecisions = true;
+            root.SetActive(true);
+            var camera = new GameObject("Training camera").AddComponent<Camera>();
+            camera.tag = "MainCamera";
+            camera.transform.position = new Vector3(0f, 0f, -10f);
+            camera.orthographic = true;
+            camera.orthographicSize = 8f;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(.025f, .035f, .05f);
+            Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            AssetDatabase.SaveAssets();
+            Debug.Log("CELLS_ML_SCENE_READY " + ScenePath + "; start the trainer, then press Play.");
+        }
+    }
+}

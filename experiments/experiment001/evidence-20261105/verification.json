@@ -1,0 +1,92 @@
+{
+  "verified": true,
+  "paired_worlds": 30,
+  "episodes": 60,
+  "agent_outcomes": 240,
+  "action_records": 19200,
+  "summary": {
+    "metric": "delivery_on_minus_off",
+    "paired_seeds": "30",
+    "mean_on_minus_off": "-240.35333333333293",
+    "sample_sd": "132.62863562785256",
+    "standard_error": "24.2145651681694",
+    "bootstrap95_low": "-285.47616666666613",
+    "bootstrap95_high": "-192.9971666666663"
+  },
+  "source_commit": "bec532c81ae33aae1659aa0679a79ddf28fa2f43",
+  "dirty_worktree": true,
+  "dotnet_version": "unavailable: CLI version query failed",
+  "identical_repeat": true,
+  "protocol": {
+    "schema": "cells.experiment001.baseline-freeze.v1",
+    "status": "scripted baseline validation; not the complete LLM study",
+    "first_seed": 1200000,
+    "seeds": 30,
+    "horizon": 80,
+    "players": 4,
+    "conditions": [
+      "off",
+      "on"
+    ],
+    "policies": [
+      "periodic_signaler",
+      "signal_follower",
+      "signal_follower",
+      "signal_follower"
+    ],
+    "intervention": "message delivery only; signaling attempts remain charged in both arms",
+    "utility": "sum of realized per-step harvest minus forage, movement and signaling costs; rest gain included",
+    "unit_of_analysis": "paired world seed",
+    "bootstrap_samples": 4000,
+    "bootstrap_seed": 631,
+    "limitations": [
+      "scripted agents",
+      "no modeled genomes",
+      "no death or integrity dynamics",
+      "symbolic replenishing yields, not conserved biological mass",
+      "no LLM calls",
+      "no learned signaling"
+    ]
+  },
+  "source_sha256": {
+    "Tests/Headless/Cells.HeadlessChecks.csproj": "b82657399a950906f80da9a247f30727c83fb0af28e9f78d35e6766fef0059ee",
+    "experiments/experiment001/baseline-v1.json": "264272d394f5b7229a645927ee4cf7189df1d37d0cb5f21b623bb88f93d158cf",
+    "tools/run_experiment001.py": "7eca21267535b8482309abcc041b50c581ab38f6e334037cc1c855377d1b81fe",
+    "Tests/Headless/CellMachineChecks.cs": "722b53dd29b251afd97543784c23ef69a63f8ddb29a7f2122e4193f9e72811da",
+    "Tests/Headless/CommonsActionTrace.cs": "7535e88851b4ab65a075d4c9eb334f27484f016112de526a898dfe3b7b765049",
+    "Tests/Headless/Experiment001ValidityChecks.cs": "864ac7aba5ef8d8cc1d9089358dec6fd5f4cdfc94d14089f63fecc6017b1fdba",
+    "Tests/Headless/PlanarDragChecks.cs": "58038937d89de68980063b25540bfad9e42396243fb9082f3643cfd6f6610475",
+    "Tests/Headless/Program.cs": "1742083d17ebcca98a91a47c9b1ccc741ef423d3e32f60f7b1686e812fc654a9",
+    "Tests/Headless/RenewableCommonsChecks.cs": "b6ddc518d919565d0cef5294eae8e44aace23a43061b3d63220cd840cf4278cd",
+    "Assets/CellsDemo/Scripts/Experiments/AdaptiveExperiment001V2.cs": "d3a5947743b9fae2192b2b9b7fa4fc3c7de4d9c12f741ee717c9e052250a5688",
+    "Assets/CellsDemo/Scripts/Experiments/AdaptiveHeldOut001V3.cs": "ae78819f792ac0055afed629415e2015c250ccb5dbc3483436513aa744bd59ec",
+    "Assets/CellsDemo/Scripts/Experiments/ChemotaxisAssayPlanV1.cs": "3a878366fe2ab4eeebbce19ab6014c8eaef88c35b244e0526cef51cf41eeba5c",
+    "Assets/CellsDemo/Scripts/Experiments/CommonsDelayedLearningV1.cs": "031f398391c756c9e5ca7ae229e3fe08f12302da46239a40695ac7088a55b703",
+    "Assets/CellsDemo/Scripts/Experiments/CommonsIntentionStudyV1.cs": "7431e92f547b2799bcc80577912b2ba43c63cbefc18d02c47a74a53396928166",
+    "Assets/CellsDemo/Scripts/Experiments/CommonsLearningV1.cs": "7913b84669ab29964c1b9d6a8260261f04da8b32d56a3898c4c652c5b40e52f8",
+    "Assets/CellsDemo/Scripts/Experiments/EmpiricalPayoffTensorV1.cs": "863966d6d141596ffb10af82b916c8b0336306a56a65d7ce57d587700476561e",
+    "Assets/CellsDemo/Scripts/Experiments/Exp3EpisodeSelectorV1.cs": "ef4e35bc933358c084bcf2e8a2dcaa302265c93ccfc6f082ed7343a49ce6b731",
+    "Assets/CellsDemo/Scripts/Experiments/Exp3HeldOutEvaluationV1.cs": "a19cfb9507e61b3e7403015cbfac7f43cb9ff88bc09a51895d9d8d35267e8f0e",
+    "Assets/CellsDemo/Scripts/Experiments/Exp3StrategyTrainingV1.cs": "372eb312ceac93f726ce9e4481054b1235f5afbc7639ac5d9e1b1dc35216ba67",
+    "Assets/CellsDemo/Scripts/Experiments/Experiment001V1.cs": "9e03d0b3454feb440b5b427bbd5aad34613d5d840af0286ec4364645020243cc",
+    "Assets/CellsDemo/Scripts/Experiments/MessageUseExperiment001V4.cs": "891c13369e2b7147544b1f19291bc680b69c8c10afba200f707216f554b1cb9b",
+    "Assets/CellsDemo/Scripts/Experiments/PairedAssayAnalysisV1.cs": "c2fa5c8e9c426e9f9fbc4a22671772f8ee1ddbfd91d630c18a3ed1a89f2ed333",
+    "Assets/CellsDemo/Scripts/Experiments/PhysicalSignalAssayV1.cs": "4a0e0024586ac9b257abd38b770724befe1742cdb4de7472ea5bdbcbd41b3290",
+    "Assets/CellsDemo/Scripts/Experiments/RenewableCommonsV0.cs": "f8052d33f1172f005fe6845d858d9bc3eb7618b8c616cc08bd410c9b2c02cc82",
+    "Assets/CellsDemo/Scripts/Experiments/RestrictedDeviationStudyV1.cs": "5a387640e6d58304b17ce17f9d25340c90e3a527f903248602e01a70554fcfb6",
+    "Assets/CellsDemo/Scripts/Experiments/SeededNutrientPatches.cs": "8b15d30189b2f8f28f3145e426901c0cc77f87e1eadf7b17f65417bb7aae3c0d",
+    "Assets/CellsDemo/Scripts/Experiments/SignalingExperimentRunnerV1.cs": "d439778b5ba7667a4d6157770bb561ca9b000ee120245978806faed0cbc8b4ca",
+    "Assets/CellsDemo/Scripts/Experiments/SignalingGameV1.cs": "b4aa31d164120f06322d68609ba358711c1f88b3c6888b04da35b2aa7e82424e",
+    "Assets/CellsDemo/Scripts/Automata/CellFieldV01.cs": "69fa7ece0fd382fd2ef1a8cc8c42f7238fba39c9e3b3be6588e4d6a639f8fc1a",
+    "Assets/CellsDemo/Scripts/Automata/CellMachineV01.cs": "bb4ec7aa69364419b7c6e474e946b73a620ad210c7a3f45dc4887598a09eea47",
+    "Assets/CellsDemo/Scripts/Physiology/PlanarDragBalance.cs": "d652c963432efecef041f9e4d6e29583930dbd919460c5bc88644c07fee8ff21"
+  },
+  "output_sha256": {
+    "episodes.csv": "0625368b19174c661925dc5c68e6c57eb560f5b50bfd82ce8073246960c2a6c2",
+    "agents.csv": "192797a840bf4d7babe2983dc144d8281af7125712390fc754116d9fb3c897da",
+    "steps.csv": "92664c6b89fd3af47c5644749797e39b55be256a301969eeeb558aba675fe7c9",
+    "paired.csv": "b7131637ba153830b21826e56b57cfa36f8e5d36dde9ace451caa39ecdea79cd",
+    "summary.csv": "7a481c1b8abade33d8524717c9596eef4b9b37154f04cc6b1ba87a173ff8899d",
+    "manifest.json": "ea7c2d4c99aaef4922bbb553372523cdd9b550bbd205f08528ca1ac822fb0833"
+  }
+}

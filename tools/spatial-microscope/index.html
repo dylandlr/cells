@@ -1,0 +1,40 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>cells · Spatial Machine Microscope</title>
+<style>
+:root{color-scheme:dark;background:#07141e;color:#ddedf1;font:14px system-ui,sans-serif}
+body{max-width:1340px;margin:auto;padding:18px}header,.controls{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}h1{font-size:23px;margin:0}
+small,.muted{color:#9bb5c6}button,input{background:#173042;color:#edf4f7;border:1px solid #44667b;border-radius:6px;padding:7px}
+button{cursor:pointer}.layout{display:grid;grid-template-columns:minmax(400px,1fr) 300px;gap:12px}.panel{background:linear-gradient(145deg,#102b3a,#081b28);border:1px solid #35596b;border-radius:12px;padding:12px}
+canvas{width:100%;height:auto;display:block;aspect-ratio:1}.datum{padding:10px 0;border-bottom:1px solid #294757;display:flex;justify-content:space-between}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+</style>
+<header><div><h1>cells <span class="muted">/ spatial microscope</span></h1><small>Four assembled machine agents · recorded locations, uptake and membrane state</small></div><span id="tick">No recording loaded</span></header>
+<div class="controls"><label>Spatial field CSV <input id="file" type="file" accept=".csv"></label><button id="play" disabled>▶ Play</button><button id="step" disabled>Step</button><button id="reset" disabled>Reset</button><label>Scrub <input id="scrub" type="range" value="0" min="0" max="0" disabled></label></div>
+<div class="layout"><div class="panel"><small>TOP-DOWN PETRI DISH · POSITIONS FROM SIMULATION</small><canvas id="scene" width="900" height="900"></canvas><small>Membrane/node artwork is schematic. Cell centers are measured simulation coordinates, not decorative drift. Nutrient backdrop is decorative because the CSV currently stores only local nutrient observations.</small></div><aside class="panel"><b>Selected cell</b><p class="muted">Click a cell to inspect its machine state.</p><div id="data">Load an exported spatial trace.</div><p class="muted">The current fixed-gradient controller is scripted, not learned. Membranes are stateful but lack deformable physics. Diffusion follows a discrete finite-grid transport rule.</p></aside></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id),canvas=$("scene"),ctx=canvas.getContext("2d");
+const keys="tick,agent,x,y,energy,integrity,internal,local_nutrient,uptake,metabolized,waste,total_material".split(",");
+let frames=[],index=0,selected=0,timer=null,display=[];
+function parse(csv){const lines=csv.trim().split(/\r?\n/);if(lines.shift()!==keys.join(","))throw Error("Unexpected spatial machine schema");
+const byTick=new Map();for(const line of lines.filter(Boolean)){const values=line.split(",");if(values.length!==keys.length)throw Error("Invalid trace row");let row={};keys.forEach((k,i)=>{row[k]=Number(values[i]);if(!Number.isFinite(row[k]))throw Error("Invalid field "+k)});if(row.x<0||row.x>1||row.y<0||row.y>1)throw Error("Position outside normalized domain");if(!byTick.has(row.tick))byTick.set(row.tick,[]);byTick.get(row.tick).push(row);}
+return [...byTick.entries()].sort((a,b)=>a[0]-b[0]).map(([tick,agents])=>{if(agents.length!==4||new Set(agents.map(a=>a.agent)).size!==4)throw Error("Missing agent at tick "+tick);return {tick,agents:agents.sort((a,b)=>a.agent-b.agent)};});}
+function circle(x,y,r,fill,stroke,width=1){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=width;ctx.stroke()}}
+function text(s,x,y,color,size=18){ctx.font=size+"px ui-monospace,monospace";ctx.fillStyle=color;ctx.textAlign="center";ctx.fillText(s,x,y)}
+function render(){ctx.clearRect(0,0,900,900);const grad=ctx.createRadialGradient(430,350,40,450,450,430);grad.addColorStop(0,"#163b4e");grad.addColorStop(1,"#071923");circle(450,450,427,grad,"#8eb7c8",8);circle(450,450,416,null,"#477287",2);
+ctx.save();ctx.beginPath();ctx.arc(450,450,406,0,Math.PI*2);ctx.clip();
+for(let i=0;i<180;i++){const a=i*2.399963,r=Math.sqrt((i+.5)/180)*393;circle(450+Math.cos(a)*r,450+Math.sin(a)*r,i%7===0?2.2:1.1,i%3===0?"#648e8a":"#366c76",null);}
+display=[];if(frames.length){const frame=frames[index];for(const a of frame.agents){const x=110+a.x*680,y=110+a.y*680,r=34;display.push({id:a.agent,x,y});const color=["#e7bf78","#8ee0c1","#a7bce7","#d4a5dd"][a.agent];
+circle(x,y,r,color+"20",color,a.agent===selected?5:3);circle(x,y,r-6,null,color+"66",1.4);circle(x-5,y-4,12,color+"66",color+"99",1);
+for(let k=0;k<4;k++){const px=x+Math.cos(k*1.57)*23,py=y+Math.sin(k*1.57)*23;circle(px,py,3.3,color,null);}
+text("A"+a.agent,x,y-46,"#e3eff5",18);text(a.uptake>.0001?"↘":"◇",x+39,y+39,color,22);
+}}
+ctx.restore();if(frames.length){const f=frames[index];$("tick").textContent="TICK "+f.tick+" / "+frames.length;const a=f.agents[selected];$("data").replaceChildren();const rows=[["Agent","A"+a.agent+" [fixed controller]"],["Position",a.x.toFixed(3)+", "+a.y.toFixed(3)],["Energy",a.energy.toFixed(3)],["Membrane integrity",(a.integrity*100).toFixed(1)+"%"],["Internal nutrient",a.internal.toFixed(3)],["Local nutrient",a.local_nutrient.toFixed(3)],["Uptake this tick",a.uptake.toFixed(4)],["Metabolized",a.metabolized.toFixed(4)],["Cumulative waste",a.waste.toFixed(4)],["Total tracked material",a.total_material.toFixed(3)]];
+for(const [k,v] of rows){const d=document.createElement("div");d.className="datum";const label=document.createElement("span");label.textContent=k;const value=document.createElement("b");value.textContent=v;d.append(label,value);$("data").append(d)}$("scrub").value=index;}
+else text("Load field trace to display actual cells",450,450,"#aac9d6",22);}
+function stop(){clearInterval(timer);timer=null;$("play").textContent="▶ Play";}
+function step(){if(index>=frames.length-1){stop();return;}index++;render();}
+$("file").onchange=async e=>{try{stop();frames=parse(await e.target.files[0].text());if(!frames.length)throw Error("Empty spatial trace");index=0;$("scrub").max=frames.length-1;for(const key of ["play","step","reset","scrub"])$(key).disabled=false;render();}catch(err){$("data").textContent=String(err);}};
+$("play").onclick=()=>{if(timer){stop();return;}$("play").textContent="Ⅱ Pause";timer=setInterval(step,140)};
+$("step").onclick=()=>{stop();step()};$("reset").onclick=()=>{stop();index=0;render()};$("scrub").oninput=e=>{stop();index=+e.target.value;render()};
+canvas.onclick=e=>{const b=canvas.getBoundingClientRect(),x=(e.clientX-b.left)*900/b.width,y=(e.clientY-b.top)*900/b.height;for(const a of display){if(Math.hypot(a.x-x,a.y-y)<42){selected=a.id;render();break;}}};render();
+</script></html>

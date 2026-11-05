@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>cells · action microscope</title>
+<style>
+body{font:14px ui-monospace,Consolas,monospace;background:#0e1419;color:#dcebe8;max-width:1020px;margin:auto;padding:22px}
+h1{font-size:22px}p,small{color:#a8bcb9;line-height:1.5}
+button,input{background:#1e3138;color:#f1faf9;border:1px solid #426463;padding:8px;cursor:pointer}button:disabled{opacity:.4}
+#world{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
+.patch{border:1px solid #456762;border-radius:12px;padding:16px;min-height:100px;background:#14262a}
+#cards{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.card{background:#1c282f;border-radius:8px;padding:10px;border:1px solid #364c50}
+#events{height:260px;overflow:auto;background:#101e22;padding:12px;border:1px solid #354e50}
+.event{padding:5px 0;border-bottom:1px solid #27363c}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+b{color:#98ecbf}.num{font-size:23px;color:#bcf7d7}
+@media(max-width:660px){#world{grid-template-columns:1fr}#cards{grid-template-columns:repeat(2,1fr)}}
+</style>
+<h1>◉ cells / action microscope</h1>
+<p><strong>Actual headless commons event replay.</strong> Load a CSV exported from <code>--commons-trace</code>. Symbols represent recorded events; the viewer never calculates simulation state. Use the learned-policy trace export to inspect frozen trained followers and their received invitations; the sender remains scripted.</p>
+<div class="controls"><label>Trace CSV <input type="file" id="file" accept=".csv,text/csv"></label><button id="prev" disabled>◀</button><button id="next" disabled>▶ Next step</button><button id="play" disabled>Play</button><span id="clock">No trace</span></div>
+<div id="world"></div><div id="cards"></div><h3>Action symbols and recorded events</h3><div id="events">Load an exported CSV to inspect the authoritative simulation actions.</div>
+<small>⚑ signal sent (not necessarily delivered) · ⌁ invitation heard · ⌖ signaled target · ↘ harvest · ♻ restoration attempt · ✓ completed restoration · × death · ◇ rest · ▤ net observed stock change. A stock difference may reflect harvesting, restoration and stochastic background replenishment; it is not by itself an attribution of cause.</small>
+<script>
+"use strict";
+let records=[],steps=[],cursor=-1,interval=null,learnedMode=false;
+const $=id=>document.getElementById(id),codes={"signal":"⚑","harvest":"↘","restore-attempt":"♻","repair-success":"✓","death":"×","rest":"◇","stock":"▤","observation":"⌁"};
+function actor(i){return i<0?"WORLD":"A"+i+(learnedMode?(i===0?"[S]":"[L]"):"[S]");}
+function name(e){if(e.kind==="observation"){const m=/heard=(-?\d+)/.exec(e.detail);return m&&+m[1]>=0?"⌁ heard invitation ⌖ P"+m[1]:"◉ observation · no invitation heard";}return (codes[e.kind]||"·")+" "+e.kind;}
+function parse(csv){const lines=csv.trim().split(/\r?\n/);if(lines[0]!=="tick,kind,agent,patch,amount,energy,stock,detail")throw Error("Expected the commons trace CSV schema");return lines.slice(1).filter(Boolean).map(line=>{const parts=line.split(",");if(parts.length!==8)throw Error("Invalid trace row");return {tick:+parts[0],kind:parts[1],agent:+parts[2],patch:+parts[3],amount:+parts[4],energy:+parts[5],stock:+parts[6],detail:parts[7]};});}
+function el(tag,cls,text){const item=document.createElement(tag);if(cls)item.className=cls;if(text!==undefined)item.textContent=text;return item;}
+function show(){if(cursor<0)return;const tick=steps[cursor],now=records.filter(x=>x.tick===tick);
+const all=records.filter(x=>x.tick<=tick);const patchStocks=[null,null,null],agents=[null,null,null,null];
+for(const event of all){if(event.kind==="stock")patchStocks[event.patch]=event.stock;if(event.agent>=0&&event.agent<4&&event.kind!=="observation")agents[event.agent]=event;}
+$("world").replaceChildren();for(let i=0;i<3;i++){const panel=el("div","patch");panel.append(el("div","", "▤ PATCH "+i),el("div","num",patchStocks[i]===null?"?":String(patchStocks[i])+" units"));const relevant=now.filter(x=>x.patch===i&&x.kind!=="stock"&&x.kind!=="observation");panel.append(el("small","",relevant.map(x=>actor(x.agent)+" "+name(x)).join(" · ")||"No new actions recorded"));$("world").append(panel);}
+$("cards").replaceChildren();for(let i=0;i<4;i++){const card=el("div","card");card.append(el("b","", "● "+actor(i)),el("p","",agents[i]?"energy "+agents[i].energy.toFixed(2):"not observed"),el("small","",agents[i]?name(agents[i]):"no event"));$("cards").append(card);}
+$("events").replaceChildren();for(const e of now){const suffix=e.kind==="observation"?" | "+e.detail:e.kind==="repair-success"?" | aggregate completed="+e.amount:e.kind==="stock"?" | net stock Δ="+e.amount.toFixed(2):" | "+e.detail+" | reward="+e.amount.toFixed(2);$("events").append(el("div","event","T"+e.tick+" "+actor(e.agent)+" "+name(e)+(e.patch>=0&&e.kind!=="observation"?" @ P"+e.patch:"")+suffix));}
+$("clock").textContent="step "+tick+" · "+(cursor+1)+"/"+steps.length;
+}
+function next(){cursor=Math.min(cursor+1,steps.length-1);show();if(cursor===steps.length-1)stop();}
+function stop(){clearInterval(interval);interval=null;$("play").textContent="Play";}
+$("file").addEventListener("change",async e=>{try{const file=e.target.files[0];if(!file)return;stop();records=parse(await file.text());learnedMode=records.some(e=>e.detail==="frozen-learned-follower");steps=[...new Set(records.map(r=>r.tick))].sort((a,b)=>a-b);if(!steps.length)throw Error("Empty trace");cursor=0;for(const id of ["prev","next","play"])$(id).disabled=false;show();}catch(err){$("events").textContent=String(err);}});
+$("prev").onclick=()=>{cursor=Math.max(0,cursor-1);show();};
+$("next").onclick=next;
+$("play").onclick=()=>{if(interval){stop();return;}if(cursor===steps.length-1)cursor=-1;$("play").textContent="Pause";interval=setInterval(next,360);};
+</script></html>

@@ -1,0 +1,1 @@
+{"schema":"cells.experiment001.v1","first_seed":1200000,"seeds":30,"horizon":80,"control":"message_delivery_only","policy":"periodic_signaler_plus_three_followers","note":"symbolic resource game, not genomic traits"}
