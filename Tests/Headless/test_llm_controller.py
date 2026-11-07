@@ -4,9 +4,11 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import sys
 import unittest
 
 ROOT=Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'tools'))
 spec=importlib.util.spec_from_file_location('controller',ROOT/'tools/run_llm_experiment001.py')
 c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c)
 
@@ -83,6 +85,22 @@ class ControllerTests(unittest.TestCase):
             self.assertEqual(result['completed_rounds'],0)
             self.assertEqual(result['calls_attempted'],3)
             self.assertNotIn('submitted_batch',(out/'events.jsonl').read_text())
+
+    def test_tamu_payload_through_real_simulator(self):
+        from tamu_llm_transport import parse_stream
+        def fake(body,key,timeout):
+            self.assertTrue(body['stream'])
+            self.assertNotIn('instructions',body)
+            local=json.loads(body['messages'][1]['content'])
+            for past in local['history']:
+                self.assertEqual(past['observation']['agent'],local['observation']['agent'])
+            part={'model':'fixture','choices':[{'index':0,'delta':{'content':json.dumps({'code':6,'note':'fixture'})},'finish_reason':'stop'}]}
+            return parse_stream([('data: '+json.dumps(part)).encode(),b'data: [DONE]'])
+        with tempfile.TemporaryDirectory() as td:
+            args=self.args(Path(td)/'run');args.provider='tamu'
+            result=c.run(args,'fixture-key',fake)
+            self.assertEqual(result['completed_rounds'],4)
+            self.assertEqual(result['usage_missing_responses'],16)
 
     def test_insufficient_budget_rejected_before_start(self):
         with tempfile.TemporaryDirectory() as td:

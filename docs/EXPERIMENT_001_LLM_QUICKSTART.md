@@ -1,10 +1,45 @@
 # OpenAI agents: development pilot
 
-**Texas A&M connection pending:** The user obtains API access through Texas A&M.
-Confirm the university portal, API base URL, authentication scheme and permitted model
-identifier before using these commands. This implementation currently targets only
-https://api.openai.com/v1/responses. University gateway or Azure credentials must not
-be assumed compatible or submitted to that endpoint. No live key has been used.
+## Texas A&M course gateway
+
+Configured from the supplied CSCE 631-D Fall 2026 API guide. Use this command for the
+university service; the public OpenAI commands below are a separate provider option.
+
+```powershell
+git pull --ff-only origin feat/substance-ontology
+dotnet build Tests/Headless/Cells.HeadlessChecks.csproj -c Release
+python tools/run_llm_experiment001.py artifacts/tamu-pilot-001 --provider tamu --model protected.gpt-5-mini --prompt-key
+```
+
+The terminal prompts invisibly for the course API key and your personal CF_Authorization
+cookie. Copy the course key from the course guide locally; it is intentionally not included
+in this repository. Obtain your cookie after signing into https://chat.tamu.ai with TAMU
+SSO/Duo: browser DevTools → Application (Firefox: Storage) → Cookies → chat.tamu.ai →
+CF_Authorization → Value. Paste only that value, or its CF_Authorization=value pair,
+into the hidden local prompt. Never paste either credential into chat or a shared log.
+The guide states the cookie expires in approximately 24 hours and the per-student quota
+is $5/day. A fresh sign-in/cookie may be needed after HTTP 401/403 or a sign-in redirect.
+
+For preconfigured environments, omit --prompt-key and supply TAMU_API_KEY and
+TAMU_CF_AUTHORIZATION locally. These are not loaded automatically from env files.
+The simulator child process does not inherit these credential variables.
+
+TAMU requests use https://chat.tamu.ai/api/chat/completions, streaming SSE,
+temperature 0.7 and max_tokens 256 by default. The initial adapter deliberately supports
+only protected.gpt-5-mini; the guide's Claude thinking models require different settings.
+Do not pass --reasoning-effort in TAMU mode. Unsupported structured-output options are
+not sent: JSON is requested in the prompt and strictly validated locally. Invalid JSON,
+refusals, truncation, missing stream completion and transport errors abort without fallback.
+
+TAMU response logs contain reconstructed answer text, returned model/id, finish status
+and usage when supplied. They are normalized records, not byte-for-byte raw SSE archives.
+Reasoning content is ignored. Missing usage remains explicitly flagged. The guide does
+not promise that every model provides usage, so recorded zero is not proof of zero cost.
+Redirects are rejected rather than forwarding session credentials to another host.
+The four-round pilot makes at most 16 requests and reports pilot_truncated on success.
+No live authenticated TAMU run has yet been verified.
+
+## Public OpenAI alternative
 
 The controller runs four OpenAI-controlled agents against the existing C# Experiment 001.
 It needs Python 3.11+, .NET 8 SDK, an OpenAI API key and access to a Responses-compatible

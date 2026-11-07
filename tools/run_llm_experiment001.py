@@ -101,7 +101,7 @@ def run(args, key, call=request_openai):
         result = subprocess.run(['git', *values], cwd=ROOT, capture_output=True, text=True)
         return result.stdout.strip() if result.returncode == 0 else 'unavailable'
     manifest = {'schema': 'cells.llm-pilot.v1', 'created_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        'status': 'started', 'model_requested': args.model, 'seed': args.seed,
+        'status': 'started', 'provider': getattr(args, 'provider', 'openai'), 'model_requested': args.model, 'seed': args.seed,
         'delivery': args.delivery, 'rounds_requested': args.rounds, 'game_horizon': 80,
         'max_calls': args.max_calls, 'max_output_tokens_per_call': args.output_tokens,
         'timeout_seconds': args.timeout, 'retry_policy': 'none; abort on any failure',
@@ -120,7 +120,7 @@ def run(args, key, call=request_openai):
                 log.write(json.dumps({'type': kind, **fields})+'\n'); log.flush()
             process = subprocess.Popen([args.dotnet, str(dll), '--strategic-session', str(args.seed), args.delivery],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=err, text=True, encoding='utf-8',
-                env={k:v for k,v in os.environ.items() if k != 'OPENAI_API_KEY'})
+                env={k:v for k,v in os.environ.items() if k not in ('OPENAI_API_KEY', 'TAMU_API_KEY', 'TAMU_CF_AUTHORIZATION')})
             inbox = queue.Queue()
             def reader():
                 for line in process.stdout: inbox.put(line)
@@ -149,6 +149,9 @@ def run(args, key, call=request_openai):
                         body = payload(args.model, obs, histories[seat], args.output_tokens)
                         if getattr(args, 'reasoning_effort', None) is not None:
                             body['reasoning'] = {'effort': args.reasoning_effort}
+                        if getattr(args, 'provider', 'openai') == 'tamu':
+                            from tamu_llm_transport import chat_payload
+                            body = chat_payload(body)
                         manifest['calls_attempted'] += 1
                         event('model_request', step=current['step'], seat=seat, body=body)
                         write('manifest.json', manifest)
@@ -197,6 +200,7 @@ def run(args, key, call=request_openai):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('output', help='New output directory; never overwritten')
+    p.add_argument('--provider', choices=['openai','tamu'], default='openai')
     p.add_argument('--model', required=True, help='Responses-compatible model with structured outputs; pin a snapshot for evaluation')
     p.add_argument('--reasoning-effort', choices=['none','low','medium','high'], default=None)
     p.add_argument('--seed', type=int, default=1200000)
@@ -209,9 +213,21 @@ def main():
     p.add_argument('--dll', default=str(ROOT/'Tests/Headless/bin/Release/net8.0/Cells.HeadlessChecks.dll'))
     p.add_argument('--prompt-key', action='store_true', help='Read existing key invisibly; keep only in memory')
     args = p.parse_args()
-    key = getpass.getpass('Existing OpenAI API key (hidden): ') if args.prompt_key else os.environ.get('OPENAI_API_KEY', '')
-    if not key.strip(): p.error('No API key available; use --prompt-key or an existing OPENAI_API_KEY environment variable')
-    try: result = run(args, key.strip())
+    key_env = 'TAMU_API_KEY' if args.provider == 'tamu' else 'OPENAI_API_KEY'
+    key = getpass.getpass('API key (hidden): ') if args.prompt_key else os.environ.get(key_env, '')
+    if not key.strip(): p.error('No API key available; use --prompt-key or '+key_env)
+    call = request_openai
+    if args.provider == 'tamu':
+        if args.model != 'protected.gpt-5-mini':
+            p.error('Initial TAMU pilot supports protected.gpt-5-mini only; other models need separate parameter validation')
+        if args.reasoning_effort is not None:
+            p.error('Do not set --reasoning-effort for the TAMU pilot')
+        from tamu_llm_transport import normalize_cookie, request_tamu
+        cookie = getpass.getpass('CF_Authorization cookie (hidden): ') if args.prompt_key else os.environ.get('TAMU_CF_AUTHORIZATION', '')
+        try: cookie = normalize_cookie(cookie)
+        except ValueError: p.error('Missing or invalid TAMU_CF_AUTHORIZATION; use --prompt-key')
+        call = lambda body, key, timeout: request_tamu(body, key, timeout, cookie)
+    try: result = run(args, key.strip(), call)
     except Exception as exc:
         print('Run failed ('+type(exc).__name__+'). Inspect local logs; no fallback actions were substituted.', file=sys.stderr)
         return 1
