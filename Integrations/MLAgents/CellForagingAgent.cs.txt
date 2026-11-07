@@ -1,0 +1,159 @@
+using UnityEngine;
+using Unity.MLAgents;
+using Unity.MLAgents.Actuators;
+using Unity.MLAgents.Sensors;
+using Unity.MLAgents.Policies;
+using Cells.Demo;
+using Cells.Physiology;
+
+namespace Cells.Learning
+{
+    // Academy runs before the simulation. Score the completed physics step afterward.
+    [DefaultExecutionOrder(200)]
+    public sealed class CellForagingAgent : Agent
+    {
+        public int firstSeed = 631;
+        public float horizonSeconds = 30f;
+        public float motorPenalty = .1f;
+        [Range(0f, 1f)] public float heuristicActivation = .75f;
+        public string evaluationLabel = "unlabeled";
+        float episodePenalty, episodeHorizon, episodeDt;
+        int activeSeed;
+        GameObject world;
+        CellMotorPolicyPort port;
+        ChemotaxisTrialRecorder recorder;
+        readonly float[] observations = new float[CellMotorPolicyPort.ObservationCount];
+        float previousDigestion, previousMotorEnergy;
+        int episode;
+
+        public override void Initialize()
+        {
+            ValidateConfiguration();
+            MaxStep = 0; // Horizon uses completed simulation steps.
+        }
+
+        public void ValidateConfiguration()
+        {
+            var behavior = GetComponent<BehaviorParameters>();
+            var brain = behavior.BrainParameters;
+            if (brain.VectorObservationSize != 5 || brain.NumStackedVectorObservations != 4
+                || brain.ActionSpec.NumContinuousActions != 1 || brain.ActionSpec.NumDiscreteActions != 0
+                || behavior.BehaviorName != "CellsMotorV1")
+                throw new System.InvalidOperationException("CellsMotorV1 requires 5 observations, 4 stacks, 1 continuous action and no discrete actions.");
+            var requester = GetComponent<DecisionRequester>();
+            if (!requester || requester.DecisionPeriod != 5 || !requester.TakeActionsBetweenDecisions)
+                throw new System.InvalidOperationException("Use DecisionRequester: period 5, repeat actions enabled.");
+            if (Mathf.Abs(Time.fixedDeltaTime - .02f) > .000001f)
+                throw new System.InvalidOperationException("Motor training requires fixedDeltaTime = 0.02 seconds.");
+            if (!float.IsFinite(horizonSeconds) || horizonSeconds <= 0f
+                || !float.IsFinite(motorPenalty) || motorPenalty < 0f)
+                throw new System.InvalidOperationException("Invalid episode horizon or motor penalty.");
+        }
+
+        public override void OnEpisodeBegin()
+        {
+            CleanupWorld();
+            episodePenalty = motorPenalty;
+            episodeHorizon = horizonSeconds;
+            episodeDt = Time.fixedDeltaTime;
+            world = new GameObject("ML assay episode " + episode);
+            world.transform.SetParent(transform, false);
+            var demo = world.AddComponent<ChemistryDemoBootstrap>();
+            demo.autoBuild = false;
+            demo.assayMode = true;
+            activeSeed = unchecked(firstSeed + episode++);
+            demo.seed = activeSeed;
+            demo.Build();
+            port = demo.AssaySwimmer.gameObject.AddComponent<CellMotorPolicyPort>();
+            recorder = demo.AssayRecorder;
+            recorder.controllerLabel = "mlagents-motor-v1";
+            recorder.BeginTrial();
+            previousDigestion = previousMotorEnergy = 0f;
+        }
+
+        public override void CollectObservations(VectorSensor sensor)
+        {
+            if (port) port.ReadObservations(observations);
+            else System.Array.Clear(observations, 0, observations.Length);
+            foreach (float value in observations) sensor.AddObservation(value);
+        }
+
+        public override void OnActionReceived(ActionBuffers actions)
+        {
+            // ML-Agents continuous actions [-1,1] map to motor activation [0,1].
+            if (actions.ContinuousActions.Length != 1)
+                throw new System.InvalidOperationException("Expected one motor action.");
+            if (port) port.ApplyMotorAction((actions.ContinuousActions[0] + 1f) * .5f);
+        }
+
+        public override void Heuristic(in ActionBuffers actionsOut)
+        {
+            var actions = actionsOut.ContinuousActions;
+            actions[0] = 2f * Mathf.Clamp01(heuristicActivation) - 1f; // Configurable constant-motor baseline.
+        }
+
+        void FixedUpdate()
+        {
+            if (!recorder) return;
+            float digestion = recorder.NutrientDigested;
+            float motorEnergy = recorder.MotorEnergySpent;
+            AddReward(Mathf.Max(0f, digestion - previousDigestion)
+                - episodePenalty * Mathf.Max(0f, motorEnergy - previousMotorEnergy));
+            previousDigestion = digestion;
+            previousMotorEnergy = motorEnergy;
+            if (!recorder.Alive)
+            {
+                AddReward(-1f);
+                ReportEpisode("death");
+                EndEpisode();
+            }
+            else if (recorder.ElapsedSeconds >= Mathf.Max(episodeDt, episodeHorizon))
+                {
+                ReportEpisode("time_limit");
+                EpisodeInterrupted(); // Time-limit truncation, not biological death.
+            }
+        }
+
+        [System.Serializable]
+        struct EpisodeSummary
+        {
+            public string schema, ending, behaviorType, evaluationLabel;
+            public float motorPenalty, horizonSeconds, fixedDeltaTime, heuristicActivation;
+            public int seed, recordedSteps;
+            public float elapsedSeconds, nutrientAbsorbed, nutrientDigested, motorEnergy, pathLength, reward;
+            public bool alive;
+        }
+
+        void ReportEpisode(string ending)
+        {
+            Debug.Log("CELL_ML_EPISODE " + JsonUtility.ToJson(new EpisodeSummary {
+                schema = "cells.ml-episode.v2", ending = ending, seed = activeSeed,
+                behaviorType = GetComponent<BehaviorParameters>().BehaviorType.ToString(),
+                evaluationLabel = evaluationLabel, heuristicActivation = heuristicActivation,
+                motorPenalty = episodePenalty, horizonSeconds = episodeHorizon, fixedDeltaTime = episodeDt,
+                recordedSteps = recorder.RecordedSteps, elapsedSeconds = recorder.ElapsedSeconds,
+                nutrientAbsorbed = recorder.NutrientAbsorbed, nutrientDigested = recorder.NutrientDigested,
+                motorEnergy = recorder.MotorEnergySpent, pathLength = recorder.PathLength,
+                reward = GetCumulativeReward(), alive = recorder.Alive
+            }));
+        }
+
+        void CleanupWorld()
+        {
+            port = null;
+            recorder = null;
+            if (!world) return;
+            world.SetActive(false);
+            Destroy(world);
+            world = null;
+        }
+
+        protected override void OnDisable()
+        {
+            // ML-Agents collects a terminal observation during base.OnDisable.
+            // Keep the organism available until that notification has finished.
+            try { base.OnDisable(); }
+            finally { CleanupWorld(); }
+        }
+    }
+}

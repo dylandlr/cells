@@ -1,0 +1,16 @@
+{
+  "schema": "cells.experiment001.baseline-freeze.v1",
+  "status": "scripted baseline validation; not the complete LLM study",
+  "first_seed": 1200000,
+  "seeds": 30,
+  "horizon": 80,
+  "players": 4,
+  "conditions": ["off", "on"],
+  "policies": ["periodic_signaler", "signal_follower", "signal_follower", "signal_follower"],
+  "intervention": "message delivery only; signaling attempts remain charged in both arms",
+  "utility": "sum of realized per-step harvest minus forage, movement and signaling costs; rest gain included",
+  "unit_of_analysis": "paired world seed",
+  "bootstrap_samples": 4000,
+  "bootstrap_seed": 631,
+  "limitations": ["scripted agents", "no modeled genomes", "no death or integrity dynamics", "symbolic replenishing yields, not conserved biological mass", "no LLM calls", "no learned signaling"]
+}
